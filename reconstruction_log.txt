@@ -1,0 +1,80 @@
+[2026-03-09 18:36:58] Connected to MongoDB successfully.
+[2026-03-09 18:36:58] Initializing OCR Engine (EasyOCR)...
+[2026-03-09 18:37:01] Starting reconstruction for 54 faculty splits.
+[2026-03-09 18:37:01] Processing (1/54): page_10_bottom.png
+[2026-03-09 18:37:19] Quota Exceeded for Key #1.
+[2026-03-09 18:37:20] Quota Exceeded for Key #2.
+[2026-03-09 18:37:46] SUCCESS: Faculty 'Mr: ANNAPPA SHETTY' stored in DB.
+[2026-03-09 18:37:46] Processing (2/54): page_10_top.png
+[2026-03-09 18:38:32] SUCCESS: Faculty 'Mr. RAGHURAM SHETTY' stored in DB.
+[2026-03-09 18:38:32] Processing (3/54): page_11_bottom.png
+[2026-03-09 18:39:31] SUCCESS: Faculty 'Mrs. NANDA RAI' stored in DB.
+[2026-03-09 18:39:31] Processing (4/54): page_11_top.png
+[2026-03-09 18:40:58] SUCCESS: Faculty 'Mrs: PREETHI SHETTY' stored in DB.
+[2026-03-09 18:40:58] Processing (5/54): page_12_bottom.png
+[2026-03-09 18:41:43] SUCCESS: Faculty 'Mr. HAREESHA B.' stored in DB.
+[2026-03-09 18:41:43] Processing (6/54): page_12_top.png
+[2026-03-09 18:42:37] SUCCESS: Faculty 'Mrs. AVITHA M. CORREA' stored in DB.
+[2026-03-09 18:42:37] Processing (7/54): page_13_bottom.png
+[2026-03-09 18:43:14] SUCCESS: Faculty 'Mr. PRAVEEN MOGAVEERA' stored in DB.
+[2026-03-09 18:43:14] Processing (8/54): page_13_top.png
+[2026-03-09 18:43:46] SUCCESS: Faculty 'Mr. RAJATH BANGERA' stored in DB.
+[2026-03-09 18:43:46] Processing (9/54): page_14_bottom.png
+[2026-03-09 18:44:24] SUCCESS: Faculty 'Dr. CHETHAN SHETTY K' stored in DB.
+[2026-03-09 18:44:24] Processing (10/54): page_14_top.png
+[2026-03-09 18:44:57] SUCCESS: Faculty 'Ms. VISHALAKSHI S.' stored in DB.
+[2026-03-09 18:44:57] Processing (11/54): page_15_bottom.png
+[2026-03-09 18:45:51] SUCCESS: Faculty 'Mrs. PRAVEENA M. POOJARY' stored in DB.
+[2026-03-09 18:45:51] Processing (12/54): page_15_top.png
+[2026-03-09 18:46:17] SUCCESS: Faculty 'Mrs. RESHMA SHETTY' stored in DB.
+[2026-03-09 18:46:17] Processing (13/54): page_16_bottom.png
+[2026-03-09 18:47:45] SUCCESS: Faculty 'Dr. DEEPA' stored in DB.
+[2026-03-09 18:47:45] Processing (14/54): page_16_top.png
+[2026-03-09 18:48:54] SUCCESS: Faculty 'Ms. RASHMITHA SHETTY' stored in DB.
+[2026-03-09 18:48:54] Processing (15/54): page_17_bottom.png
+[2026-03-09 18:49:31] SUCCESS: Faculty 'Mrs. DEEPIKA Ga' stored in DB.
+[2026-03-09 18:49:31] Processing (16/54): page_17_top.png
+[2026-03-09 18:50:11] SUCCESS: Faculty 'Mrs. REVATHI D' stored in DB.
+[2026-03-09 18:50:11] Processing (17/54): page_18_bottom.png
+[2026-03-09 18:51:00] SUCCESS: Faculty 'Mrs. SWATHI G RAO' stored in DB.
+[2026-03-09 18:51:00] Processing (18/54): page_18_top.png
+[2026-03-09 18:52:36] SUCCESS: Faculty 'Ms. RAVINA C. POOJARY' stored in DB.
+[2026-03-09 18:52:36] Processing (19/54): page_19_bottom.png
+[2026-03-09 18:53:35] SUCCESS: Faculty 'Mrs. MEGHA S. BHAT' stored in DB.
+[2026-03-09 18:53:35] Processing (20/54): page_19_top.png
+[2026-03-09 18:54:18] SUCCESS: Faculty 'Mrs. SUREKHA ACHARYA' stored in DB.
+[2026-03-09 18:54:18] Processing (21/54): page_1_bottom.png
+[2026-03-09 18:55:16] SUCCESS: Faculty 'Mrs. VEENA V. BHAT' stored in DB.
+[2026-03-09 18:55:16] Processing (22/54): page_1_top.png
+[2026-03-09 18:55:30] Quota Exceeded for Key #3.
+[2026-03-09 18:56:00] SUCCESS: Faculty 'Prof: Dr. K UMESH SHETTY' stored in DB.
+[2026-03-09 18:56:00] Processing (23/54): page_20_bottom.png
+[2026-03-09 18:56:37] SUCCESS: Faculty 'Mr. GIRIRAJ BHAT' stored in DB.
+[2026-03-09 18:56:37] Processing (24/54): page_20_top.png
+[2026-03-09 18:57:30] SUCCESS: Faculty 'Mr. MAHESH KUMAR' stored in DB.
+[2026-03-09 18:57:30] Processing (25/54): page_21_bottom.png
+[2026-03-09 18:58:18] SUCCESS: Faculty 'Mrs. WILMA SHARAL' stored in DB.
+[2026-03-09 18:58:18] Processing (26/54): page_21_top.png
+[2026-03-09 18:58:58] SUCCESS: Faculty 'Mr. HARISH KANCHAN' stored in DB.
+[2026-03-09 18:58:58] Processing (27/54): page_22_bottom.png
+[2026-03-09 18:59:52] SUCCESS: Faculty 'Ms. RASHMI GAVADI' stored in DB.
+[2026-03-09 18:59:52] Processing (28/54): page_22_top.png
+[2026-03-09 19:00:55] SUCCESS: Faculty 'Mrs. JAYALAKSHMI K' stored in DB.
+[2026-03-09 19:00:55] Processing (29/54): page_23_bottom.png
+[2026-03-09 19:01:39] SUCCESS: Faculty 'Mr. PRANAM R BETRABET' stored in DB.
+[2026-03-09 19:01:39] Processing (30/54): page_23_top.png
+[2026-03-09 19:02:45] SUCCESS: Faculty 'Mr. SHREEKANTH' stored in DB.
+[2026-03-09 19:02:45] Processing (31/54): page_24_bottom.png
+[2026-03-09 19:03:43] SUCCESS: Faculty 'Mrs. VIJAYASHREE A' stored in DB.
+[2026-03-09 19:03:43] Processing (32/54): page_24_top.png
+[2026-03-09 19:04:43] SUCCESS: Faculty 'Ms. MEGHA' stored in DB.
+[2026-03-09 19:04:43] Processing (33/54): page_25_bottom.png
+[2026-03-09 19:05:06] Connected to MongoDB successfully.
+[2026-03-09 19:05:06] Initializing OCR Engine (EasyOCR)...
+[2026-03-09 19:05:08] Starting reconstruction for 54 faculty splits.
+[2026-03-09 19:05:08] Processing (33/54): page_25_bottom.png
+[2026-03-09 19:05:28] Quota Exceeded for Key #1.
+[2026-03-09 19:05:29] Quota Exceeded for Key #2.
+[2026-03-09 19:05:30] Quota Exceeded for Key #3.
+[2026-03-09 19:06:00] SUCCESS: Faculty 'Mr. MAHESH POOJARI' stored in DB.
+[2026-03-09 19:06:00] Processing (34/54): page_25_top.png

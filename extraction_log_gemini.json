@@ -1,0 +1,236 @@
+[
+    {
+        "timestamp": "2026-03-08 17:18:58",
+        "filename": "page_13_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:19:17",
+        "filename": "page_13_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:19:37",
+        "filename": "page_14_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:20:32",
+        "filename": "page_13_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:20:51",
+        "filename": "page_13_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:21:09",
+        "filename": "page_14_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:21:28",
+        "filename": "page_14_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:21:47",
+        "filename": "page_15_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:22:09",
+        "filename": "page_15_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:23:31",
+        "filename": "page_13_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:23:51",
+        "filename": "page_13_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:24:13",
+        "filename": "page_14_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:24:42",
+        "filename": "page_14_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:25:13",
+        "filename": "page_15_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:25:35",
+        "filename": "page_15_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:25:55",
+        "filename": "page_16_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:26:18",
+        "filename": "page_16_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:26:44",
+        "filename": "page_17_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:27:30",
+        "filename": "page_17_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:27:52",
+        "filename": "page_18_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:28:26",
+        "filename": "page_18_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:28:47",
+        "filename": "page_19_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:29:06",
+        "filename": "page_19_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:29:27",
+        "filename": "page_20_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:30:13",
+        "filename": "page_20_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:30:39",
+        "filename": "page_21_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:31:14",
+        "filename": "page_21_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:31:41",
+        "filename": "page_22_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:32:13",
+        "filename": "page_22_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:32:44",
+        "filename": "page_23_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:33:16",
+        "filename": "page_23_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:33:46",
+        "filename": "page_24_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:34:13",
+        "filename": "page_24_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:35:06",
+        "filename": "page_25_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:35:27",
+        "filename": "page_25_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:35:48",
+        "filename": "page_26_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:36:07",
+        "filename": "page_26_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:36:26",
+        "filename": "page_27_bottom.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    },
+    {
+        "timestamp": "2026-03-08 17:36:46",
+        "filename": "page_27_top.png",
+        "status": "ERROR",
+        "details": "Failed to process image."
+    }
+]
