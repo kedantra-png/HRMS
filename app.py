@@ -66,6 +66,7 @@ from difflib import get_close_matches
 import json
 import re
 import csv
+import fitz  # PyMuPDF for optional page-level images
 
 # Admin Routes
 @app.route('/admin/dashboard')
@@ -586,6 +587,19 @@ def admin_timetables():
         else:
             try:
                 pdf_bytes = file.read()
+
+                # Optionally save each full page as an image into static/timetable_images
+                static_root = os.path.join(os.path.dirname(__file__), "static")
+                page_images_folder = os.path.join(static_root, "timetable_images")
+                os.makedirs(page_images_folder, exist_ok=True)
+
+                with fitz.open(stream=pdf_bytes, filetype="pdf") as doc_pages:
+                    for idx in range(len(doc_pages)):
+                        page = doc_pages.load_page(idx)
+                        pix = page.get_pixmap(dpi=200)
+                        page_name = f"page_{idx + 1:02d}.png"
+                        page_path = os.path.join(page_images_folder, page_name)
+                        pix.save(page_path)
 
                 # Build lecturer list and faculty details BEFORE OCR so we can pass
                 # all known faculty names into the PDF processor (for pages that

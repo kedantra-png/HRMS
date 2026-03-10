@@ -186,7 +186,8 @@ def extract_timetable_structure(image: Image.Image) -> Optional[Dict]:
         return None
 
     try:
-        genai.configure(api_key=api_key)
+        # Use stable v1 API so models like gemini-1.5-flash are available
+        genai.configure(api_key=api_key, api_version="v1")
         model = genai.GenerativeModel("gemini-1.5-flash")
 
         buf = io.BytesIO()
@@ -264,6 +265,20 @@ def pdf_to_faculty_images(
     with io.BytesIO(pdf_bytes) as pdf_stream:
         doc = fitz.open(stream=pdf_stream.read(), filetype="pdf")
 
+    # Prepare debug/visualisation folders:
+    #  - static/timetable_images: full page renders (page_1.png, page_2.png, ...)
+    #  - static/timetable_splits: per-page timetable crops (page_1_top.png, page_1_bottom.png, ...)
+    try:
+        project_root = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
+        static_root = os.path.join(project_root, "static")
+        timetable_images_dir = os.path.join(static_root, "timetable_images")
+        timetable_splits_dir = os.path.join(static_root, "timetable_splits")
+        os.makedirs(timetable_images_dir, exist_ok=True)
+        os.makedirs(timetable_splits_dir, exist_ok=True)
+    except Exception:
+        timetable_images_dir = None
+        timetable_splits_dir = None
+
     pages_with_name: List[Dict] = []
     pages_without_name: List[Dict] = []
 
@@ -271,6 +286,17 @@ def pdf_to_faculty_images(
 
     for page_index in range(len(doc)):
         page = doc.load_page(page_index)
+        page_number = page_index + 1
+
+        # Save the whole page as an image (timetable_images/page_N.png)
+        if timetable_images_dir:
+            try:
+                full_pix = page.get_pixmap(dpi=200)
+                full_mode = "RGBA" if full_pix.alpha else "RGB"
+                full_img = Image.frombytes(full_mode, (full_pix.width, full_pix.height), full_pix.samples)
+                full_img.save(os.path.join(timetable_images_dir, f"page_{page_number:02d}.png"), format="PNG")
+            except Exception:
+                pass
 
         # Use text blocks so we can locate ALL FACULTY / PRINCIPAL sections
         # on the page, allowing multiple timetables per page.
@@ -282,6 +308,7 @@ def pdf_to_faculty_images(
         # First pass: find all (faculty_name, top, bottom) segments.
         segments: List[Dict] = []
         current: Dict | None = None
+        last_heading_y: float | None = None
 
         for b in blocks:
             if len(b) < 5:
@@ -290,6 +317,11 @@ def pdf_to_faculty_images(
             if not isinstance(text, str):
                 continue
             norm = re.sub(r"\s+", " ", text.upper())
+
+            # Capture the main college heading so that each timetable crop
+            # can start slightly above it (as in your visual examples).
+            if "DR. B. B. HEGDE FIRST GRADE COLLEGE" in norm:
+                last_heading_y = y0
 
             # New FACULTY header (not the 'FACULTY INDIVIDUAL TIME TABLE' title)
             if "FACULTY" in norm and "TIME TABLE" not in norm:
@@ -301,21 +333,26 @@ def pdf_to_faculty_images(
                         current["bottom"] = y0
                         segments.append(current)
 
+                    # Use the last seen college heading (if any) as the top of
+                    # this segment so that the saved image goes from the header
+                    # down to PRINCIPAL.
+                    seg_top = last_heading_y if last_heading_y is not None else y0
                     current = {
                         "faculty_name": name_candidate,
-                        "top": y0,
+                        "top": seg_top,
                         "bottom": None,
                     }
+                    last_heading_y = None
                     continue
 
             # PRINCIPAL line closes the current segment (if any).
-            # Guard against OCR/PDF text noise where "PRINCIPAL" is detected too early.
+            # Now we include the PRINCIPAL text itself in the crop, so the final
+            # image runs visually from the college header down to PRINCIPAL.
             if current and "PRINCIPAL" in norm and y0 > (current.get("top", page_rect.y0) + 80):
-                # Close the segment a few units above the PRINCIPAL text so it
-                # does not appear, but keep the entire table (including SATURDAY).
-                trim_margin = 5
-                proposed_bottom = y0 - trim_margin
-                current["bottom"] = max(current.get("top", page_rect.y0) + 100, proposed_bottom)
+                # Use the block bottom (y1) plus a small margin so PRINCIPAL
+                # is clearly visible, but never go past the page bottom.
+                principal_bottom = min(page_rect.y1, y1 + 10)
+                current["bottom"] = max(current.get("top", page_rect.y0) + 100, principal_bottom)
                 segments.append(current)
                 current = None
 
@@ -326,6 +363,9 @@ def pdf_to_faculty_images(
 
         # If we didn't detect any segments but we have known faculty names,
         # fall back to OCR-based detection from full page text.
+        # Counter of segments for this page (used when saving visual split images)
+        seg_counter = 0
+
         if not segments:
             # OCR once for the page if needed
             ocr_text = ""
@@ -373,9 +413,15 @@ def pdf_to_faculty_images(
                     line_items.sort(key=lambda x: x["top"])
 
                     faculty_lines = []
+                    header_top = None
                     principal_tops = []
                     for item in line_items:
                         norm = re.sub(r"\s+", " ", item["text"].upper())
+                        # Capture the college heading position so each cropped
+                        # timetable starts from the same header line.
+                        if "DR. B. B. HEGDE FIRST GRADE COLLEGE" in norm:
+                            if header_top is None:
+                                header_top = item["top"]
                         if "PRINCIPAL" in norm:
                             principal_tops.append(item["top"])
                         if "FACULTY" in norm and "TIME TABLE" not in norm:
@@ -392,7 +438,13 @@ def pdf_to_faculty_images(
                         min_gap_px = max(180, int(image_full.height * 0.10))
 
                         for idx, fline in enumerate(faculty_lines):
-                            top_px = max(0, int(fline["top"]) - 10)
+                            # If we detected the main college header, start the
+                            # crop from there so the image runs from header to
+                            # PRINCIPAL for every faculty on this page.
+                            if header_top is not None:
+                                top_px = max(0, int(header_top) - 5)
+                            else:
+                                top_px = max(0, int(fline["top"]) - 10)
 
                             next_faculty_top = None
                             if idx + 1 < len(faculty_lines):
@@ -403,8 +455,9 @@ def pdf_to_faculty_images(
                             # Prefer the first PRINCIPAL line sufficiently below this FACULTY line
                             for ptop in principal_tops:
                                 if ptop > top_px + min_gap_px:
-                                    # Cut a very small margin above the PRINCIPAL text.
-                                    bottom_px = int(ptop) - 5
+                                    # Extend the crop slightly *below* the PRINCIPAL
+                                    # baseline so that the PRINCIPAL text is visible.
+                                    bottom_px = int(ptop) + 40
                                     break
 
                             # If no PRINCIPAL found, fall back to next FACULTY header
@@ -417,6 +470,16 @@ def pdf_to_faculty_images(
                             bottom_px = max(top_px + min_gap_px, min(image_full.height, bottom_px))
 
                             cropped = image_full.crop((0, top_px, image_full.width, bottom_px))
+
+                            # Save visual split for this page (page_XX_top.png, page_XX_bottom.png, ...)
+                            if timetable_splits_dir:
+                                try:
+                                    suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
+                                    split_name = f"page_{page_number:02d}_{suffix}.png"
+                                    cropped.save(os.path.join(timetable_splits_dir, split_name), format="PNG")
+                                except Exception:
+                                    pass
+                            seg_counter += 1
                             entry = {
                                 "page_index": page_index,
                                 "faculty_name": fline["faculty_name"],
@@ -448,6 +511,16 @@ def pdf_to_faculty_images(
             continue
 
         # For each detected faculty segment on this page, render and store separately.
+        # First compute a unified height so all timetable crops on this page share
+        # the same dimensions (uniform look).
+        max_seg_height = 0
+        for seg in segments:
+            top = max(page_rect.y0, seg.get("top", page_rect.y0))
+            bottom = min(page_rect.y1, seg.get("bottom", page_rect.y1))
+            h = max(0, int(bottom - top))
+            if h > max_seg_height:
+                max_seg_height = h
+
         for seg in segments:
             faculty_name = seg.get("faculty_name")
             top = max(page_rect.y0, seg.get("top", page_rect.y0))
@@ -457,6 +530,23 @@ def pdf_to_faculty_images(
             pix = page.get_pixmap(dpi=200, clip=rect)
             mode = "RGBA" if pix.alpha else "RGB"
             image = Image.frombytes(mode, (pix.width, pix.height), pix.samples)
+
+            # Pad to a unified height per page so all faculty timetable images
+            # for this page have the same width and height.
+            if max_seg_height and image.height < max_seg_height:
+                canvas = Image.new(mode, (image.width, max_seg_height), "white")
+                canvas.paste(image, (0, 0))
+                image = canvas
+
+            # Save visual split for this page (page_XX_top.png, page_XX_bottom.png, ...)
+            if timetable_splits_dir:
+                try:
+                    suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
+                    split_name = f"page_{page_number:02d}_{suffix}.png"
+                    image.save(os.path.join(timetable_splits_dir, split_name), format="PNG")
+                except Exception:
+                    pass
+            seg_counter += 1
 
             # For per-segment entries we can reuse embedded_text; OCR is not required
             # because we already extracted the faculty name from the FACULTY line.
