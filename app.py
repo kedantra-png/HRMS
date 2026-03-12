@@ -67,6 +67,7 @@ import json
 import re
 import csv
 import fitz  # PyMuPDF for optional page-level images
+from pathlib import Path
 
 # Admin Routes
 @app.route('/admin/dashboard')
@@ -987,6 +988,414 @@ def lecturer_dashboard():
         has_timetable=has_timetable,
         timetable_image_url=timetable_image_url,
         leaves_left=leaves_left
+    )
+
+def _parse_date_loose(text: str):
+    """
+    Parse a date from common user formats to YYYY-MM-DD.
+    Accepts:
+    - YYYY-MM-DD
+    - DD-MM-YYYY / D-M-YYYY
+    - DD/MM/YYYY / D/M/YYYY
+    Returns iso_date string or None.
+    """
+    raw = (text or "").strip()
+    if not raw:
+        return None
+
+    # ISO first
+    m = re.fullmatch(r"(?P<y>\d{4})-(?P<m>\d{1,2})-(?P<d>\d{1,2})", raw)
+    if m:
+        try:
+            dt = datetime(int(m["y"]), int(m["m"]), int(m["d"]))
+            return dt.strftime("%Y-%m-%d")
+        except Exception:
+            return None
+
+    m = re.fullmatch(r"(?P<d>\d{1,2})[\/\-](?P<m>\d{1,2})[\/\-](?P<y>\d{4})", raw)
+    if m:
+        try:
+            dt = datetime(int(m["y"]), int(m["m"]), int(m["d"]))
+            return dt.strftime("%Y-%m-%d")
+        except Exception:
+            return None
+
+    return None
+
+def _extract_date_range(message: str):
+    """
+    Best-effort date range extraction from a message.
+    Returns (from_iso, to_iso) or (None, None).
+    """
+    msg = (message or "").strip()
+    if not msg:
+        return (None, None)
+
+    # Find all date-like tokens in the message
+    tokens = re.findall(r"\b(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})\b", msg)
+    parsed = [_parse_date_loose(t) for t in tokens]
+    parsed = [p for p in parsed if p]
+    if len(parsed) >= 2:
+        return (parsed[0], parsed[1])
+
+    return (None, None)
+
+CHATBOT_INTENT_PHRASES = {
+    # Base seed phrases (always available)
+    "apply_leave": [
+        "apply leave", "apply for leave", "leave apply", "need leave", "want leave", "take leave",
+        "i need leave", "i want leave", "i want to apply leave", "i need to apply leave",
+        "leave", "apply leave please",
+    ],
+    "leave_balance": [
+        "leave balance", "leaves left", "leave left", "how many leaves", "how many leave", "leave remaining",
+        "remaining leave", "my leave balance",
+    ],
+    "attendance": [
+        "attendance", "my attendance", "attendance report", "present days", "absent days",
+    ],
+    "timetable": [
+        "timetable", "my timetable", "time table", "schedule", "my schedule",
+    ],
+    "dashboard": [
+        "dashboard", "home", "main page",
+    ],
+    "greeting": [
+        "hi", "hello", "hey", "good morning", "good evening", "good afternoon",
+    ],
+}
+
+def _load_excel_phrase_booster():
+    """
+    Use the Excel dataset (ID, Sentence) to boost phrase matching.
+    This is NOT supervised training (no labels in the file). We auto-assign sentences
+    into intents by keyword rules and add them as extra phrases.
+    """
+    try:
+        xlsx_path = Path(os.path.dirname(__file__)) / "static" / "chatbot_data_trani" / "chatbot_100k_sentences_dataset.xlsx"
+        if not xlsx_path.exists():
+            return
+
+        # Allow disabling via env (startup time / memory)
+        if (os.getenv("CHATBOT_EXCEL_BOOST", "1") or "1").strip() in {"0", "false", "False", "no", "NO"}:
+            return
+
+        import pandas as pd
+
+        df = pd.read_excel(str(xlsx_path))
+        if "Sentence" not in df.columns:
+            return
+
+        # keyword buckets for auto intent assignment
+        buckets = {
+            "apply_leave": ["apply leave", "leave apply", "need leave", "want leave", "take leave", "apply for leave"],
+            "leave_balance": ["leave balance", "leaves left", "leave remaining", "remaining leave"],
+            "attendance": ["attendance", "present", "absent", "checkin", "checkout"],
+            "timetable": ["timetable", "time table", "schedule", "class", "period"],
+            "dashboard": ["dashboard", "home"],
+            "greeting": ["hi", "hello", "hey", "good morning", "good evening", "good afternoon"],
+        }
+
+        # cap per bucket to avoid huge memory growth
+        cap = int((os.getenv("CHATBOT_EXCEL_BOOST_CAP", "3000") or "3000").strip() or 3000)
+        added = {k: 0 for k in buckets.keys()}
+
+        for s in df["Sentence"].astype(str).fillna("").tolist():
+            s_norm = s.strip().lower()
+            if not s_norm:
+                continue
+            # Keep phrase length reasonable (avoid huge paragraphs)
+            if len(s_norm) > 140:
+                continue
+
+            for intent, keys in buckets.items():
+                if added[intent] >= cap:
+                    continue
+                if any(k in s_norm for k in keys):
+                    CHATBOT_INTENT_PHRASES.setdefault(intent, []).append(s_norm)
+                    added[intent] += 1
+                    break
+    except Exception:
+        # Never fail app startup due to phrase booster
+        return
+
+# Load phrase booster once on import/startup
+_load_excel_phrase_booster()
+
+def _chatbot_make_reply(text: str, *, actions=None, cards=None, ok: bool = True, message: str | None = None):
+    return jsonify({
+        "ok": ok,
+        "text": text,
+        "message": message,
+        "actions": actions or [],
+        "cards": cards or [],
+        "ts": datetime.now().isoformat(),
+    })
+
+@app.route('/lecturer/api/chat', methods=['POST'])
+def lecturer_chat_api():
+    """
+    Lightweight lecturer chatbot endpoint (session-based state).
+    The UI sends either:
+    - { "message": "..." } for normal chat
+    - { "action": "...", "payload": {...} } for button clicks
+    """
+    body = request.get_json(silent=True) or {}
+    message = (body.get("message") or "").strip()
+    action = (body.get("action") or "").strip()
+    payload = body.get("payload") or {}
+
+    # API-friendly auth (do not redirect with HTML)
+    if not current_user.is_authenticated:
+        return _chatbot_make_reply(
+            "Session expired. Please login again.",
+            ok=False,
+            message="unauthorized",
+            actions=[{"type": "navigate", "label": "Login", "url": url_for("login", next=request.path)}],
+        ), 401
+    if getattr(current_user, "role", None) != "lecturer":
+        return _chatbot_make_reply(
+            "Lecturer access required.",
+            ok=False,
+            message="forbidden",
+            actions=[{"type": "navigate", "label": "Go Home", "url": url_for("index")}],
+        ), 403
+
+    state = session.get("lecturer_chat_state") or {}
+    pending = state.get("pending") or {}
+
+    def reset_pending():
+        state["pending"] = {}
+        session["lecturer_chat_state"] = state
+
+    def set_pending(p):
+        state["pending"] = p
+        session["lecturer_chat_state"] = state
+
+    # Handle explicit actions from UI buttons
+    if action == "navigate":
+        url = payload.get("url") or url_for("lecturer_dashboard")
+        return _chatbot_make_reply("Opening…", actions=[{"type": "navigate", "url": url}])
+
+    if action == "cancel_flow":
+        reset_pending()
+        return _chatbot_make_reply("Okay, cancelled. What would you like to do next?")
+
+    # IMPORTANT: handle slot-setting actions before flow continuation
+    if action == "set_leave_type":
+        if pending.get("intent") != "apply_leave":
+            pending = {"intent": "apply_leave"}
+        pending["leave_type"] = (payload.get("value") or payload.get("leave_type") or "").strip()
+        set_pending(pending)
+        return _chatbot_make_reply("Okay. Now tell me the leave dates (example: 03-01-2026 to 06-01-2026)." if (not pending.get("from_date") or not pending.get("to_date")) else "Okay. What’s the reason for your leave?")
+
+    if action == "confirm_leave":
+        if pending.get("intent") != "apply_leave":
+            reset_pending()
+            return _chatbot_make_reply("I don’t have a leave request ready to submit. Try: “Apply leave from 03-01-2026 to 06-01-2026”.")
+
+        leave_type = (pending.get("leave_type") or "").strip()
+        from_date = (pending.get("from_date") or "").strip()
+        to_date = (pending.get("to_date") or "").strip()
+        reason = (pending.get("reason") or "").strip()
+        description = (pending.get("description") or "").strip()
+
+        if not (leave_type and from_date and to_date and reason):
+            return _chatbot_make_reply("Some fields are missing. Please continue the leave flow.")
+
+        # Validate date ordering
+        try:
+            fdt = datetime.strptime(from_date, "%Y-%m-%d")
+            tdt = datetime.strptime(to_date, "%Y-%m-%d")
+            if fdt > tdt:
+                return _chatbot_make_reply("From date cannot be after To date. Please re-enter the dates.")
+        except Exception:
+            return _chatbot_make_reply("I couldn’t validate your dates. Please provide them as DD-MM-YYYY or YYYY-MM-DD.")
+
+        leave_data = {
+            "lecturer_id": current_user.id,
+            "lecturer_name": current_user.name,
+            "type": leave_type,
+            "from_date": from_date,
+            "to_date": to_date,
+            "reason": reason,
+            "description": description,
+            "status": "Pending",
+            "created_at": datetime.now(),
+            "mode": "full",
+        }
+        res = leaves.insert_one(leave_data)
+        socketio.emit('new_leave_request', {
+            "id": str(res.inserted_id),
+            "lecturer_name": current_user.name,
+            "type": leave_type,
+            "from_date": from_date,
+            "to_date": to_date,
+            "status": "Pending"
+        })
+
+        reset_pending()
+        return _chatbot_make_reply(
+            f"Submitted. Your leave request is Pending (ID: {str(res.inserted_id)}).",
+            actions=[
+                {"type": "navigate", "label": "Open Dashboard", "url": url_for("lecturer_dashboard")},
+                {"type": "navigate", "label": "Apply another leave", "url": url_for("apply_leave", mode="full")},
+            ],
+        )
+
+    # If user is in the middle of a flow, continue slot-filling
+    if pending.get("intent") == "apply_leave":
+        # allow user to restart with new dates
+        if message:
+            from_d, to_d = _extract_date_range(message)
+            if from_d and to_d:
+                pending["from_date"] = from_d
+                pending["to_date"] = to_d
+
+            if not pending.get("leave_type"):
+                # Treat message as leave type if it resembles known options
+                msg_lower = message.lower()
+                known = {
+                    "casual": "Casual Leave",
+                    "medical": "Medical Leave",
+                    "earned": "Earned Leave",
+                    "short": "Short Leave",
+                }
+                for k, v in known.items():
+                    if k in msg_lower:
+                        pending["leave_type"] = v
+                        break
+
+            elif not pending.get("reason"):
+                pending["reason"] = message
+            elif not pending.get("description"):
+                pending["description"] = message
+
+            set_pending(pending)
+
+        missing = []
+        if not pending.get("from_date") or not pending.get("to_date"):
+            missing.append("dates")
+        if not pending.get("leave_type"):
+            missing.append("leave type")
+        if not pending.get("reason"):
+            missing.append("reason")
+        if not pending.get("description"):
+            missing.append("description")
+
+        if missing:
+            if missing[0] == "dates":
+                return _chatbot_make_reply("Tell me the leave dates (example: 03-01-2026 to 06-01-2026).", actions=[{"type": "cancel_flow", "label": "Cancel"}])
+            if missing[0] == "leave type":
+                return _chatbot_make_reply(
+                    "Choose a leave type.",
+                    actions=[
+                        {"type": "set_leave_type", "label": "Casual Leave", "value": "Casual Leave"},
+                        {"type": "set_leave_type", "label": "Medical Leave", "value": "Medical Leave"},
+                        {"type": "set_leave_type", "label": "Earned Leave", "value": "Earned Leave"},
+                        {"type": "set_leave_type", "label": "Short Leave", "value": "Short Leave"},
+                        {"type": "cancel_flow", "label": "Cancel"},
+                    ],
+                )
+            if missing[0] == "reason":
+                return _chatbot_make_reply("What’s the reason for your leave?")
+            if missing[0] == "description":
+                return _chatbot_make_reply("Add a short description (1 line).")
+
+        # All fields present → show confirmation card
+        leaves_left = calculate_leaves_left(current_user.id)
+        card = {
+            "type": "leave_confirm",
+            "title": "Confirm leave application",
+            "fields": [
+                {"label": "From", "value": pending.get("from_date")},
+                {"label": "To", "value": pending.get("to_date")},
+                {"label": "Type", "value": pending.get("leave_type")},
+                {"label": "Reason", "value": pending.get("reason")},
+                {"label": "Description", "value": pending.get("description")},
+                {"label": "Leaves left (approx.)", "value": str(leaves_left)},
+            ],
+        }
+        return _chatbot_make_reply(
+            "Please confirm.",
+            cards=[card],
+            actions=[
+                {"type": "confirm_leave", "label": "Confirm & Submit"},
+                {"type": "cancel_flow", "label": "Cancel"},
+            ],
+        )
+
+    # No active flow: detect intent from message
+    msg_lower = message.lower()
+    if not message:
+        return _chatbot_make_reply(
+            "Examples you can type:\n- Apply leave from 03-01-2026 to 06-01-2026\n- My timetable\n- My attendance\n- Leave balance",
+            actions=[
+                {"type": "navigate", "label": "Dashboard", "url": url_for("lecturer_dashboard")},
+                {"type": "navigate", "label": "Timetable", "url": url_for("lecturer_timetable")},
+                {"type": "navigate", "label": "Attendance", "url": url_for("lecturer_attendance")},
+                {"type": "navigate", "label": "Apply Leave", "url": url_for("apply_leave", mode="full")},
+            ],
+        )
+
+    # Quick navigation intents
+    def _match_any(intent_key: str) -> bool:
+        phrases = CHATBOT_INTENT_PHRASES.get(intent_key) or []
+        return any(p in msg_lower for p in phrases)
+
+    if "timetable" in msg_lower or _match_any("timetable"):
+        return _chatbot_make_reply("Opening your timetable.", actions=[{"type": "navigate", "url": url_for("lecturer_timetable")}])
+    if "attendance" in msg_lower or _match_any("attendance"):
+        return _chatbot_make_reply("Opening your attendance.", actions=[{"type": "navigate", "url": url_for("lecturer_attendance")}])
+    if "dashboard" in msg_lower or "home" in msg_lower or _match_any("dashboard"):
+        return _chatbot_make_reply("Opening dashboard.", actions=[{"type": "navigate", "url": url_for("lecturer_dashboard")}])
+
+    # Leaves left
+    if ("leave" in msg_lower and ("left" in msg_lower or "balance" in msg_lower)) or _match_any("leave_balance"):
+        leaves_left = calculate_leaves_left(current_user.id)
+        return _chatbot_make_reply(f"You have {leaves_left} leave day(s) left (based on approved leaves).")
+
+    # Apply leave intent
+    is_leave_apply = (
+        ("leave" in msg_lower and any(k in msg_lower for k in ("apply", "need", "want", "take")))
+        or msg_lower.startswith("leave")
+        or _match_any("apply_leave")
+        or msg_lower.strip() in {"leave", "apply leave"}
+    )
+    if is_leave_apply:
+        from_d, to_d = _extract_date_range(message)
+        p = {"intent": "apply_leave"}
+        if from_d and to_d:
+            p["from_date"] = from_d
+            p["to_date"] = to_d
+        set_pending(p)
+        if not (from_d and to_d):
+            return _chatbot_make_reply(
+                "Sure — first tell me the date range (example: 03-01-2026 to 06-01-2026).",
+                actions=[
+                    {"type": "navigate", "label": "Open Leave Form", "url": url_for("apply_leave", mode="full")},
+                    {"type": "cancel_flow", "label": "Cancel"},
+                ],
+            )
+        return _chatbot_make_reply(
+            "Got the dates. Now choose a leave type.",
+            actions=[
+                {"type": "set_leave_type", "label": "Casual Leave", "value": "Casual Leave"},
+                {"type": "set_leave_type", "label": "Medical Leave", "value": "Medical Leave"},
+                {"type": "set_leave_type", "label": "Earned Leave", "value": "Earned Leave"},
+                {"type": "set_leave_type", "label": "Short Leave", "value": "Short Leave"},
+                {"type": "cancel_flow", "label": "Cancel"},
+            ],
+        )
+
+    # Default fallback
+    return _chatbot_make_reply(
+        "I can help with Leave, Timetable, Attendance, and Leave balance. Try: “Apply leave from 03-01-2026 to 06-01-2026”.",
+        actions=[
+            {"type": "navigate", "label": "Apply Leave", "url": url_for("apply_leave", mode="full")},
+            {"type": "navigate", "label": "Timetable", "url": url_for("lecturer_timetable")},
+            {"type": "navigate", "label": "Attendance", "url": url_for("lecturer_attendance")},
+        ],
     )
 
 

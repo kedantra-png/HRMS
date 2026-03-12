@@ -28,6 +28,74 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% if current_user.is_authenticated and current_user.role == 'lecturer' %}
+    <!-- Lecturer Chatbot Widget -->
+    <div id="lectChatRoot" class="fixed bottom-5 right-5 z-50" data-user-name="{{ current_user.name|e }}">
+        <button id="lectChatFab"
+            class="group flex items-center gap-3 rounded-full bg-indigo-700 hover:bg-indigo-800 text-white shadow-2xl shadow-indigo-500/20 px-4 py-3 transition-colors">
+            <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10">
+                <i class="fas fa-robot"></i>
+            </span>
+            <span class="hidden sm:block font-semibold text-sm">HR Assistant</span>
+        </button>
+
+        <div id="lectChatPanel"
+            class="hidden mt-3 w-[92vw] sm:w-[420px] h-[70vh] sm:h-[560px] bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
+            <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold leading-tight">Lecturer Assistant</p>
+                        <p class="text-[11px] text-white/70 leading-tight">Leave • Timetable • Attendance</p>
+                    </div>
+                </div>
+                <button id="lectChatClose" class="text-white/80 hover:text-white px-2 py-1 rounded-lg">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div id="lectChatMsgs" class="h-[calc(100%-124px)] overflow-y-auto px-4 py-4 space-y-3 bg-slate-50"></div>
+
+            <div class="px-4 py-3 border-t bg-white">
+                <div class="flex gap-2 items-center">
+                    <input id="lectChatInput" type="text" autocomplete="off"
+                        placeholder="Type: Apply leave 03-01-2026 to 06-01-2026"
+                        class="flex-1 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                    <button id="lectChatHelp" type="button"
+                        class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold">
+                        Help
+                    </button>
+                    <button id="lectChatSend"
+                        class="px-4 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold">
+                        Send
+                    </button>
+                </div>
+                <div id="lectChatQuick" class="hidden mt-2 flex flex-wrap gap-2">
+                    <button data-quick="Apply leave from 03-01-2026 to 06-01-2026"
+                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+                        Apply Leave
+                    </button>
+                    <button data-quick="My timetable"
+                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">
+                        Timetable
+                    </button>
+                    <button data-quick="My attendance"
+                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                        Attendance
+                    </button>
+                    <button data-quick="Leave balance"
+                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">
+                        Leave Balance
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/lecturer_chatbot.js') }}"></script>
+    {% endif %}
+
     <footer class="mt-auto py-6 text-center text-slate-500 text-sm border-t bg-white">
         &copy; 2026 Live College Office Management System | HRMS Core
     </footer>

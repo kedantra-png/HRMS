@@ -1,80 +1,326 @@
-[2026-03-09 18:36:58] Connected to MongoDB successfully.
-[2026-03-09 18:36:58] Initializing OCR Engine (EasyOCR)...
-[2026-03-09 18:37:01] Starting reconstruction for 54 faculty splits.
-[2026-03-09 18:37:01] Processing (1/54): page_10_bottom.png
-[2026-03-09 18:37:19] Quota Exceeded for Key #1.
-[2026-03-09 18:37:20] Quota Exceeded for Key #2.
-[2026-03-09 18:37:46] SUCCESS: Faculty 'Mr: ANNAPPA SHETTY' stored in DB.
-[2026-03-09 18:37:46] Processing (2/54): page_10_top.png
-[2026-03-09 18:38:32] SUCCESS: Faculty 'Mr. RAGHURAM SHETTY' stored in DB.
-[2026-03-09 18:38:32] Processing (3/54): page_11_bottom.png
-[2026-03-09 18:39:31] SUCCESS: Faculty 'Mrs. NANDA RAI' stored in DB.
-[2026-03-09 18:39:31] Processing (4/54): page_11_top.png
-[2026-03-09 18:40:58] SUCCESS: Faculty 'Mrs: PREETHI SHETTY' stored in DB.
-[2026-03-09 18:40:58] Processing (5/54): page_12_bottom.png
-[2026-03-09 18:41:43] SUCCESS: Faculty 'Mr. HAREESHA B.' stored in DB.
-[2026-03-09 18:41:43] Processing (6/54): page_12_top.png
-[2026-03-09 18:42:37] SUCCESS: Faculty 'Mrs. AVITHA M. CORREA' stored in DB.
-[2026-03-09 18:42:37] Processing (7/54): page_13_bottom.png
-[2026-03-09 18:43:14] SUCCESS: Faculty 'Mr. PRAVEEN MOGAVEERA' stored in DB.
-[2026-03-09 18:43:14] Processing (8/54): page_13_top.png
-[2026-03-09 18:43:46] SUCCESS: Faculty 'Mr. RAJATH BANGERA' stored in DB.
-[2026-03-09 18:43:46] Processing (9/54): page_14_bottom.png
-[2026-03-09 18:44:24] SUCCESS: Faculty 'Dr. CHETHAN SHETTY K' stored in DB.
-[2026-03-09 18:44:24] Processing (10/54): page_14_top.png
-[2026-03-09 18:44:57] SUCCESS: Faculty 'Ms. VISHALAKSHI S.' stored in DB.
-[2026-03-09 18:44:57] Processing (11/54): page_15_bottom.png
-[2026-03-09 18:45:51] SUCCESS: Faculty 'Mrs. PRAVEENA M. POOJARY' stored in DB.
-[2026-03-09 18:45:51] Processing (12/54): page_15_top.png
-[2026-03-09 18:46:17] SUCCESS: Faculty 'Mrs. RESHMA SHETTY' stored in DB.
-[2026-03-09 18:46:17] Processing (13/54): page_16_bottom.png
-[2026-03-09 18:47:45] SUCCESS: Faculty 'Dr. DEEPA' stored in DB.
-[2026-03-09 18:47:45] Processing (14/54): page_16_top.png
-[2026-03-09 18:48:54] SUCCESS: Faculty 'Ms. RASHMITHA SHETTY' stored in DB.
-[2026-03-09 18:48:54] Processing (15/54): page_17_bottom.png
-[2026-03-09 18:49:31] SUCCESS: Faculty 'Mrs. DEEPIKA Ga' stored in DB.
-[2026-03-09 18:49:31] Processing (16/54): page_17_top.png
-[2026-03-09 18:50:11] SUCCESS: Faculty 'Mrs. REVATHI D' stored in DB.
-[2026-03-09 18:50:11] Processing (17/54): page_18_bottom.png
-[2026-03-09 18:51:00] SUCCESS: Faculty 'Mrs. SWATHI G RAO' stored in DB.
-[2026-03-09 18:51:00] Processing (18/54): page_18_top.png
-[2026-03-09 18:52:36] SUCCESS: Faculty 'Ms. RAVINA C. POOJARY' stored in DB.
-[2026-03-09 18:52:36] Processing (19/54): page_19_bottom.png
-[2026-03-09 18:53:35] SUCCESS: Faculty 'Mrs. MEGHA S. BHAT' stored in DB.
-[2026-03-09 18:53:35] Processing (20/54): page_19_top.png
-[2026-03-09 18:54:18] SUCCESS: Faculty 'Mrs. SUREKHA ACHARYA' stored in DB.
-[2026-03-09 18:54:18] Processing (21/54): page_1_bottom.png
-[2026-03-09 18:55:16] SUCCESS: Faculty 'Mrs. VEENA V. BHAT' stored in DB.
-[2026-03-09 18:55:16] Processing (22/54): page_1_top.png
-[2026-03-09 18:55:30] Quota Exceeded for Key #3.
-[2026-03-09 18:56:00] SUCCESS: Faculty 'Prof: Dr. K UMESH SHETTY' stored in DB.
-[2026-03-09 18:56:00] Processing (23/54): page_20_bottom.png
-[2026-03-09 18:56:37] SUCCESS: Faculty 'Mr. GIRIRAJ BHAT' stored in DB.
-[2026-03-09 18:56:37] Processing (24/54): page_20_top.png
-[2026-03-09 18:57:30] SUCCESS: Faculty 'Mr. MAHESH KUMAR' stored in DB.
-[2026-03-09 18:57:30] Processing (25/54): page_21_bottom.png
-[2026-03-09 18:58:18] SUCCESS: Faculty 'Mrs. WILMA SHARAL' stored in DB.
-[2026-03-09 18:58:18] Processing (26/54): page_21_top.png
-[2026-03-09 18:58:58] SUCCESS: Faculty 'Mr. HARISH KANCHAN' stored in DB.
-[2026-03-09 18:58:58] Processing (27/54): page_22_bottom.png
-[2026-03-09 18:59:52] SUCCESS: Faculty 'Ms. RASHMI GAVADI' stored in DB.
-[2026-03-09 18:59:52] Processing (28/54): page_22_top.png
-[2026-03-09 19:00:55] SUCCESS: Faculty 'Mrs. JAYALAKSHMI K' stored in DB.
-[2026-03-09 19:00:55] Processing (29/54): page_23_bottom.png
-[2026-03-09 19:01:39] SUCCESS: Faculty 'Mr. PRANAM R BETRABET' stored in DB.
-[2026-03-09 19:01:39] Processing (30/54): page_23_top.png
-[2026-03-09 19:02:45] SUCCESS: Faculty 'Mr. SHREEKANTH' stored in DB.
-[2026-03-09 19:02:45] Processing (31/54): page_24_bottom.png
-[2026-03-09 19:03:43] SUCCESS: Faculty 'Mrs. VIJAYASHREE A' stored in DB.
-[2026-03-09 19:03:43] Processing (32/54): page_24_top.png
-[2026-03-09 19:04:43] SUCCESS: Faculty 'Ms. MEGHA' stored in DB.
-[2026-03-09 19:04:43] Processing (33/54): page_25_bottom.png
-[2026-03-09 19:05:06] Connected to MongoDB successfully.
-[2026-03-09 19:05:06] Initializing OCR Engine (EasyOCR)...
-[2026-03-09 19:05:08] Starting reconstruction for 54 faculty splits.
-[2026-03-09 19:05:08] Processing (33/54): page_25_bottom.png
-[2026-03-09 19:05:28] Quota Exceeded for Key #1.
-[2026-03-09 19:05:29] Quota Exceeded for Key #2.
-[2026-03-09 19:05:30] Quota Exceeded for Key #3.
-[2026-03-09 19:06:00] SUCCESS: Faculty 'Mr. MAHESH POOJARI' stored in DB.
-[2026-03-09 19:06:00] Processing (34/54): page_25_top.png
+[2026-03-10 10:56:00] Connected to MongoDB successfully.
+[2026-03-10 10:58:22] Connected to MongoDB successfully.
+[2026-03-10 10:58:22] Initializing OCR Engine (EasyOCR)...
+[2026-03-10 11:16:44] Initializing OCR Engine (EasyOCR)...
+[2026-03-10 11:16:47] Starting reconstruction for 54 faculty splits.
+[2026-03-10 11:16:47] Processing (1/54): page_01_bottom.png
+[2026-03-10 11:17:13] Quota Exceeded for Key #1.
+[2026-03-10 11:17:13] Quota Exceeded for Key #2.
+[2026-03-10 11:17:14] AI/Parser Error on page_01_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:17:14] Processing (2/54): page_01_top.png
+[2026-03-10 11:17:22] AI/Parser Error on page_01_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:17:22] Processing (3/54): page_02_bottom.png
+[2026-03-10 11:17:33] AI/Parser Error on page_02_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:17:33] Processing (4/54): page_02_top.png
+[2026-03-10 11:17:44] AI/Parser Error on page_02_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:17:44] Processing (5/54): page_03_bottom.png
+[2026-03-10 11:17:56] AI/Parser Error on page_03_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:17:56] Processing (6/54): page_03_top.png
+[2026-03-10 11:18:09] AI/Parser Error on page_03_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:18:09] Processing (7/54): page_04_bottom.png
+[2026-03-10 11:18:22] AI/Parser Error on page_04_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:18:22] Processing (8/54): page_04_top.png
+[2026-03-10 11:18:34] AI/Parser Error on page_04_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:18:34] Processing (9/54): page_05_bottom.png
+[2026-03-10 11:18:47] AI/Parser Error on page_05_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:18:47] Processing (10/54): page_05_top.png
+[2026-03-10 11:19:01] AI/Parser Error on page_05_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:19:01] Processing (11/54): page_06_bottom.png
+[2026-03-10 11:19:16] AI/Parser Error on page_06_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:19:16] Processing (12/54): page_06_top.png
+[2026-03-10 11:19:30] AI/Parser Error on page_06_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:19:30] Processing (13/54): page_07_bottom.png
+[2026-03-10 11:19:44] AI/Parser Error on page_07_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:19:44] Processing (14/54): page_07_top.png
+[2026-03-10 11:19:58] AI/Parser Error on page_07_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:19:58] Processing (15/54): page_08_bottom.png
+[2026-03-10 11:20:11] AI/Parser Error on page_08_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:20:11] Processing (16/54): page_08_top.png
+[2026-03-10 11:20:24] AI/Parser Error on page_08_top.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:20:24] Processing (17/54): page_09_bottom.png
+[2026-03-10 11:20:37] AI/Parser Error on page_09_bottom.png: 403 Your API key was reported as leaked. Please use another API key.
+[2026-03-10 11:20:37] Processing (18/54): page_09_top.png
+[2026-03-10 11:25:30] Initializing OCR Engine (EasyOCR)...
+[2026-03-10 11:25:33] Starting reconstruction for 54 faculty splits.
+[2026-03-10 11:25:33] Processing (1/54): page_01_bottom.png
+[2026-03-10 11:25:54] Quota Exceeded for Key #1.
+[2026-03-10 11:25:54] Quota Exceeded for Key #2.
+[2026-03-10 11:25:55] Quota Exceeded for Key #3.
+[2026-03-10 11:25:56] Quota Exceeded for Key #4.
+[2026-03-10 11:25:56] STOPPING: No more valid API keys.
+[2026-03-10 11:27:38] Initializing OCR Engine (EasyOCR)...
+[2026-03-10 11:27:41] Starting reconstruction for 54 faculty splits.
+[2026-03-10 11:27:41] Processing (1/54): page_01_bottom.png
+[2026-03-10 11:27:57] Quota Exceeded for Key #1.
+[2026-03-10 11:27:58] Quota Exceeded for Key #2.
+[2026-03-10 11:27:58] Quota Exceeded for Key #3.
+[2026-03-10 11:27:59] Quota Exceeded for Key #4.
+[2026-03-10 11:27:59] STOPPING: No more valid API keys.
+[2026-03-10 15:49:47] Initializing OCR Engine (EasyOCR)...
+[2026-03-10 15:49:50] Starting reconstruction for 54 faculty splits.
+[2026-03-10 15:49:50] Processing (1/54): page_01_bottom.png
+[2026-03-10 15:50:18] AI/Parser Error on page_01_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:50:23] Processing (2/54): page_01_top.png
+[2026-03-10 15:50:33] AI/Parser Error on page_01_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:50:38] Processing (3/54): page_02_bottom.png
+[2026-03-10 15:50:47] AI/Parser Error on page_02_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:50:52] Processing (4/54): page_02_top.png
+[2026-03-10 15:51:03] AI/Parser Error on page_02_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:51:08] Processing (5/54): page_03_bottom.png
+[2026-03-10 15:51:19] AI/Parser Error on page_03_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:51:24] Processing (6/54): page_03_top.png
+[2026-03-10 15:51:34] AI/Parser Error on page_03_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:51:39] Processing (7/54): page_04_bottom.png
+[2026-03-10 15:51:51] AI/Parser Error on page_04_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:51:56] Processing (8/54): page_04_top.png
+[2026-03-10 15:52:06] AI/Parser Error on page_04_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:52:11] Processing (9/54): page_05_bottom.png
+[2026-03-10 15:52:25] AI/Parser Error on page_05_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:52:30] Processing (10/54): page_05_top.png
+[2026-03-10 15:52:41] AI/Parser Error on page_05_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:52:46] Processing (11/54): page_06_bottom.png
+[2026-03-10 15:52:56] AI/Parser Error on page_06_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:53:01] Processing (12/54): page_06_top.png
+[2026-03-10 15:53:11] AI/Parser Error on page_06_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:53:16] Processing (13/54): page_07_bottom.png
+[2026-03-10 15:53:25] AI/Parser Error on page_07_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:53:30] Processing (14/54): page_07_top.png
+[2026-03-10 15:53:40] AI/Parser Error on page_07_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:53:45] Processing (15/54): page_08_bottom.png
+[2026-03-10 15:53:56] AI/Parser Error on page_08_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:54:01] Processing (16/54): page_08_top.png
+[2026-03-10 15:54:12] AI/Parser Error on page_08_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:54:17] Processing (17/54): page_09_bottom.png
+[2026-03-10 15:54:27] AI/Parser Error on page_09_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:54:32] Processing (18/54): page_09_top.png
+[2026-03-10 15:54:43] AI/Parser Error on page_09_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:54:48] Processing (19/54): page_10_bottom.png
+[2026-03-10 15:54:57] AI/Parser Error on page_10_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:55:02] Processing (20/54): page_10_top.png
+[2026-03-10 15:55:14] AI/Parser Error on page_10_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:55:19] Processing (21/54): page_11_bottom.png
+[2026-03-10 15:55:23] Initializing OCR Engine (EasyOCR)...
+[2026-03-10 15:55:29] Starting reconstruction for 54 faculty splits.
+[2026-03-10 15:55:29] Processing (1/54): page_01_bottom.png
+[2026-03-10 15:56:13] AI/Parser Error on page_11_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:56:18] Processing (22/54): page_11_top.png
+[2026-03-10 15:57:08] AI/Parser Error on page_01_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:57:12] AI/Parser Error on page_11_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:57:13] Processing (2/54): page_01_top.png
+[2026-03-10 15:57:17] Processing (23/54): page_12_bottom.png
+[2026-03-10 15:58:06] AI/Parser Error on page_01_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:58:08] AI/Parser Error on page_12_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 15:58:12] Processing (3/54): page_02_bottom.png
+[2026-03-10 15:58:14] Processing (24/54): page_12_top.png
+[2026-03-10 16:00:28] AI/Parser Error on page_12_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:00:33] Processing (25/54): page_13_bottom.png
+[2026-03-10 16:00:34] Fatal Error processing page_13_bottom.png: OpenCV(4.12.0) D:\a\opencv-python\opencv-python\opencv\modules\core\src\alloc.cpp:73: error: (-4:Insufficient memory) Failed to allocate 1645600 bytes in function 'cv::OutOfMemoryError'
+
+[2026-03-10 16:00:34] Processing (26/54): page_13_top.png
+[2026-03-10 16:00:36] Fatal Error processing page_13_top.png: Unable to allocate 20.2 MiB for an array with shape (1024, 1728, 3) and data type float32
+[2026-03-10 16:00:36] Processing (27/54): page_14_bottom.png
+[2026-03-10 16:00:36] AI/Parser Error on page_02_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:00:41] Processing (4/54): page_02_top.png
+[2026-03-10 16:01:32] AI/Parser Error on page_14_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:01:37] Processing (28/54): page_14_top.png
+[2026-03-10 16:01:41] AI/Parser Error on page_02_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:01:47] Processing (5/54): page_03_bottom.png
+[2026-03-10 16:02:31] AI/Parser Error on page_14_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:02:33] AI/Parser Error on page_03_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:02:36] Processing (29/54): page_15_bottom.png
+[2026-03-10 16:02:38] Processing (6/54): page_03_top.png
+[2026-03-10 16:03:27] AI/Parser Error on page_15_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:03:30] AI/Parser Error on page_03_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:03:32] Processing (30/54): page_15_top.png
+[2026-03-10 16:03:35] Processing (7/54): page_04_bottom.png
+[2026-03-10 16:04:19] AI/Parser Error on page_04_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:04:19] AI/Parser Error on page_15_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:04:24] Processing (8/54): page_04_top.png
+[2026-03-10 16:04:24] Processing (31/54): page_16_bottom.png
+[2026-03-10 16:05:34] AI/Parser Error on page_04_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:05:35] AI/Parser Error on page_16_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:05:39] Processing (9/54): page_05_bottom.png
+[2026-03-10 16:05:40] Processing (32/54): page_16_top.png
+[2026-03-10 16:06:46] AI/Parser Error on page_05_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:06:46] AI/Parser Error on page_16_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:06:51] Processing (10/54): page_05_top.png
+[2026-03-10 16:06:51] Processing (33/54): page_17_bottom.png
+[2026-03-10 16:07:42] AI/Parser Error on page_17_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:07:43] AI/Parser Error on page_05_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:07:47] Processing (34/54): page_17_top.png
+[2026-03-10 16:07:48] Processing (11/54): page_06_bottom.png
+[2026-03-10 16:08:50] AI/Parser Error on page_17_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:08:50] AI/Parser Error on page_06_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-10 16:08:55] Processing (35/54): page_18_bottom.png
+[2026-03-10 16:08:55] Processing (12/54): page_06_top.png
+[2026-03-11 09:31:14] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 09:31:19] Starting reconstruction for 54 faculty splits.
+[2026-03-11 09:31:19] Processing (1/54): page_01_bottom.png
+[2026-03-11 09:32:07] AI/Parser Error on page_01_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-11 09:32:12] Processing (2/54): page_01_top.png
+[2026-03-11 09:32:23] AI/Parser Error on page_01_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-11 09:32:28] Processing (3/54): page_02_bottom.png
+[2026-03-11 09:32:46] AI/Parser Error on page_02_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-11 09:32:51] Processing (4/54): page_02_top.png
+[2026-03-11 09:33:13] AI/Parser Error on page_02_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-11 09:33:18] Processing (5/54): page_03_bottom.png
+[2026-03-11 09:33:43] AI/Parser Error on page_03_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-11 09:33:48] Processing (6/54): page_03_top.png
+[2026-03-11 09:34:07] AI/Parser Error on page_03_top.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-11 09:34:12] Processing (7/54): page_04_bottom.png
+[2026-03-11 09:34:32] AI/Parser Error on page_04_bottom.png: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[2026-03-11 09:34:37] Processing (8/54): page_04_top.png
+[2026-03-11 09:41:54] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 09:41:57] Starting reconstruction for 54 faculty splits.
+[2026-03-11 09:41:57] Processing (1/54): page_01_bottom.png
+[2026-03-11 09:42:24] Quota Exceeded for Key #1.
+[2026-03-11 09:42:26] Quota Exceeded for Key #2.
+[2026-03-11 09:42:29] Quota Exceeded for Key #3.
+[2026-03-11 09:42:32] Quota Exceeded for Key #4.
+[2026-03-11 09:42:35] Key #5 reported as leaked.
+[2026-03-11 09:42:35] STOPPING: No more valid API keys.
+[2026-03-11 10:23:15] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 10:23:18] Starting reconstruction for 54 faculty splits.
+[2026-03-11 10:23:18] Processing (1/54): page_01_bottom.png
+[2026-03-11 10:24:03] SUCCESS: Faculty 'Mrs. VEENA V. BHAT' stored in JSON.
+[2026-03-11 10:24:03] Processing (2/54): page_01_top.png
+[2026-03-11 10:24:25] SUCCESS: Faculty 'Prof. Dr. K. Umesh Shetty' stored in JSON.
+[2026-03-11 10:24:25] Processing (3/54): page_02_bottom.png
+[2026-03-11 10:24:51] SUCCESS: Faculty 'Mr. RAKSHITH RAO' stored in JSON.
+[2026-03-11 10:24:51] Processing (4/54): page_02_top.png
+[2026-03-11 10:25:14] SUCCESS: Faculty 'Mr. RAJESH SHETTY' stored in JSON.
+[2026-03-11 10:25:14] Processing (5/54): page_03_bottom.png
+[2026-03-11 10:25:46] SUCCESS: Faculty 'Mrs. PREETI HEGDE' stored in JSON.
+[2026-03-11 10:25:46] Processing (6/54): page_03_top.png
+[2026-03-11 10:26:17] SUCCESS: Faculty 'Mr. SATISH SHETTY' stored in JSON.
+[2026-03-11 10:26:17] Processing (7/54): page_04_bottom.png
+[2026-03-11 10:26:50] SUCCESS: Faculty 'Mrs. PRITHVISHRI G. SHETTY' stored in JSON.
+[2026-03-11 10:26:50] Processing (8/54): page_04_top.png
+[2026-03-11 10:27:12] SUCCESS: Faculty 'Mr. SUDHIR KUMAR' stored in JSON.
+[2026-03-11 10:27:12] Processing (9/54): page_05_bottom.png
+[2026-03-11 10:27:40] SUCCESS: Faculty 'Mr. SATHISH KANCHAN' stored in JSON.
+[2026-03-11 10:27:40] Processing (10/54): page_05_top.png
+[2026-03-11 10:28:06] SUCCESS: Faculty 'Mr: YOGEESH' stored in JSON.
+[2026-03-11 10:28:06] Processing (11/54): page_06_bottom.png
+[2026-03-11 10:28:29] SUCCESS: Faculty 'Mrs. VINAYA V. SHETTY' stored in JSON.
+[2026-03-11 10:28:29] Processing (12/54): page_06_top.png
+[2026-03-11 10:29:03] SUCCESS: Faculty 'Ms. DEEPA POOJARY' stored in JSON.
+[2026-03-11 10:29:03] Processing (13/54): page_07_bottom.png
+[2026-03-11 10:29:21] SUCCESS: Faculty 'Mr. AKSHAY KUMAR' stored in JSON.
+[2026-03-11 10:29:21] Processing (14/54): page_07_top.png
+[2026-03-11 10:29:40] SUCCESS: Faculty 'Mr. SHARATH KUMAR' stored in JSON.
+[2026-03-11 10:29:40] Processing (15/54): page_08_bottom.png
+[2026-03-11 10:30:26] SUCCESS: Faculty 'Mr. KISHOR KRISHNA MARAKALA' stored in JSON.
+[2026-03-11 10:30:26] Processing (16/54): page_08_top.png
+[2026-03-11 10:32:25] SUCCESS: Faculty 'Ms. POOJA' stored in JSON.
+[2026-03-11 10:32:25] Processing (17/54): page_09_bottom.png
+[2026-03-11 10:32:44] SUCCESS: Faculty 'Mr. SHREYAS' stored in JSON.
+[2026-03-11 10:32:44] Processing (18/54): page_09_top.png
+[2026-03-11 10:33:04] SUCCESS: Faculty 'Mr: VINOD KUMAR K' stored in JSON.
+[2026-03-11 10:33:04] Processing (19/54): page_10_bottom.png
+[2026-03-11 10:33:25] SUCCESS: Faculty 'Mr: ANNAPPA SHETTY' stored in JSON.
+[2026-03-11 10:33:25] Processing (20/54): page_10_top.png
+[2026-03-11 10:33:54] SUCCESS: Faculty 'Mr. RAGHURAM SHETTY' stored in JSON.
+[2026-03-11 10:33:54] Processing (21/54): page_11_bottom.png
+[2026-03-11 10:34:04] Quota Exceeded for Key #1.
+[2026-03-11 10:34:16] SUCCESS: Faculty 'Mrs. NANDA RAI' stored in JSON.
+[2026-03-11 10:34:16] Processing (22/54): page_11_top.png
+[2026-03-11 10:34:51] SUCCESS: Faculty 'Mrs. PREETHI SHETTY' stored in JSON.
+[2026-03-11 10:34:51] Processing (23/54): page_12_bottom.png
+[2026-03-11 10:35:08] SUCCESS: Faculty 'HAREESHA B' stored in JSON.
+[2026-03-11 10:35:08] Processing (24/54): page_12_top.png
+[2026-03-11 10:35:29] SUCCESS: Faculty 'Mrs. AVITHA M: CORREA' stored in JSON.
+[2026-03-11 10:35:29] Processing (25/54): page_13_bottom.png
+[2026-03-11 10:35:53] SUCCESS: Faculty 'Mr. PRAVEEN MOGAVEERA' stored in JSON.
+[2026-03-11 10:35:53] Processing (26/54): page_13_top.png
+[2026-03-11 10:36:11] SUCCESS: Faculty 'Mr. RAJATH BANGERA' stored in JSON.
+[2026-03-11 10:36:11] Processing (27/54): page_14_bottom.png
+[2026-03-11 10:36:27] SUCCESS: Faculty 'Dr. CHETHAN SHETTY K' stored in JSON.
+[2026-03-11 10:36:27] Processing (28/54): page_14_top.png
+[2026-03-11 10:36:46] SUCCESS: Faculty 'Ms. VISHALAKSHI S' stored in JSON.
+[2026-03-11 10:36:46] Processing (29/54): page_15_bottom.png
+[2026-03-11 10:37:11] SUCCESS: Faculty 'Mrs. PRAVEENA M. POOJARY' stored in JSON.
+[2026-03-11 10:37:11] Processing (30/54): page_15_top.png
+[2026-03-11 10:37:33] SUCCESS: Faculty 'Mrs. RESHMA SHETTY' stored in JSON.
+[2026-03-11 10:37:33] Processing (31/54): page_16_bottom.png
+[2026-03-11 10:37:55] SUCCESS: Faculty 'Dr. DEEPA' stored in JSON.
+[2026-03-11 10:37:55] Processing (32/54): page_16_top.png
+[2026-03-11 10:38:16] SUCCESS: Faculty 'Ms: RASHMITHA SHETTY' stored in JSON.
+[2026-03-11 10:38:16] Processing (33/54): page_17_bottom.png
+[2026-03-11 10:38:32] SUCCESS: Faculty 'Mrs. DEEPIKA G.' stored in JSON.
+[2026-03-11 10:38:32] Processing (34/54): page_17_top.png
+[2026-03-11 10:39:03] SUCCESS: Faculty 'Mrs. REVATHI D' stored in JSON.
+[2026-03-11 10:39:03] Processing (35/54): page_18_bottom.png
+[2026-03-11 10:39:24] SUCCESS: Faculty 'Mrs. SWATHI G. RAO' stored in JSON.
+[2026-03-11 10:39:24] Processing (36/54): page_18_top.png
+[2026-03-11 10:40:27] SUCCESS: Faculty 'Ms. RAVINA C. POOJARY' stored in JSON.
+[2026-03-11 10:40:27] Processing (37/54): page_19_bottom.png
+[2026-03-11 10:40:55] SUCCESS: Faculty 'Mrs MEGHA S BHAT' stored in JSON.
+[2026-03-11 10:40:55] Processing (38/54): page_19_top.png
+[2026-03-11 10:41:16] SUCCESS: Faculty 'Mrs. SUREKHA ACHARYA' stored in JSON.
+[2026-03-11 10:41:16] Processing (39/54): page_20_bottom.png
+[2026-03-11 10:41:53] SUCCESS: Faculty 'Mr. GIRIRAJ BHAT' stored in JSON.
+[2026-03-11 10:41:53] Processing (40/54): page_20_top.png
+[2026-03-11 10:42:29] SUCCESS: Faculty 'Mr: MAHESH KUMAR' stored in JSON.
+[2026-03-11 10:42:29] Processing (41/54): page_21_bottom.png
+[2026-03-11 10:43:06] SUCCESS: Faculty 'Mrs. WILMA SHARAL' stored in JSON.
+[2026-03-11 10:43:06] Processing (42/54): page_21_top.png
+[2026-03-11 10:43:24] Quota Exceeded for Key #2.
+[2026-03-11 10:43:27] Key #3 reported as leaked.
+[2026-03-11 10:43:27] STOPPING: No more valid API keys.
+[2026-03-11 11:23:50] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 11:23:54] Starting reconstruction. Total images: 54 | Already processed: 41 | Remaining: 13
+[2026-03-11 11:23:54] Processing remaining (1/13): page_21_top.png
+[2026-03-11 11:24:15] Quota Exceeded for Key #1.
+[2026-03-11 11:24:18] Quota Exceeded for Key #2.
+[2026-03-11 11:24:21] Key #3 reported as leaked.
+[2026-03-11 11:24:21] STOPPING: No more valid API keys.
+[2026-03-11 11:39:32] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 11:39:39] Remaining images to process (13): page_21_top.png, page_22_bottom.png, page_22_top.png, page_23_bottom.png, page_23_top.png, page_24_bottom.png, page_24_top.png, page_25_bottom.png, page_25_top.png, page_26_bottom.png, page_26_top.png, page_27_bottom.png, page_27_top.png
+[2026-03-11 11:40:14] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 11:40:18] Starting reconstruction. Total images: 54 | Already processed: 41 | Remaining: 13
+[2026-03-11 11:40:18] Processing remaining (1/13): page_21_top.png
+[2026-03-11 11:41:33] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 11:41:37] Starting reconstruction. Total images: 54 | Already processed: 41 | Remaining: 13
+[2026-03-11 11:41:37] Processing remaining (1/13): page_21_top.png
+[2026-03-11 11:42:23] Quota Exceeded for Key #1.
+[2026-03-11 11:42:25] Quota Exceeded for Key #2.
+[2026-03-11 11:42:27] Quota Exceeded for Key #3.
+[2026-03-11 11:42:30] Key #4 reported as leaked.
+[2026-03-11 11:42:30] STOPPING: No more valid API keys.
+[2026-03-11 11:47:55] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 11:48:00] Starting reconstruction. Total images: 54 | Already processed: 41 | Remaining: 13
+[2026-03-11 11:48:00] Processing remaining (1/13): page_21_top.png
+[2026-03-11 11:48:29] Quota Exceeded for Key #1.
+[2026-03-11 11:48:48] SUCCESS: Faculty 'Mr. HARISH KANCHAN' stored in JSON.
+[2026-03-11 11:48:48] Processing remaining (2/13): page_22_bottom.png
+[2026-03-11 11:49:04] Quota Exceeded for Key #2.
+[2026-03-11 11:49:06] Key #3 reported as leaked.
+[2026-03-11 11:49:06] STOPPING: No more valid API keys.
+[2026-03-11 11:52:11] Initializing OCR Engine (EasyOCR)...
+[2026-03-11 11:52:15] Starting reconstruction. Total images: 54 | Already processed: 42 | Remaining: 12
+[2026-03-11 11:52:15] Processing remaining (1/12): page_22_bottom.png
+[2026-03-11 11:52:57] SUCCESS: Faculty 'Ms. RASHMI GAVADI' stored in JSON.
+[2026-03-11 11:52:57] Processing remaining (2/12): page_22_top.png
+[2026-03-11 11:53:19] SUCCESS: Faculty 'Mrs. JAYALAKSHMI K' stored in JSON.
+[2026-03-11 11:53:19] Processing remaining (3/12): page_23_bottom.png
+[2026-03-11 11:53:51] SUCCESS: Faculty 'Mr: PRANAM R BETRABET' stored in JSON.
+[2026-03-11 11:53:51] Processing remaining (4/12): page_23_top.png
+[2026-03-11 11:54:24] SUCCESS: Faculty 'Mr. SHREEKANTH' stored in JSON.
+[2026-03-11 11:54:24] Processing remaining (5/12): page_24_bottom.png
+[2026-03-11 11:54:53] SUCCESS: Faculty 'Mrs. VIJAYASHREE A' stored in JSON.
+[2026-03-11 11:54:53] Processing remaining (6/12): page_24_top.png
+[2026-03-11 11:55:41] Fatal Error processing page_24_top.png: list indices must be integers or slices, not str
+[2026-03-11 11:55:41] Processing remaining (7/12): page_25_bottom.png
+[2026-03-11 11:56:26] SUCCESS: Faculty 'Mr. MAHESH POOJARI' stored in JSON.
+[2026-03-11 11:56:26] Processing remaining (8/12): page_25_top.png
+[2026-03-11 11:56:56] SUCCESS: Faculty 'Ms. SHIVANI ADIGA' stored in JSON.
+[2026-03-11 11:56:56] Processing remaining (9/12): page_26_bottom.png
+[2026-03-11 11:57:21] SUCCESS: Faculty 'Mrs. NIRMALA' stored in JSON.
+[2026-03-11 11:57:21] Processing remaining (10/12): page_26_top.png
+[2026-03-11 11:58:08] SUCCESS: Faculty 'Mrs. Poornima' stored in JSON.
+[2026-03-11 11:58:08] Processing remaining (11/12): page_27_bottom.png
+[2026-03-11 11:58:34] SUCCESS: Faculty 'Mr. MAHESH NAIK' stored in JSON.
+[2026-03-11 11:58:34] Processing remaining (12/12): page_27_top.png
+[2026-03-11 11:58:58] SUCCESS: Faculty 'Mr. THIMMAPPA DS' stored in JSON.
+[2026-03-11 11:58:58] Batch processing complete.

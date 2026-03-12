@@ -1,17 +1,24 @@
+"""
+Timetable reconstruction script.
+- Uses relative paths (based on script directory)
+- Stores output in JSON file instead of MongoDB
+- Processes all PNG images in the given directory
+"""
 import os
 import json
+import argparse
 import easyocr
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
-from pymongo import MongoClient
 from datetime import datetime
+import time
 
-# 1. SETUP ENVIRONMENT
-load_dotenv(r"f:\HRMS\.env")
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
-DB_NAME = os.getenv("DATABASE_NAME", "hrms_db")
-COLLECTION_NAME = "reconstructed_timetables"
+# Script directory for relative paths
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 1. SETUP ENVIRONMENT (relative paths)
+load_dotenv(os.path.join(SCRIPT_DIR, ".env"))
 
 # Define the highly specific system prompt for timetable reconstruction
 SYSTEM_PROMPT = """
@@ -46,6 +53,7 @@ REQUIRED JSON STRUCTURE:
 }
 """
 
+
 class ApiKeyManager:
     def __init__(self, key_file):
         self.key_file = key_file
@@ -56,12 +64,13 @@ class ApiKeyManager:
     def load_keys(self):
         if not os.path.exists(self.key_file):
             print(f"Warning: Key file {self.key_file} not found. Creating with default from .env.")
+            os.makedirs(os.path.dirname(self.key_file) or ".", exist_ok=True)
             with open(self.key_file, "w") as f:
                 f.write(os.getenv("GOOGLE_API_KEY", "") + "\n")
-        
+
         with open(self.key_file, "r") as f:
             self.keys = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-        
+
         if not self.keys:
             raise Exception("No API keys found in api_keys.txt")
         print(f"Loaded {len(self.keys)} API Keys.")
@@ -74,57 +83,99 @@ class ApiKeyManager:
         if self.current_index >= len(self.keys):
             print("CRITICAL: All API keys have exceeded their quota!")
             return False
-        
+
         print(f"Switching to API key #{self.current_index + 1}...")
         genai.configure(api_key=self.get_current_key())
         return True
 
-def log_event(message):
+
+def log_event(message, log_path):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(r"f:\HRMS\reconstruction_log.txt", "a", encoding="utf-8") as f:
+    with open(log_path, "a", encoding="utf-8") as f:
         f.write(f"[{timestamp}] {message}\n")
     print(message)
 
-def process_all_timetables(image_dir):
-    # Setup DB
-    try:
-        client = MongoClient(MONGO_URI)
-        db = client[DB_NAME]
-        collection = db[COLLECTION_NAME]
-        # Optional: Clear collection if user wants to start fresh
-        # collection.delete_many({}) 
-        log_event("Connected to MongoDB successfully.")
-    except Exception as e:
-        log_event(f"Database Error: {e}")
-        return
 
+def load_json_data(json_path):
+    """Load existing reconstructed timetables from JSON file."""
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Warning: Could not load existing JSON: {e}. Starting fresh.")
+    return []
+
+
+def save_json_data(json_path, data):
+    """Save reconstructed timetables to JSON file."""
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def process_all_timetables(
+    image_dir,
+    output_json_path,
+    log_path,
+    api_keys_path,
+    list_remaining_only=False,
+    max_images=None,
+):
     # Setup API Manager
-    key_manager = ApiKeyManager(r"f:\HRMS\api_keys.txt")
+    key_manager = ApiKeyManager(api_keys_path)
+    # Add .env key to the list if not already present
+    env_key = os.getenv("GOOGLE_API_KEY")
+    if env_key and env_key not in key_manager.keys:
+        key_manager.keys.append(env_key)
+        print("Added API key from .env to the rotation.")
+        
     genai.configure(api_key=key_manager.get_current_key())
-    MODEL_NAME = "gemini-2.5-flash"
+    MODEL_NAME = "gemini-flash-latest"
+
+    # Load existing data (to support skip-already-processed and incremental runs)
+    all_records = load_json_data(output_json_path)
+    processed_files = {r.get("source_file") for r in all_records if r.get("source_file")}
 
     # Setup OCR
-    log_event("Initializing OCR Engine (EasyOCR)...")
+    log_event("Initializing OCR Engine (EasyOCR)...", log_path)
     reader = easyocr.Reader(['en'], gpu=False)
-    
-    # Get Images
-    images = sorted([f for f in os.listdir(image_dir) if f.lower().endswith(".png")])
+
+    # Get Images (support png, jpg, jpeg)
+    image_extensions = (".png", ".jpg", ".jpeg")
+    images = sorted([
+        f for f in os.listdir(image_dir)
+        if f.lower().endswith(image_extensions)
+    ])
     if not images:
-        log_event(f"No PNG images found in {image_dir}")
+        log_event(f"No PNG/JPG images found in {image_dir}", log_path)
         return
 
-    log_event(f"Starting reconstruction for {len(images)} faculty splits.")
+    # Only process remaining/unprocessed images (resume-safe)
+    remaining_images = [img for img in images if img not in processed_files]
+    if not remaining_images:
+        log_event("All images are already processed. Nothing to do.", log_path)
+        return
 
-    for idx, img_name in enumerate(images):
+    if list_remaining_only:
+        log_event(
+            f"Remaining images to process ({len(remaining_images)}): {', '.join(remaining_images)}",
+            log_path
+        )
+        return
+
+    if isinstance(max_images, int) and max_images > 0:
+        remaining_images = remaining_images[:max_images]
+
+    log_event(
+        f"Starting reconstruction. Total images: {len(images)} | "
+        f"Already processed: {len(processed_files)} | Remaining: {len(remaining_images)}",
+        log_path
+    )
+
+    for idx, img_name in enumerate(remaining_images):
         img_path = os.path.join(image_dir, img_name)
-        
-        # Check if already processed
-        if collection.find_one({"source_file": img_name}):
-            print(f"Skipping ({idx+1}/{len(images)}): {img_name} (Already in DB)")
-            continue
-            
-        log_event(f"Processing ({idx+1}/{len(images)}): {img_name}")
-        
+        log_event(f"Processing remaining ({idx+1}/{len(remaining_images)}): {img_name}", log_path)
+
         try:
             # Step 1: OCR Extraction
             results = reader.readtext(img_path)
@@ -133,7 +184,7 @@ def process_all_timetables(image_dir):
                 cx = sum(p[0] for p in bbox) / 4
                 cy = sum(p[1] for p in bbox) / 4
                 ocr_payload_list.append(f"'{text}' at (x={round(cx)}, y={round(cy)})")
-            
+
             full_ocr_text = "\n".join(ocr_payload_list)
 
             # Step 2: AI Processing (with key rotation)
@@ -144,45 +195,115 @@ def process_all_timetables(image_dir):
                         model_name=MODEL_NAME,
                         system_instruction=SYSTEM_PROMPT
                     )
-                    
+
                     response = model.generate_content(
                         f"RECONSTRUCT THIS TIMETABLE FROM OCR DATA:\n{full_ocr_text}",
                         generation_config={"response_mime_type": "application/json"}
                     )
-                    
+
                     raw_text = response.text.replace('```json', '').replace('```', '').strip()
                     data = json.loads(raw_text)
                     success = True
-                    
+
                 except google_exceptions.ResourceExhausted:
-                    log_event(f"Quota Exceeded for Key #{key_manager.current_index + 1}.")
+                    log_event(f"Quota Exceeded for Key #{key_manager.current_index + 1}.", log_path)
                     if not key_manager.switch_to_next_key():
-                        log_event("STOPPING: No more valid API keys.")
-                        return # Exit early
+                        log_event("STOPPING: No more valid API keys.", log_path)
+                        return
+                    time.sleep(2)  # Short delay after switching keys
+                except google_exceptions.PermissionDenied as e:
+                    if "leaked" in str(e).lower():
+                        log_event(f"Key #{key_manager.current_index + 1} reported as leaked.", log_path)
+                    else:
+                        log_event(f"Permission Denied for Key #{key_manager.current_index + 1}: {e}", log_path)
+                    
+                    if not key_manager.switch_to_next_key():
+                        log_event("STOPPING: No more valid API keys.", log_path)
+                        return
                 except Exception as e:
-                    log_event(f"AI/Parser Error on {img_name}: {e}")
-                    break # Skip this image
+                    log_event(f"AI/Parser Error on {img_name}: {e}", log_path)
+                    time.sleep(5)  # Back off on general error
+                    break
 
             if success:
-                # Step 3: Add Metadata & Save to DB
+                # Step 3: Add Metadata
                 data["source_file"] = img_name
                 data["processed_at"] = datetime.now().isoformat()
-                
-                # Insert into MongoDB
-                # Use upsert based on source_file to avoid duplicates if re-run
-                collection.update_one(
-                    {"source_file": img_name},
-                    {"$set": data},
-                    upsert=True
-                )
-                
-                log_event(f"SUCCESS: Faculty '{data['metadata'].get('faculty_name', 'Unknown')}' stored in DB.")
+
+                # Update or append in records
+                existing_idx = next((i for i, r in enumerate(all_records) if r.get("source_file") == img_name), None)
+                if existing_idx is not None:
+                    all_records[existing_idx] = data
+                else:
+                    all_records.append(data)
+
+                # Save to JSON file after each successful processing
+                save_json_data(output_json_path, all_records)
+                processed_files.add(img_name)
+
+                log_event(f"SUCCESS: Faculty '{data.get('metadata', {}).get('faculty_name', 'Unknown')}' stored in JSON.", log_path)
 
         except Exception as e:
-            log_event(f"Fatal Error processing {img_name}: {e}")
+            log_event(f"Fatal Error processing {img_name}: {e}", log_path)
 
-    log_event("Batch processing complete.")
+    log_event("Batch processing complete.", log_path)
+
 
 if __name__ == "__main__":
-    image_folder = r"f:\HRMS\timetable_splits"
-    process_all_timetables(image_folder)
+    parser = argparse.ArgumentParser(description="Reconstruct timetables from images and save to JSON")
+    parser.add_argument(
+        "--input", "-i",
+        default=os.path.join(SCRIPT_DIR, "static", "timetable_splits"),
+        help="Directory containing timetable images (relative or absolute path)"
+    )
+    parser.add_argument(
+        "--output", "-o",
+        default=os.path.join(SCRIPT_DIR, "reconstructed_timetables.json"),
+        help="Output JSON file path"
+    )
+    parser.add_argument(
+        "--log",
+        default=os.path.join(SCRIPT_DIR, "reconstruction_log.txt"),
+        help="Log file path"
+    )
+    parser.add_argument(
+        "--api-keys",
+        default=os.path.join(SCRIPT_DIR, "api_keys.txt"),
+        help="Path to API keys file"
+    )
+    parser.add_argument(
+        "--list-remaining",
+        action="store_true",
+        help="Only list remaining/unprocessed images and exit (no API calls)."
+    )
+    parser.add_argument(
+        "--max-images",
+        type=int,
+        default=None,
+        help="Process at most N remaining images (useful to avoid quota burn)."
+    )
+    args = parser.parse_args()
+
+    # Resolve paths (convert relative to absolute based on script dir if needed)
+    image_dir = args.input if os.path.isabs(args.input) else os.path.join(SCRIPT_DIR, args.input)
+    output_json = args.output if os.path.isabs(args.output) else os.path.join(SCRIPT_DIR, args.output)
+    log_path = args.log if os.path.isabs(args.log) else os.path.join(SCRIPT_DIR, args.log)
+    api_keys_path = args.api_keys if os.path.isabs(args.api_keys) else os.path.join(SCRIPT_DIR, args.api_keys)
+
+    if not os.path.isdir(image_dir):
+        print(f"Error: Image directory does not exist: {image_dir}")
+        exit(1)
+
+    print(f"Input directory: {image_dir}")
+    print(f"Output JSON: {output_json}")
+    print(f"Log file: {log_path}")
+    print("-" * 50)
+
+    process_all_timetables(
+        image_dir,
+        output_json,
+        log_path,
+        api_keys_path,
+        list_remaining_only=args.list_remaining,
+        max_images=args.max_images,
+    )

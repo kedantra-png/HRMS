@@ -48,7 +48,7 @@
     </div>
 </div>
 
-<div class="mb-8 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+<div class="mb-8 bg-white rounded-2xl border border-slate-100 shadow-lg shadow-black/15 p-6">
     <h2 class="text-lg font-semibold text-slate-800 mb-4">Upload Timetable PDF</h2>
     <form id="uploadForm" method="post" enctype="multipart/form-data" class="space-y-4">
         <div>
@@ -80,7 +80,7 @@
     </div>
 </div>
 
-<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+<div class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-black/15 overflow-hidden">
     <div
         class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-2 border-b border-slate-100">
         <h2 class="text-sm font-semibold text-slate-700">Lecturers</h2>
@@ -96,12 +96,12 @@
         </div>
     </div>
     <table class="w-full text-left text-sm" id="staff-table">
-        <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+        <thead class="bg-gradient-to-r from-slate-700 to-slate-800 text-white text-xs uppercase tracking-wider">
             <tr>
-                <th class="px-6 py-3">Staff ID</th>
-                <th class="px-6 py-3">Lecturer Name</th>
-                <th class="px-6 py-3">Status</th>
-                <th class="px-6 py-3">Timetable</th>
+                <th class="px-6 py-4 font-bold">Staff ID</th>
+                <th class="px-6 py-4 font-bold">Lecturer Name</th>
+                <th class="px-6 py-4 font-bold">Status</th>
+                <th class="px-6 py-4 font-bold">Timetable</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-50" id="staff-table-body">
