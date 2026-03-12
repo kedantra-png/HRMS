@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mrs. NIRMALA",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "IBCA (B)",
+        "subject": "Maths"
+      },
+      "II": {
+        "class_section": "IBCA (C)",
+        "subject": "Maths"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III BCA A",
+        "subject": "Project"
+      },
+      "V": {
+        "class_section": "BCA (A)",
+        "subject": "Maths"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "III BCA (A)",
+        "subject": "Project"
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": "IBCA (C)",
+        "subject": "Maths"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "IBCA (A)",
+        "subject": "Maths"
+      },
+      "IV": {
+        "class_section": "IBCA (C)",
+        "subject": "Maths"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "IBCA (B)",
+        "subject": "Maths"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": "IBCA (C)",
+        "subject": "Maths"
+      },
+      "II": {
+        "class_section": "IBCA (B)",
+        "subject": "Maths"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "BCA (A)",
+        "subject": "Maths"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "IBCA (B)",
+        "subject": "Maths"
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "IBCA (A)",
+        "subject": "Maths"
+      },
+      "III": {
+        "class_section": "IBCA (C)",
+        "subject": "Maths"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "BCA (A)",
+        "subject": "Maths"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "IBCA (B)",
+        "subject": "Maths"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mr: ANNAPPA SHETTY",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "III B.Com (D)",
+        "subject": "Advanced Financial Management"
+      },
+      "III": {
+        "class_section": "III B.Com (C)",
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "II B.Com (D)",
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "IB.Com (B)",
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III B.Com (C)",
+        "subject": null
+      },
+      "V": {
+        "class_section": "II B.Com (D)",
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "IB.Com (B)",
+        "subject": null
+      },
+      "IV": {
+        "class_section": "II B.Com (A)",
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": "I B.Com (B)",
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III B.Com (D)",
+        "subject": "Advanced Financial Management"
+      },
+      "V": {
+        "class_section": "II B.Com (D)",
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "III B.Com (D)",
+        "subject": "Advanced Financial Management"
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": "III B.Com (D)",
+        "subject": "Advanced Financial Management"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "III B.Com (C)",
+        "subject": null
+      },
+      "IV": {
+        "class_section": "IB.Com (B)",
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "III B.Com (C)",
+        "subject": "MRP"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": "II B.Com (A)",
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

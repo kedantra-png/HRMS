@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Dr. DEEPA",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "I B.Com (D)",
+        "subject": "Hindi"
+      },
+      "II": {
+        "class_section": "II B.Com (D)",
+        "subject": "Hindi"
+      },
+      "III": {
+        "class_section": "II B.Com (A&B)",
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "II B.Com (D)",
+        "subject": "Hindi"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "II B.Com (D)",
+        "subject": "Hindi"
+      },
+      "III": {
+        "class_section": "II BCA (A&B)",
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "I B.Com (D)",
+        "subject": "Hindi"
+      },
+      "VI": {
+        "class_section": "II B.Com (B)",
+        "subject": "MV"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "II BCA (A&B)",
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Hindi"
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Hindi"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "II B.Com (A&B)",
+        "subject": null
+      },
+      "VI": {
+        "class_section": "II BCA (A&B)",
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Hindi"
+      },
+      "III": {
+        "class_section": "I B.Com (D)",
+        "subject": "Hindi"
+      },
+      "IV": {
+        "class_section": "II BCA (A&B)",
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Hindi"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

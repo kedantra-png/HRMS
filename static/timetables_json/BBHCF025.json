@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mrs. AVITHA M: CORREA",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "II BBA",
+        "subject": "Corporate Accounting - II"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "III BBA",
+        "subject": "CDW"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "I BBA",
+        "subject": "Production and Operation Management"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "III BBA",
+        "subject": "CDW"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "II BBA",
+        "subject": "Corporate Accounting - II"
+      },
+      "V": {
+        "class_section": "III BBA",
+        "subject": "ERP"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "III BBA",
+        "subject": "CDW"
+      },
+      "IV": {
+        "class_section": "II BBA",
+        "subject": "Corporate Accounting - II"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "I BBA",
+        "subject": "Production and Operation Management"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "II BBA",
+        "subject": "Corporate Accounting - II"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "III BBA",
+        "subject": "ERP"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": "II BBA",
+        "subject": "Corporate Accounting - II"
+      },
+      "II": {
+        "class_section": "III BBA",
+        "subject": "CDW"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "I BBA",
+        "subject": "Production and Operation Management"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": "I BBA",
+        "subject": "Production and Operation Management"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

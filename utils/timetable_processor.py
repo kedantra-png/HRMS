@@ -1,49 +1,60 @@
 import os
 import io
 import re
+import json
+import sqlite3
+import time
+from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 
 import fitz  # PyMuPDF
 from PIL import Image
 import pytesseract
-from difflib import get_close_matches
-
-try:
-    import google.generativeai as genai
-except ImportError:  # pragma: no cover - optional dependency
-    genai = None
+import easyocr
+import google.generativeai as genai
+from google.api_core import exceptions as google_exceptions
 
 
 def _configure_tesseract() -> None:
     """
     Optional Windows-friendly override.
-    If Tesseract is installed but not in PATH, set env var:
-      TESSERACT_CMD=C:\\Program Files\\Tesseract-OCR\\tesseract.exe
     """
     cmd = (os.getenv("TESSERACT_CMD") or "").strip()
     if cmd:
         pytesseract.pytesseract.tesseract_cmd = cmd
 
 
+def log_event(message: str, socketio=None):
+    """
+    Log an event to reconstruction_log.txt and optionally emit via socketio.
+    """
+    project_root = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
+    log_path = os.path.join(project_root, "reconstruction_log.txt")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] {message}\n")
+    except Exception:
+        pass
+    print(message)
+    if socketio:
+        try:
+            socketio.emit('timetable_log', {'message': f"[{timestamp}] {message}"})
+        except Exception:
+            pass
+
+
 def _extract_faculty_name(text: str) -> str | None:
     """
     Try to extract faculty name from OCR text.
     Looks for lines like: 'FACULTY: Mr. MAHESH KUMAR'
-    and intentionally ignores header lines such as
-    'FACULTY INDIVIDUAL TIME TABLE: 2025-26 (II TERM)'.
     """
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
 
     def _cleanup_name(raw: str) -> str:
-        """
-        OCR sometimes captures extra fields on the same line, e.g.
-        'FACULTY: Mr. RAGHURAM SHETTY MENTOR: ... TOTAL: 17 Hrs'
-        We only want the actual faculty name.
-        """
         raw = re.sub(r"\s+", " ", (raw or "")).strip()
         if not raw:
             return ""
-        # Remove anything after common keywords that appear after the name
         raw_upper = raw.upper()
         cut_keywords = ["MENTOR", "TOTAL", "DEPARTMENT", "DEPT", "PRINCIPAL", "TIME TABLE"]
         cut_idx = None
@@ -53,27 +64,22 @@ def _extract_faculty_name(text: str) -> str | None:
                 cut_idx = m.start() if cut_idx is None else min(cut_idx, m.start())
         if cut_idx is not None:
             raw = raw[:cut_idx].strip()
-        # Remove trailing punctuation/dashes/colons
         raw = re.sub(r"[\s:\-–—]+$", "", raw).strip()
         return raw
 
-    # First, prefer lines that explicitly start with 'FACULTY:'
     for line in lines:
         norm = re.sub(r"\s+", " ", line.upper())
-        # Skip header like 'FACULTY INDIVIDUAL TIME TABLE: 2025-26 (II TERM)'
         if "TIME TABLE" in norm:
             continue
         if norm.startswith("FACULTY:"):
             parts = line.split(":", 1)
             if len(parts) == 2:
                 name = _cleanup_name(parts[1])
-                # Ignore if this is clearly just a year / term (mostly digits)
                 if re.fullmatch(r"[0-9\s\-\(\)IVX]+", name.upper()):
                     continue
                 if name:
                     return name
 
-    # Fallback: any line that begins with 'FACULTY' but not 'TIME TABLE'
     for line in lines:
         norm = re.sub(r"\s+", " ", line.upper())
         if "TIME TABLE" in norm:
@@ -90,12 +96,7 @@ def _extract_faculty_name(text: str) -> str | None:
 
 
 def _normalize_name(text: str) -> str:
-    """
-    Lightweight normalization used when matching OCR text against a list
-    of known faculty names (for pages that don't have an explicit FACULTY line).
-    """
     text = (text or "").upper()
-    # Remove common trailing fields that are not part of the name
     text = re.split(r"\b(MENTOR|TOTAL|DEPARTMENT|DEPT)\b", text, maxsplit=1)[0]
     text = re.sub(r"\b(MR|MRS|MS|MISS|DR|PROF|PROFESSOR)\.?\b", "", text)
     text = re.sub(r"[^A-Z\s]", " ", text)
@@ -106,168 +107,260 @@ def _normalize_name(text: str) -> str:
 def _fallback_detect_faculty_from_page_text(
     page_text: str, known_faculty_names: List[str]
 ) -> Optional[str]:
-    """
-    When no explicit 'FACULTY:' line is present, attempt to infer the faculty
-    name by matching the page OCR text against a list of known names.
-    """
     if not page_text or not known_faculty_names:
         return None
-
     norm_page = _normalize_name(page_text)
     if not norm_page:
         return None
-
-    # Token set of the full page text
     page_tokens = set(norm_page.split())
-
     best_name = None
     best_score = 0.0
-
+    from difflib import get_close_matches
     for name in known_faculty_names:
         norm_name = _normalize_name(name)
         if not norm_name:
             continue
-
         name_tokens = set(norm_name.split())
         if not name_tokens:
             continue
-
-        # Overlap score (0..1) based on common tokens
         common = page_tokens & name_tokens
         if not common:
             continue
-
         score = len(common) / len(name_tokens)
         if score > best_score:
             best_score = score
             best_name = name
-
-    # Require at least 60% of the name tokens to appear in the page text
     if best_score >= 0.6:
         return best_name
-
-    # Fallback: fuzzy string similarity on normalized strings
     norm_known = [_normalize_name(n) for n in known_faculty_names]
     best = get_close_matches(norm_page, norm_known, n=1, cutoff=0.8)
     if best:
         idx = norm_known.index(best[0])
         return known_faculty_names[idx]
-
     return None
 
 
-def extract_timetable_structure(image: Image.Image) -> Optional[Dict]:
-    """
-    Optional AI-powered extraction of structured timetable data from a cropped
-    faculty timetable image using Google Gemini (vision model).
+def lookup_subject_in_sqlite(faculty_name: str, class_section: str) -> Optional[str]:
+    db_path = os.getenv("MOULYA_DB_PATH") or r"F:\moulya_college.db"
+    if not db_path or not os.path.exists(db_path):
+        return None
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        def _get_tokens(t):
+            t = (t or "").upper()
+            t = re.sub(r"\b(MR|MRS|MS|MISS|DR|PROF)\b", "", t)
+            t = re.sub(r"[^A-Z0-9]", " ", t)
+            return set(t.split())
 
-    Returns a dictionary like:
-    {
-        "faculty_name": "...",
-        "total_hours": 18,
-        "slots": [
-            {
-                "day": "MONDAY",
-                "session": "I",
-                "time": "9:45-10:35",
-                "subject": "II BCA B Python",
-                "notes": ""
-            },
-            ...
-        ]
-    }
+        # 1. Find Lecturer ID
+        cursor.execute("SELECT id, name FROM lecturer")
+        lecturers = cursor.fetchall()
+        target_lecturer_id = None
+        
+        ocr_fac_tokens = _get_tokens(faculty_name)
+        if not ocr_fac_tokens:
+            conn.close()
+            return None
 
-    If the GOOGLE_API_KEY is not configured or google-generativeai is missing,
-    this function returns None and the rest of the system continues to work
-    without structured data.
-    """
-    api_key = (os.getenv("GOOGLE_API_KEY") or "").strip()
-    if not api_key or genai is None:
+        best_score = 0
+        for lid, lname in lecturers:
+            db_tokens = _get_tokens(lname)
+            if not db_tokens: continue
+            
+            # Intersection score
+            common = ocr_fac_tokens & db_tokens
+            score = len(common) / max(len(ocr_fac_tokens), len(db_tokens))
+            
+            if score > best_score:
+                best_score = score
+                target_lecturer_id = lid
+        
+        if best_score < 0.6:
+            target_lecturer_id = None
+            
+        if not target_lecturer_id:
+            conn.close()
+            return None
+
+        # 2. Find Course ID
+        cursor.execute("SELECT id, name FROM course")
+        courses = cursor.fetchall()
+        target_course_id = None
+        
+        ocr_class_tokens = _get_tokens(class_section)
+        if not ocr_class_tokens:
+            conn.close()
+            return None
+
+        best_c_score = 0
+        for cid, cname in courses:
+            db_tokens = _get_tokens(cname)
+            if not db_tokens: continue
+            
+            common = ocr_class_tokens & db_tokens
+            score = len(common) / max(len(ocr_class_tokens), len(db_tokens))
+            
+            if score > best_c_score:
+                best_c_score = score
+                target_course_id = cid
+
+        if best_c_score < 0.6:
+            target_course_id = None
+        
+        if not target_course_id:
+            conn.close()
+            return None
+
+        # 3. Find Unique Subject
+        query = """
+        SELECT DISTINCT s.name 
+        FROM subject_assignment sa
+        JOIN subject s ON sa.subject_id = s.id
+        WHERE sa.lecturer_id = ? AND s.course_id = ? AND sa.is_active = 1
+        """
+        cursor.execute(query, (target_lecturer_id, target_course_id))
+        subjects = [row[0] for row in cursor.fetchall()]
+        
+        conn.close()
+        
+        if len(subjects) == 1:
+            return subjects[0]
+        elif len(subjects) > 1:
+            log_event(f"Ambiguity in DB: Faculty '{faculty_name}' has multiple subjects {subjects} for '{class_section}'. No update.", socketio=socketio)
+            return None
         return None
 
-    try:
-        # Use stable v1 API so models like gemini-1.5-flash are available
-        genai.configure(api_key=api_key, api_version="v1")
-        model = genai.GenerativeModel("gemini-1.5-flash")
+    except Exception as e:
+        log_event(f"Moulya DB Error: {e}")
+        return None
 
+
+def extract_timetable_structure(image: Image.Image, faculty_name_hint: Optional[str] = None, socketio=None) -> Optional[Dict]:
+    """
+    AI-powered extraction of structured timetable data using EasyOCR coordinates and Google Gemini.
+    """
+    api_key_env = (os.getenv("GOOGLE_API_KEY") or "").strip()
+    api_keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "api_keys.txt")
+    keys = []
+    if os.path.exists(api_keys_path):
+        with open(api_keys_path, "r") as f:
+            keys = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+    if api_key_env and api_key_env not in keys:
+        keys.append(api_key_env)
+    if not keys:
+        return None
+
+    # Step 1: OCR Extraction
+    try:
+        reader = easyocr.Reader(['en'], gpu=False)
         buf = io.BytesIO()
         image.save(buf, format="PNG")
-        img_bytes = buf.getvalue()
+        ocr_results = reader.readtext(buf.getvalue())
+        
+        ocr_payload_list = []
+        for (bbox, text, prob) in ocr_results:
+            cx = sum(p[0] for p in bbox) / 4
+            cy = sum(p[1] for p in bbox) / 4
+            ocr_payload_list.append(f"'{text}' at (x={round(cx)}, y={round(cy)})")
+        
+        full_ocr_text = "\n".join(ocr_payload_list)
+    except Exception as e:
+        log_event(f"OCR Error: {e}", socketio=socketio)
+        return None
 
-        prompt = """
-You are reading a college faculty timetable image.
-Extract the timetable into pure JSON. Return ONLY JSON, no explanation.
+    system_prompt = """
+You are a Timetable Data Extraction Expert.
+Extract and reconstruct the structured timetable JSON from the OCR results provided.
 
-Use this schema:
+CRITICAL INSTRUCTIONS:
+1. Use the provided (X,Y) coordinates to determine cell placement:
+   - X-coordinates help you identify the Period (I to VII).
+   - Y-coordinates help you identify the Day (Monday to Saturday).
+2. For each hour (I, II, III, IV, V, VI, VII), you MUST extract TWO fields:
+   - "class_section": The class and section (e.g., "II BCA B", "I B.Com A").
+   - "subject": The subject name or code (e.g., "Python", "MRP", "Java", "Accounting").
+3. IMPORTANT: If a cell contains a combined string like "MRP III B.COM (E)", the first part is usually the SUBJECT and the rest is the CLASS/SECTION. You MUST split them.
+   - Example "MRP III B.COM (E)" -> subject: "MRP", class_section: "III B.COM (E)"
+   - Example "JAVA III BCA A" -> subject: "JAVA", class_section: "III BCA A"
+4. If a cell contains multi-line text, combine them correctly.
+5. If a cell is empty or unclear, mark both fields as null.
+6. Return *ONLY* valid JSON formatting.
+
+STRUCTURE:
 {
-  "faculty_name": "<string>",
-  "total_hours": <int>,  // total teaching hours per week if shown, else 0
-  "slots": [
-    {
-      "day": "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY",
-      "session": "0" | "I" | "II" | "III" | "IV" | "V" | "VI" | "VII",
-      "time": "<time-range as text, e.g. '8:50-9:40'>",
-      "subject": "<subject / class text from the cell>",
-      "notes": "<any extra text in that cell or ''>"
-    }
-  ]
+  "faculty_name": "...",
+  "timetable": {
+    "Monday": {
+      "I": {"class_section": "...", "subject": "..."},
+      "II": {...},
+      ...
+    },
+    ...
+  }
 }
-
-Include one slot for each non-empty cell in the main timetable grid.
 """
 
-        resp = model.generate_content(
-            [
-                prompt,
-                {"mime_type": "image/png", "data": img_bytes},
-            ]
-        )
+    for api_key in keys:
+        try:
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel("models/gemini-3.1-flash-lite-preview")
+            
+            resp = model.generate_content(
+                f"SYSTEM: {system_prompt}\n\nRECONSTRUCT THIS TIMETABLE FROM OCR DATA:\n{full_ocr_text}"
+            )
 
-        text = (resp.text or "").strip()
-        # Sometimes Gemini wraps JSON in markdown code fences
-        if text.startswith("```"):
-            text = text.strip("`")
-            # remove possible language hint like ```json
-            if "\n" in text:
-                text = "\n".join(text.split("\n")[1:])
+            text = (resp.text or "").strip()
+            if text.startswith("```"):
+                text = text.strip("`")
+                if text.lower().startswith("json"):
+                    text = text[4:].strip()
 
-        import json as _json
+            data = json.loads(text)
+            fname = faculty_name_hint or data.get("faculty_name", "")
+            log_event(f"AI Reconstruction successful for {fname or 'Unknown faculty'}", socketio=socketio)
+            
+            # Post-processing: Split heuristic and SQLite Lookup
+            if "timetable" in data:
+                for day, hours in data["timetable"].items():
+                    if not isinstance(hours, dict): continue
+                    for hour, fields in hours.items():
+                        if isinstance(fields, dict) and fields.get("class_section"):
+                            cs = fields["class_section"].strip()
+                            # Heuristic split if subject is missing
+                            if not fields.get("subject"):
+                                # Pattern: [CODE] [YEAR/NUMERAL] [COURSE]
+                                # Example: MRP III B.COM (E)
+                                split_match = re.match(r"^([A-Z0-9]{2,8})\s+((?:I+|[1-3])\s+.*)$", cs, re.IGNORECASE)
+                                if split_match:
+                                    fields["subject"] = split_match.group(1).upper()
+                                    fields["class_section"] = split_match.group(2).strip()
+                                    log_event(f"Heuristic Split: '{cs}' -> sub: '{fields['subject']}', class: '{fields['class_section']}'", socketio=socketio)
 
-        data = _json.loads(text)
-        # Basic shape validation
-        if not isinstance(data, dict):
-            return None
-        if "slots" in data and not isinstance(data["slots"], list):
-            data["slots"] = []
-        return data
-    except Exception:
-        # Fail silently – structured extraction is an enhancement only
-        return None
+                            # If subject still missing, try SQLite
+                            if not fields.get("subject"):
+                                lookup = lookup_subject_in_sqlite(fname, fields["class_section"])
+                                if lookup:
+                                    log_event(f"SQLite Lookup: Found subject '{lookup}' for {fname} at {day} {hour}", socketio=socketio)
+                                    fields["subject"] = lookup
+            
+            return data
+        except Exception as e:
+            log_event(f"Gemini Error with key {api_key[:10]}...: {e}", socketio=socketio)
+            continue
+            
+    return None
 
 
 def pdf_to_faculty_images(
     pdf_bytes: bytes,
     known_faculty_names: Optional[List[str]] = None,
 ) -> Tuple[List[Dict], List[Dict]]:
-    """
-    Convert each page in the PDF into an image, OCR it,
-    and extract the faculty name.
-
-    Returns (pages_with_name, pages_without_name)
-    where each entry is:
-      {
-        "page_index": int,
-        "faculty_name": str | None,
-        "image": PIL.Image.Image,
-        "ocr_text": str,
-      }
-    """
     with io.BytesIO(pdf_bytes) as pdf_stream:
         doc = fitz.open(stream=pdf_stream.read(), filetype="pdf")
 
-    # Prepare debug/visualisation folders:
-    #  - static/timetable_images: full page renders (page_1.png, page_2.png, ...)
-    #  - static/timetable_splits: per-page timetable crops (page_1_top.png, page_1_bottom.png, ...)
     try:
         project_root = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
         static_root = os.path.join(project_root, "static")
@@ -288,7 +381,6 @@ def pdf_to_faculty_images(
         page = doc.load_page(page_index)
         page_number = page_index + 1
 
-        # Save the whole page as an image (timetable_images/page_N.png)
         if timetable_images_dir:
             try:
                 full_pix = page.get_pixmap(dpi=200)
@@ -298,94 +390,52 @@ def pdf_to_faculty_images(
             except Exception:
                 pass
 
-        # Use text blocks so we can locate ALL FACULTY / PRINCIPAL sections
-        # on the page, allowing multiple timetables per page.
         blocks = page.get_text("blocks") or []
         embedded_text = (page.get_text("text") or "").strip()
-
         page_rect = page.rect
 
-        # First pass: find all (faculty_name, top, bottom) segments.
         segments: List[Dict] = []
         current: Dict | None = None
         last_heading_y: float | None = None
 
         for b in blocks:
-            if len(b) < 5:
-                continue
+            if len(b) < 5: continue
             x0, y0, x1, y1, text = b[0], b[1], b[2], b[3], b[4]
-            if not isinstance(text, str):
-                continue
+            if not isinstance(text, str): continue
             norm = re.sub(r"\s+", " ", text.upper())
-
-            # Capture the main college heading so that each timetable crop
-            # can start slightly above it (as in your visual examples).
             if "DR. B. B. HEGDE FIRST GRADE COLLEGE" in norm:
                 last_heading_y = y0
-
-            # New FACULTY header (not the 'FACULTY INDIVIDUAL TIME TABLE' title)
             if "FACULTY" in norm and "TIME TABLE" not in norm:
                 name_candidate = _extract_faculty_name(text)
                 if name_candidate:
-                    # If a previous segment is still open without an explicit bottom,
-                    # close it at this new header.
                     if current and current.get("bottom") is None:
                         current["bottom"] = y0
                         segments.append(current)
-
-                    # Use the last seen college heading (if any) as the top of
-                    # this segment so that the saved image goes from the header
-                    # down to PRINCIPAL.
                     seg_top = last_heading_y if last_heading_y is not None else y0
-                    current = {
-                        "faculty_name": name_candidate,
-                        "top": seg_top,
-                        "bottom": None,
-                    }
+                    current = {"faculty_name": name_candidate, "top": seg_top, "bottom": None}
                     last_heading_y = None
                     continue
-
-            # PRINCIPAL line closes the current segment (if any).
-            # Now we include the PRINCIPAL text itself in the crop, so the final
-            # image runs visually from the college header down to PRINCIPAL.
             if current and "PRINCIPAL" in norm and y0 > (current.get("top", page_rect.y0) + 80):
-                # Use the block bottom (y1) plus a small margin so PRINCIPAL
-                # is clearly visible, but never go past the page bottom.
                 principal_bottom = min(page_rect.y1, y1 + 10)
                 current["bottom"] = max(current.get("top", page_rect.y0) + 100, principal_bottom)
                 segments.append(current)
                 current = None
 
-        # If a segment is still open at end of page, close it at page bottom
         if current:
             current["bottom"] = page_rect.y1
             segments.append(current)
 
-        # If we didn't detect any segments but we have known faculty names,
-        # fall back to OCR-based detection from full page text.
-        # Counter of segments for this page (used when saving visual split images)
         seg_counter = 0
-
         if not segments:
-            # OCR once for the page if needed
             ocr_text = ""
             try:
                 pix_full = page.get_pixmap(dpi=200)
                 mode_full = "RGBA" if pix_full.alpha else "RGB"
                 image_full = Image.frombytes(mode_full, (pix_full.width, pix_full.height), pix_full.samples)
                 ocr_text = pytesseract.image_to_string(image_full)
-            except pytesseract.TesseractNotFoundError as e:
-                raise RuntimeError(
-                    "Tesseract OCR is required for scanned PDFs, but it was not found. "
-                    "Install Tesseract and add it to PATH, or set TESSERACT_CMD "
-                    "to the full path of tesseract.exe."
-                ) from e
             except Exception:
                 image_full = None
 
-            # If this is a scanned PDF, embedded_text is often empty and there may be
-            # multiple timetables on one page. Use OCR word boxes to find multiple
-            # "FACULTY ... PRINCIPAL" segments and crop each one.
             if image_full is not None:
                 try:
                     data = pytesseract.image_to_data(image_full, output_type=pytesseract.Output.DICT)
@@ -393,173 +443,70 @@ def pdf_to_faculty_images(
                     n = len(data.get("text", []))
                     for i in range(n):
                         word = (data["text"][i] or "").strip()
-                        if not word:
-                            continue
-                        key = (
-                            data.get("block_num", [0])[i],
-                            data.get("par_num", [0])[i],
-                            data.get("line_num", [0])[i],
-                        )
+                        if not word: continue
+                        key = (data.get("block_num", [0])[i], data.get("par_num", [0])[i], data.get("line_num", [0])[i])
                         top = int(data.get("top", [0])[i] or 0)
                         lines.setdefault(key, {"top": top, "words": []})
-                        lines[key]["top"] = min(lines[key]["top"], top)
                         lines[key]["words"].append(word)
-
-                    line_items = []
-                    for v in lines.values():
-                        txt = re.sub(r"\s+", " ", " ".join(v["words"]).strip())
-                        if txt:
-                            line_items.append({"top": v["top"], "text": txt})
-                    line_items.sort(key=lambda x: x["top"])
-
+                    line_items = sorted([{"top": v["top"], "text": " ".join(v["words"])} for v in lines.values()], key=lambda x: x["top"])
                     faculty_lines = []
                     header_top = None
                     principal_tops = []
                     for item in line_items:
-                        norm = re.sub(r"\s+", " ", item["text"].upper())
-                        # Capture the college heading position so each cropped
-                        # timetable starts from the same header line.
-                        if "DR. B. B. HEGDE FIRST GRADE COLLEGE" in norm:
-                            if header_top is None:
-                                header_top = item["top"]
-                        if "PRINCIPAL" in norm:
-                            principal_tops.append(item["top"])
+                        norm = item["text"].upper()
+                        if "DR. B. B. HEGDE FIRST GRADE COLLEGE" in norm and header_top is None: header_top = item["top"]
+                        if "PRINCIPAL" in norm: principal_tops.append(item["top"])
                         if "FACULTY" in norm and "TIME TABLE" not in norm:
                             nm = _extract_faculty_name(item["text"])
-                            if nm:
-                                faculty_lines.append({"top": item["top"], "faculty_name": nm})
-
-                    principal_tops.sort()
-                    faculty_lines.sort(key=lambda x: x["top"])
-
+                            if nm: faculty_lines.append({"top": item["top"], "faculty_name": nm})
+                    
                     if faculty_lines:
-                        # A timetable crop should include the grid down to SATURDAY.
-                        # Use a minimum vertical gap so we don't accidentally crop just the header.
-                        min_gap_px = max(180, int(image_full.height * 0.10))
-
+                        min_gap = max(180, int(image_full.height * 0.10))
                         for idx, fline in enumerate(faculty_lines):
-                            # If we detected the main college header, start the
-                            # crop from there so the image runs from header to
-                            # PRINCIPAL for every faculty on this page.
-                            if header_top is not None:
-                                top_px = max(0, int(header_top) - 5)
-                            else:
-                                top_px = max(0, int(fline["top"]) - 10)
-
-                            next_faculty_top = None
-                            if idx + 1 < len(faculty_lines):
-                                next_faculty_top = int(faculty_lines[idx + 1]["top"])
-
+                            top_px = max(0, int(header_top or fline["top"]) - 10)
                             bottom_px = None
-
-                            # Prefer the first PRINCIPAL line sufficiently below this FACULTY line
                             for ptop in principal_tops:
-                                if ptop > top_px + min_gap_px:
-                                    # Extend the crop slightly *below* the PRINCIPAL
-                                    # baseline so that the PRINCIPAL text is visible.
+                                if ptop > top_px + min_gap:
                                     bottom_px = int(ptop) + 40
                                     break
-
-                            # If no PRINCIPAL found, fall back to next FACULTY header
-                            if bottom_px is None and next_faculty_top is not None and next_faculty_top > top_px + min_gap_px:
-                                bottom_px = next_faculty_top - 8
-
-                            if bottom_px is None:
-                                bottom_px = image_full.height
-
-                            bottom_px = max(top_px + min_gap_px, min(image_full.height, bottom_px))
-
-                            cropped = image_full.crop((0, top_px, image_full.width, bottom_px))
-
-                            # Save visual split for this page (page_XX_top.png, page_XX_bottom.png, ...)
+                            if bottom_px is None and idx+1 < len(faculty_lines):
+                                bottom_px = int(faculty_lines[idx+1]["top"]) - 8
+                            if bottom_px is None: bottom_px = image_full.height
+                            cropped = image_full.crop((0, top_px, image_full.width, min(image_full.height, bottom_px)))
                             if timetable_splits_dir:
-                                try:
-                                    suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
-                                    split_name = f"page_{page_number:02d}_{suffix}.png"
-                                    cropped.save(os.path.join(timetable_splits_dir, split_name), format="PNG")
-                                except Exception:
-                                    pass
+                                suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
+                                cropped.save(os.path.join(timetable_splits_dir, f"page_{page_number:02d}_{suffix}.png"))
                             seg_counter += 1
-                            entry = {
-                                "page_index": page_index,
-                                "faculty_name": fline["faculty_name"],
-                                "image": cropped,
-                                "ocr_text": ocr_text or embedded_text,
-                            }
-                            pages_with_name.append(entry)
+                            pages_with_name.append({"page_index": page_index, "faculty_name": fline["faculty_name"], "image": cropped, "ocr_text": ocr_text or embedded_text})
                         continue
-                except Exception:
-                    # If multi-segment OCR fails, fall back to single-faculty mode below
-                    pass
-
+                except Exception: pass
+            
             faculty_name = _extract_faculty_name(ocr_text) or _extract_faculty_name(embedded_text)
-
             if not faculty_name and known_faculty_names:
-                combined_text = (embedded_text or "") + "\n" + (ocr_text or "")
-                faculty_name = _fallback_detect_faculty_from_page_text(combined_text, known_faculty_names)
-
-            entry = {
-                "page_index": page_index,
-                "faculty_name": faculty_name,
-                "image": image_full,
-                "ocr_text": ocr_text or embedded_text,
-            }
-            if faculty_name:
-                pages_with_name.append(entry)
-            else:
-                pages_without_name.append(entry)
+                faculty_name = _fallback_detect_faculty_from_page_text((embedded_text or "") + "\n" + (ocr_text or ""), known_faculty_names)
+            
+            entry = {"page_index": page_index, "faculty_name": faculty_name, "image": image_full, "ocr_text": ocr_text or embedded_text}
+            if faculty_name: pages_with_name.append(entry)
+            else: pages_without_name.append(entry)
             continue
 
-        # For each detected faculty segment on this page, render and store separately.
-        # First compute a unified height so all timetable crops on this page share
-        # the same dimensions (uniform look).
-        max_seg_height = 0
+        max_h = 0
         for seg in segments:
-            top = max(page_rect.y0, seg.get("top", page_rect.y0))
-            bottom = min(page_rect.y1, seg.get("bottom", page_rect.y1))
-            h = max(0, int(bottom - top))
-            if h > max_seg_height:
-                max_seg_height = h
+            h = int(min(page_rect.y1, seg.get("bottom", page_rect.y1)) - max(page_rect.y0, seg.get("top", page_rect.y0)))
+            if h > max_h: max_h = h
 
         for seg in segments:
-            faculty_name = seg.get("faculty_name")
-            top = max(page_rect.y0, seg.get("top", page_rect.y0))
-            bottom = min(page_rect.y1, seg.get("bottom", page_rect.y1))
-
-            rect = fitz.Rect(page_rect.x0, top, page_rect.x1, bottom)
-            pix = page.get_pixmap(dpi=200, clip=rect)
-            mode = "RGBA" if pix.alpha else "RGB"
-            image = Image.frombytes(mode, (pix.width, pix.height), pix.samples)
-
-            # Pad to a unified height per page so all faculty timetable images
-            # for this page have the same width and height.
-            if max_seg_height and image.height < max_seg_height:
-                canvas = Image.new(mode, (image.width, max_seg_height), "white")
-                canvas.paste(image, (0, 0))
-                image = canvas
-
-            # Save visual split for this page (page_XX_top.png, page_XX_bottom.png, ...)
+            top, bottom = max(page_rect.y0, seg.get("top", page_rect.y0)), min(page_rect.y1, seg.get("bottom", page_rect.y1))
+            pix = page.get_pixmap(dpi=200, clip=fitz.Rect(page_rect.x0, top, page_rect.x1, bottom))
+            img = Image.frombytes("RGBA" if pix.alpha else "RGB", (pix.width, pix.height), pix.samples)
+            if max_h and img.height < max_h:
+                canvas = Image.new(img.mode, (img.width, max_h), "white")
+                canvas.paste(img, (0, 0))
+                img = canvas
             if timetable_splits_dir:
-                try:
-                    suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
-                    split_name = f"page_{page_number:02d}_{suffix}.png"
-                    image.save(os.path.join(timetable_splits_dir, split_name), format="PNG")
-                except Exception:
-                    pass
+                suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
+                img.save(os.path.join(timetable_splits_dir, f"page_{page_number:02d}_{suffix}.png"))
             seg_counter += 1
-
-            # For per-segment entries we can reuse embedded_text; OCR is not required
-            # because we already extracted the faculty name from the FACULTY line.
-            entry = {
-                "page_index": page_index,
-                "faculty_name": faculty_name,
-                "image": image,
-                "ocr_text": embedded_text,
-            }
-            if faculty_name:
-                pages_with_name.append(entry)
-            else:
-                pages_without_name.append(entry)
+            pages_with_name.append({"page_index": page_index, "faculty_name": seg.get("faculty_name"), "image": img, "ocr_text": embedded_text})
 
     return pages_with_name, pages_without_name
-

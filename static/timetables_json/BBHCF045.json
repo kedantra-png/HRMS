@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mr. SHREEKANTH",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BCA (A)",
+        "subject": "DS Lab"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III BCA (B)",
+        "subject": "DS"
+      },
+      "V": {
+        "class_section": "III BCA (B)",
+        "subject": "FDS"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": "I BCA (A)",
+        "subject": "DS"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "I BCA (A)",
+        "subject": "DS"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "III B.Com (E)",
+        "subject": "DS"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BCA (A)",
+        "subject": "DS Lab"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "I BCA (A)",
+        "subject": "DS"
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "III BCA (B)",
+        "subject": "FDS"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "III BCA (B)",
+        "subject": "FDS"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III BCA (B)",
+        "subject": "FDS"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "I BCA (A)",
+        "subject": "DS"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "III B.Com (E)",
+        "subject": "DS Lab"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

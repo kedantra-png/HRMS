@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mr. HAREESHA B",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "III BBA (IB)",
+        "subject": "IB"
+      },
+      "II": {
+        "class_section": "II BBA",
+        "subject": "Advertising and Media Management"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III BBA (BL)",
+        "subject": "BL"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "I BBA",
+        "subject": "Business Accounting - II"
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "II BBA",
+        "subject": "Advertising and Media Management"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III BBA (IB)",
+        "subject": "IB"
+      },
+      "V": {
+        "class_section": "I BBA",
+        "subject": "Business Accounting - II"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BBA",
+        "subject": "Business Accounting - II"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "II BBA",
+        "subject": "Advertising and Media Management"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": "III BBA (IB)",
+        "subject": "IB"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III BBA (BL)",
+        "subject": "BL"
+      },
+      "V": {
+        "class_section": "I BBA",
+        "subject": "Business Accounting - II"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": "I BBA",
+        "subject": "Business Accounting - II"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III BBA (IB)",
+        "subject": "IB"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "III BBA (BL)",
+        "subject": "BL"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mrs. MEGHA S BHAT",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "I B.COM (D)",
+        "subject": "Sanskrit"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "I B.COM (AB&C)",
+        "subject": "Sanskrit"
+      },
+      "IV": {
+        "class_section": "II B.COM (A&B)",
+        "subject": "Sanskrit"
+      },
+      "V": {
+        "class_section": "I BBA (D)",
+        "subject": "Sanskrit"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "II B.COM (D)",
+        "subject": "Sanskrit"
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": "II B.COM (D)",
+        "subject": "Sanskrit"
+      },
+      "II": {
+        "class_section": "II B.COM (D)",
+        "subject": "Sanskrit"
+      },
+      "III": {
+        "class_section": "II BCA (A&B)",
+        "subject": "Sanskrit"
+      },
+      "IV": {
+        "class_section": "II BBA (D)",
+        "subject": "Sanskrit"
+      },
+      "V": {
+        "class_section": "I B.COM (A,B&C)",
+        "subject": "Sanskrit"
+      },
+      "VI": {
+        "class_section": "I BCOM (A,B&C)",
+        "subject": "Sanskrit"
+      },
+      "VII": {
+        "class_section": "I BBA (A,B&C)",
+        "subject": "Sanskrit"
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BBA",
+        "subject": "Sanskrit"
+      },
+      "III": {
+        "class_section": "II BCOM (A&B)",
+        "subject": "Sanskrit"
+      },
+      "IV": {
+        "class_section": "II BCA (A&B)",
+        "subject": "Sanskrit"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "II BBA (A,B&C)",
+        "subject": "Sanskrit"
+      },
+      "VII": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Sanskrit"
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Sanskrit"
+      },
+      "IV": {
+        "class_section": "I BCOM (A,B&C)",
+        "subject": "Sanskrit"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "II BCOM (A&B)",
+        "subject": "Sanskrit"
+      },
+      "VII": {
+        "class_section": "II BCA (A&B)",
+        "subject": "Sanskrit"
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Sanskrit"
+      },
+      "III": {
+        "class_section": "II BBA",
+        "subject": "Sanskrit"
+      },
+      "IV": {
+        "class_section": "I B.COM (D)",
+        "subject": "Sanskrit"
+      },
+      "V": {
+        "class_section": "II BCA (A&B)",
+        "subject": "Sanskrit"
+      },
+      "VI": {
+        "class_section": "II BCOM (A&B)",
+        "subject": "Sanskrit"
+      },
+      "VII": {
+        "class_section": "I BCOM (AB&C)",
+        "subject": "Sanskrit"
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "I BBA",
+        "subject": "Sanskrit"
+      },
+      "IV": {
+        "class_section": "I BCA (A,B&C)",
+        "subject": "Sanskrit"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

@@ -9,7 +9,8 @@ import os
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='threading')
+
 bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -61,13 +62,158 @@ def logout():
 
 from utils.auth import admin_required, lecturer_required
 from datetime import datetime
-from utils.timetable_processor import pdf_to_faculty_images, extract_timetable_structure
+from utils.timetable_processor import pdf_to_faculty_images, extract_timetable_structure, log_event
 from difflib import get_close_matches
 import json
 import re
 import csv
 import fitz  # PyMuPDF for optional page-level images
 from pathlib import Path
+
+def normalize_name(name: str) -> str:
+    """
+    Make names comparable between OCR, faculty_detail.json and DB.
+    """
+    name = (name or "").upper()
+    name = re.sub(r"^FACULTY\s*[:\-]\s*", "", name)
+    name = re.split(r"\b(MENTOR|TOTAL|DEPARTMENT|DEPT)\b", name, maxsplit=1)[0]
+    name = re.sub(r"\b(MR|MRS|MS|MISS|DR|PROF|PROFESSOR)\.?\b", "", name)
+    name = re.sub(r"[^A-Z\s]", " ", name)
+    name = re.sub(r"\s+", " ", name).strip()
+    return name
+
+def surname_key(norm_name: str) -> str:
+    parts = (norm_name or "").split()
+    return parts[-1] if parts else ""
+
+def partial_match(norm_small: str, norm_big: str) -> bool:
+    if not norm_small or not norm_big:
+        return False
+    if len(norm_small) > len(norm_big):
+        norm_small, norm_big = norm_big, norm_small
+    if norm_small in norm_big:
+        return True
+    small_tokens = set(norm_small.split())
+    big_tokens = set(norm_big.split())
+    return len(small_tokens & big_tokens) >= min(2, len(small_tokens))
+
+def _safe_filename(base: str, fallback: str) -> str:
+    base = (base or "").strip().lower()
+    base = base.replace("&", "and")
+    base = re.sub(r"\s+", "_", base)
+    base = re.sub(r"[^a-z0-9_\-]+", "_", base)
+    base = re.sub(r"_+", "_", base).strip("._- ")
+    if not base:
+        base = fallback
+    if base in {"con", "prn", "aux", "nul"} or re.fullmatch(r"com[1-9]|lpt[1-9]", base):
+        base = f"{fallback}_{base}"
+    return base[:80]
+
+def process_timetable_async(pdf_bytes, known_faculty_names, all_lecturers, lecturers_by_staff_id, lecturers_by_norm_name, lecturers_by_surname, norm_json_name_to_staff_id, upload_folder, json_folder):
+    try:
+        pages_with_name, pages_without_name = pdf_to_faculty_images(
+            pdf_bytes, known_faculty_names=known_faculty_names or None
+        )
+        
+        total_pages = len(pages_with_name)
+        matched_count = 0
+        unmatched_pages = []
+
+        log_event(f"Starting async processing of {total_pages} pages.", socketio=socketio)
+
+        for idx, page in enumerate(pages_with_name):
+            progress = int(((idx + 1) / total_pages) * 100)
+            faculty_name_raw = page["faculty_name"]
+            
+            log_event(f"Processing page {idx+1}/{total_pages}: {faculty_name_raw}", socketio=socketio)
+            socketio.emit('timetable_progress', {'progress': progress, 'status': f'Processing {faculty_name_raw}...'})
+
+            if not faculty_name_raw:
+                continue
+
+            norm_ocr_name = normalize_name(faculty_name_raw)
+            lecturer = None
+
+            staff_id = norm_json_name_to_staff_id.get(norm_ocr_name)
+            if staff_id:
+                lecturer = lecturers_by_staff_id.get(staff_id)
+            if not lecturer:
+                lecturer = lecturers_by_norm_name.get(norm_ocr_name)
+            if not lecturer and lecturers_by_norm_name:
+                for norm_name, lect in lecturers_by_norm_name.items():
+                    if partial_match(norm_ocr_name, norm_name):
+                        lecturer = lect
+                        break
+            if not lecturer and lecturers_by_norm_name:
+                norm_lecturer_names = list(lecturers_by_norm_name.keys())
+                best = get_close_matches(norm_ocr_name, norm_lecturer_names, n=1, cutoff=0.6)
+                if best:
+                    lecturer = lecturers_by_norm_name.get(best[0])
+            if not lecturer:
+                sk = surname_key(norm_ocr_name)
+                if sk:
+                    candidates = lecturers_by_surname.get(sk, [])
+                    if len(candidates) == 1:
+                        lecturer = candidates[0]
+
+            if not lecturer:
+                unmatched_pages.append({
+                    "faculty_name": faculty_name_raw,
+                    "normalized_name": norm_ocr_name,
+                    "page_index": page["page_index"],
+                })
+                log_event(f"FAILED to match lecturer for: {faculty_name_raw}", socketio=socketio)
+                continue
+
+            matched_display_name = lecturer.get("name", faculty_name_raw)
+            log_event(f"Matched to: {matched_display_name}", socketio=socketio)
+
+            fallback = f"lect_{str(lecturer['_id'])}"
+            safe_name = _safe_filename(matched_display_name, fallback=fallback)
+            filename = f"{safe_name}.png"
+            fs_image_path = os.path.join(upload_folder, filename)
+            page["image"].save(fs_image_path, format="PNG")
+            url_image_path = f"timetables/{filename}"
+
+            log_event(f"Extracting structure via Gemini for {matched_display_name}...", socketio=socketio)
+            structured = extract_timetable_structure(page["image"], faculty_name_hint=matched_display_name, socketio=socketio)
+            
+            timetable.update_one(
+                {"lecturer_id": str(lecturer["_id"])},
+                {
+                    "$set": {
+                        "lecturer_id": str(lecturer["_id"]),
+                        "lecturer_name": matched_display_name,
+                        "image_path": url_image_path,
+                        "structured": structured or {},
+                        "uploaded_at": datetime.now(),
+                    }
+                },
+                upsert=True,
+            )
+            # Save to separate JSON file by staff_id
+            staff_id = lecturer.get("staff_id")
+            if staff_id:
+                json_filename = f"{staff_id}.json"
+                json_path = os.path.join(json_folder, json_filename)
+                try:
+                    with open(json_path, "w", encoding="utf-8") as jf:
+                        json.dump(structured or {}, jf, indent=2, ensure_ascii=False)
+                    log_event(f"JSON saved: {json_filename}", socketio=socketio)
+                except Exception as je:
+                    log_event(f"Failed to save JSON for {staff_id}: {je}", socketio=socketio)
+
+            matched_count += 1
+            log_event(f"SUCCESS: Saved timetable for {matched_display_name}", socketio=socketio)
+
+        final_msg = f"Completed. Matched {matched_count}/{total_pages} timetables."
+        log_event(final_msg, socketio=socketio)
+        socketio.emit('timetable_progress', {'progress': 100, 'status': final_msg, 'done': True})
+
+    except Exception as e:
+        err_msg = f"Async Error: {str(e)}"
+        log_event(err_msg, socketio=socketio)
+        socketio.emit('timetable_progress', {'progress': 0, 'status': err_msg, 'error': True})
 
 # Admin Routes
 @app.route('/admin/dashboard')
@@ -634,57 +780,6 @@ def admin_timetables():
                     if name:
                         known_faculty_names.append(name)
 
-                pages_with_name, pages_without_name = pdf_to_faculty_images(
-                    pdf_bytes, known_faculty_names=known_faculty_names or None
-                )
-
-                def normalize_name(name: str) -> str:
-                    """
-                    Make names comparable between OCR, faculty_detail.json and DB.
-                    - Uppercase
-                    - Remove common titles (MR, MRS, MS, DR, PROF, PROF.)
-                    - Remove dots and extra spaces
-                    """
-                    name = (name or "").upper()
-                    # Remove "FACULTY:" prefix if it slipped through
-                    name = re.sub(r"^FACULTY\s*[:\-]\s*", "", name)
-                    # OCR sometimes captures extra fields after the name on the same line
-                    # e.g. "RAGHURAM SHETTY MENTOR: ... TOTAL: 17 Hrs"
-                    name = re.split(r"\b(MENTOR|TOTAL|DEPARTMENT|DEPT)\b", name, maxsplit=1)[0]
-                    # Remove titles
-                    name = re.sub(r"\b(MR|MRS|MS|MISS|DR|PROF|PROFESSOR)\.?\b", "", name)
-                    # Remove non-letters except spaces
-                    name = re.sub(r"[^A-Z\s]", " ", name)
-                    # Collapse spaces
-                    name = re.sub(r"\s+", " ", name).strip()
-                    return name
-
-                def surname_key(norm_name: str) -> str:
-                    """
-                    Return the last word of a normalized name (surname/last token).
-                    Used as a very forgiving fallback when full-name matching fails.
-                    """
-                    parts = (norm_name or "").split()
-                    return parts[-1] if parts else ""
-
-                def partial_match(norm_small: str, norm_big: str) -> bool:
-                    """
-                    Check if one normalized name is mostly contained in another.
-                    Example: 'WILMA SHARAL' vs 'WILMA SHARAL CORNELIO'.
-                    """
-                    if not norm_small or not norm_big:
-                        return False
-                    # Ensure we compare the shorter against the longer
-                    if len(norm_small) > len(norm_big):
-                        norm_small, norm_big = norm_big, norm_small
-                    # Direct substring check
-                    if norm_small in norm_big:
-                        return True
-                    # Token-overlap check: at least 2 common tokens
-                    small_tokens = set(norm_small.split())
-                    big_tokens = set(norm_big.split())
-                    return len(small_tokens & big_tokens) >= min(2, len(small_tokens))
-
                 # Map staff_id -> lecturer document
                 lecturers_by_staff_id = {
                     lect.get("staff_id"): lect for lect in all_lecturers if lect.get("staff_id")
@@ -715,134 +810,18 @@ def admin_timetables():
                 # Use absolute path for Windows stability
                 static_root = os.path.join(os.path.dirname(__file__), "static")
                 upload_folder = os.path.join(static_root, "timetables")
+                json_folder = os.path.join(static_root, "timetables_json")
                 os.makedirs(upload_folder, exist_ok=True)
+                os.makedirs(json_folder, exist_ok=True)
 
-                def _safe_filename(base: str, fallback: str) -> str:
-                    base = (base or "").strip().lower()
-                    base = base.replace("&", "and")
-                    # remove anything after very common separators
-                    base = re.sub(r"\s+", "_", base)
-                    # keep only safe filename chars
-                    base = re.sub(r"[^a-z0-9_\-]+", "_", base)
-                    base = re.sub(r"_+", "_", base).strip("._- ")
-                    if not base:
-                        base = fallback
-                    # avoid Windows reserved names
-                    if base in {"con", "prn", "aux", "nul"} or re.fullmatch(r"com[1-9]|lpt[1-9]", base):
-                        base = f"{fallback}_{base}"
-                    return base[:80]
+                import threading
+                threading.Thread(target=process_timetable_async, args=(
+                    pdf_bytes, known_faculty_names, all_lecturers, lecturers_by_staff_id, 
+                    lecturers_by_norm_name, lecturers_by_surname, norm_json_name_to_staff_id, 
+                    upload_folder, json_folder
+                )).start()
 
-                matched_count = 0
-                unmatched_pages = []
-
-                for page in pages_with_name:
-                    faculty_name_raw = page["faculty_name"]
-                    if not faculty_name_raw:
-                        continue
-
-                    norm_ocr_name = normalize_name(faculty_name_raw)
-                    lecturer = None
-                    matched_display_name = None
-
-                    # 1) Exact match with JSON names -> staff_id -> lecturer
-                    staff_id = norm_json_name_to_staff_id.get(norm_ocr_name)
-                    if staff_id:
-                        lecturer = lecturers_by_staff_id.get(staff_id)
-
-                    # 2) Exact match with lecturer.name after normalization
-                    if not lecturer:
-                        lecturer = lecturers_by_norm_name.get(norm_ocr_name)
-
-                    # 3) Partial match: OCR name is subset/prefix of a longer stored name or vice versa
-                    if not lecturer and lecturers_by_norm_name:
-                        for norm_name, lect in lecturers_by_norm_name.items():
-                            if partial_match(norm_ocr_name, norm_name):
-                                lecturer = lect
-                                break
-
-                    # 4) Fuzzy match on normalized lecturer names (to allow small spelling mistakes)
-                    if not lecturer and lecturers_by_norm_name:
-                        norm_lecturer_names = list(lecturers_by_norm_name.keys())
-                        best = get_close_matches(norm_ocr_name, norm_lecturer_names, n=1, cutoff=0.6)
-                        if best:
-                            lecturer = lecturers_by_norm_name.get(best[0])
-
-                    # 5) Very loose surname-only fallback: if exactly one lecturer shares this surname
-                    if not lecturer:
-                        sk = surname_key(norm_ocr_name)
-                        if sk:
-                            candidates = lecturers_by_surname.get(sk, [])
-                            if len(candidates) == 1:
-                                lecturer = candidates[0]
-
-                    if not lecturer:
-                        unmatched_pages.append({
-                            "faculty_name": faculty_name_raw,
-                            "normalized_name": norm_ocr_name,
-                            "page_index": page["page_index"],
-                        })
-                        continue
-
-                    matched_display_name = lecturer.get("name", faculty_name_raw)
-
-                    # Save image (Windows-safe filename)
-                    fallback = f"lect_{str(lecturer['_id'])}"
-                    safe_name = _safe_filename(matched_display_name, fallback=fallback)
-                    filename = f"{safe_name}.png"
-                    fs_image_path = os.path.join(upload_folder, filename)
-                    try:
-                        page["image"].save(fs_image_path, format="PNG")
-                    except OSError:
-                        # Fallback to guaranteed safe name
-                        filename = f"{fallback}.png"
-                        fs_image_path = os.path.join(upload_folder, filename)
-                        page["image"].save(fs_image_path, format="PNG")
-
-                    # Store a URL-friendly relative path (forward slashes) for static serving
-                    url_image_path = f"timetables/{filename}"
-
-                    # Optional: extract structured timetable slots via AI (best-effort)
-                    structured = extract_timetable_structure(page["image"])
-
-                    # Upsert timetable record
-                    timetable.update_one(
-                        {"lecturer_id": str(lecturer["_id"])},
-                        {
-                            "$set": {
-                                "lecturer_id": str(lecturer["_id"]),
-                                "lecturer_name": matched_display_name,
-                                "image_path": url_image_path,
-                                "structured": structured or {},
-                                "uploaded_at": datetime.now(),
-                            }
-                        },
-                        upsert=True,
-                    )
-                    matched_count += 1
-
-                message = f"Processed {len(pages_with_name)} page(s). Matched {matched_count} timetable(s)."
-                if pages_without_name or unmatched_pages:
-                    extra = []
-                    if pages_without_name:
-                        extra.append(f"{len(pages_without_name)} page(s) without detectable faculty name")
-                    if unmatched_pages:
-                        extra.append(f"{len(unmatched_pages)} page(s) where faculty name did not match any lecturer")
-
-                        # Show a small sample of what OCR actually read so admin can verify.
-                        sample_names = []
-                        seen = set()
-                        for item in unmatched_pages:
-                            key = item.get("faculty_name") or ""
-                            if key and key not in seen:
-                                seen.add(key)
-                                norm_display = item.get("normalized_name") or ""
-                                sample_names.append(f"'{key}' -> '{norm_display}'")
-                            if len(sample_names) >= 5:
-                                break
-                        if sample_names:
-                            extra.append("sample OCR names: " + "; ".join(sample_names))
-
-                    message += " " + "; ".join(extra) + "."
+                message = "PDF uploaded successfully. Processing started in the background."
             except Exception as e:
                 error = f"Error processing PDF: {str(e)}"
 
@@ -989,6 +968,51 @@ def lecturer_dashboard():
         timetable_image_url=timetable_image_url,
         leaves_left=leaves_left
     )
+
+
+@app.route('/admin/api-keys', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_api_keys():
+    api_keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "api_keys.txt")
+    if request.method == 'POST':
+        new_key = request.form.get('new_key', '').strip()
+        if new_key:
+            with open(api_keys_path, 'a') as f:
+                f.write(f"\n{new_key}")
+            flash('API Key added successfully!', 'success')
+        return redirect(url_for('admin_timetables'))
+        
+    keys = []
+    if os.path.exists(api_keys_path):
+        with open(api_keys_path, 'r') as f:
+            keys = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+    return jsonify(keys)
+
+
+@app.route('/admin/view-logs')
+@login_required
+@admin_required
+def admin_view_logs():
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reconstruction_log.txt")
+    if os.path.exists(log_path):
+        with open(log_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return content
+    return "No logs found."
+
+@app.route('/admin/clear-logs', methods=['POST'])
+@login_required
+@admin_required
+def admin_clear_logs():
+    log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reconstruction_log.txt")
+    try:
+        with open(log_path, 'w', encoding='utf-8') as f:
+            f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Logs cleared by admin.\n")
+        flash('Logs cleared successfully!', 'success')
+    except Exception as e:
+        flash(f'Error clearing logs: {e}', 'danger')
+    return redirect(url_for('admin_timetables'))
 
 def _parse_date_loose(text: str):
     """

@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mr. SATISH SHETTY",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "I B.COM (A)",
+        "subject": "Financial Accounting - II"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "III B.COM (E)",
+        "subject": "Management Accounting"
+      },
+      "V": {
+        "class_section": "II B.COM (B)",
+        "subject": "Corporate Accounting - II"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "II B.COM (B)",
+        "subject": "Corporate Accounting - II"
+      },
+      "III": {
+        "class_section": "I B.COM (A)",
+        "subject": "Financial Accounting - II"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "III B.COM (E)",
+        "subject": "Management Accounting"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": "III B.COM (E)",
+        "subject": "Management Accounting"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "I B.COM (A)",
+        "subject": "Financial Accounting - II"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "III B.COM (E)",
+        "subject": "Management Accounting"
+      },
+      "VI": {
+        "class_section": "III B.COM (E)",
+        "subject": "MRP"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "III B.COM (E)",
+        "subject": "Management Accounting"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "II B.COM (B)",
+        "subject": "Corporate Accounting - II"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "I B.COM (A)",
+        "subject": "Financial Accounting - II"
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "I B.COM (A)",
+        "subject": "Financial Accounting - II"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "II B.COM (B)",
+        "subject": "Corporate Accounting - II"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": "II B.COM (B)",
+        "subject": "Corporate Accounting - II"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

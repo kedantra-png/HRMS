@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mr. SHREYAS",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "II B.Com (C)",
+        "subject": "Cost & Management Accounting - II"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "II B.Com (D)",
+        "subject": "Income Tax - II"
+      },
+      "V": {
+        "class_section": "III B.Com (D)",
+        "subject": "Investment Management"
+      },
+      "VI": {
+        "class_section": "III B.Com (A)",
+        "subject": "MRP"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "III B.Com (D)",
+        "subject": "Investment Management"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "II B.Com (C)",
+        "subject": "Cost & Management Accounting - II"
+      },
+      "VI": {
+        "class_section": "II B.Com (D)",
+        "subject": "Income Tax - II"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "II B.Com (D)",
+        "subject": "Income Tax - II"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "III B.Com (A)",
+        "subject": "Investment Management"
+      },
+      "VI": {
+        "class_section": "II B.Com (C)",
+        "subject": "Cost & Management Accounting - II"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": "II B.Com (D)",
+        "subject": "Income Tax - II"
+      },
+      "II": {
+        "class_section": "II B.Com (C)",
+        "subject": "Cost & Management Accounting - II"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "II BCom (D)",
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "III B.Com (A)",
+        "subject": "Investment Management"
+      },
+      "III": {
+        "class_section": "II B.Com (C)",
+        "subject": "Cost & Management Accounting - II"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "III B.Com (D)",
+        "subject": "Investment Management"
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": "III B.Com (A)",
+        "subject": "Investment Management"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

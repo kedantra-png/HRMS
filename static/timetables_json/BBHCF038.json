@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mrs. REVATHI D",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I B.Com (A,B&C)",
+        "subject": "HINDI"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "I BBA",
+        "subject": "HINDI"
+      },
+      "V": {
+        "class_section": "II BBA",
+        "subject": "HINDI"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "II BBA",
+        "subject": "HINDI"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "I B.Com (A,B&C)",
+        "subject": "HINDI"
+      },
+      "VI": {
+        "class_section": "I BBA",
+        "subject": "HINDI"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": "I BBA",
+        "subject": "HINDI"
+      },
+      "II": {
+        "class_section": "II B.Com (A&B)",
+        "subject": "HINDI"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "II BCA (B)",
+        "subject": "HINDI"
+      },
+      "V": {
+        "class_section": "II BBA",
+        "subject": "HINDI"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "II BCA (A)",
+        "subject": "HINDI"
+      },
+      "III": {
+        "class_section": "I B.Com (A,B&C)",
+        "subject": "HINDI"
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "II BBA",
+        "subject": "HINDI"
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "II BBA",
+        "subject": "HINDI"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": "II B.Com (A&B)",
+        "subject": "HINDI"
+      },
+      "VI": {
+        "class_section": "I B.Com (A,B&C)",
+        "subject": "HINDI"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BBA",
+        "subject": "HINDI"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "faculty_name": "Mr. SATHISH KANCHAN",
+  "timetable": {
+    "Monday": {
+      "I": {
+        "class_section": "II B.Com (D)",
+        "subject": "Corporate Accounting - II"
+      },
+      "II": {
+        "class_section": "III B.Com E",
+        "subject": "Investment Management"
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "I B.Com (C)",
+        "subject": "Financial Accounting - II"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "III B.COM (B)",
+        "subject": "MRP"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Tuesday": {
+      "I": {
+        "class_section": "I B.Com (C)",
+        "subject": "Financial Accounting - II"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "II B.Com (D)",
+        "subject": "Corporate Accounting - II"
+      },
+      "IV": {
+        "class_section": "III B.Com (B)",
+        "subject": "Investment Management"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": "II BCom (D)",
+        "subject": null
+      }
+    },
+    "Wednesday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": "I BCom (C)",
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": "II B.Com (D)",
+        "subject": "Corporate Accounting - II"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Thursday": {
+      "I": {
+        "class_section": null,
+        "subject": null
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "III B.Com (B)",
+        "subject": "Investment Management"
+      },
+      "IV": {
+        "class_section": "II B.Com (D)",
+        "subject": "Corporate Accounting - II"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": "I B.Com (B)",
+        "subject": "SSC"
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Friday": {
+      "I": {
+        "class_section": "III B.Com (B)",
+        "subject": "Investment Management"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": "I B.Com (C)",
+        "subject": "Financial Accounting - II"
+      },
+      "IV": {
+        "class_section": "III B.Com (E)",
+        "subject": "Investment Management"
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    },
+    "Saturday": {
+      "I": {
+        "class_section": "I B.Com (C)",
+        "subject": "Financial Accounting - II"
+      },
+      "II": {
+        "class_section": null,
+        "subject": null
+      },
+      "III": {
+        "class_section": null,
+        "subject": null
+      },
+      "IV": {
+        "class_section": null,
+        "subject": null
+      },
+      "V": {
+        "class_section": null,
+        "subject": null
+      },
+      "VI": {
+        "class_section": null,
+        "subject": null
+      },
+      "VII": {
+        "class_section": null,
+        "subject": null
+      }
+    }
+  }
+}

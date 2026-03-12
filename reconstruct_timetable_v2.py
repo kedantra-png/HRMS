@@ -130,7 +130,7 @@ def process_all_timetables(
         print("Added API key from .env to the rotation.")
         
     genai.configure(api_key=key_manager.get_current_key())
-    MODEL_NAME = "gemini-flash-latest"
+    MODEL_NAME = "models/gemini-3.1-flash-lite-preview"
 
     # Load existing data (to support skip-already-processed and incremental runs)
     all_records = load_json_data(output_json_path)
