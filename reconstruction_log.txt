@@ -12608,3 +12608,1196 @@ I
 [2026-03-12 19:07:43] Processing page 5/54: Mr. SATISH SHETTY
 [2026-03-12 19:07:43] Matched to: Mr. Satish Shetty
 [2026-03-12 19:07:44] Extracting structure via Gemini for Mr. Satish Shetty...
+[2026-03-18 17:39:49] Starting PDF splitting...
+[2026-03-18 17:39:52] PDF split into 54 parts.
+[2026-03-18 17:39:52] Processing part 1 of 54...
+[2026-03-18 17:39:57] Error in part 1: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:39:57] Processing part 2 of 54...
+[2026-03-18 17:40:01] Error in part 2: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:01] Processing part 3 of 54...
+[2026-03-18 17:40:06] Error in part 3: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:06] Processing part 4 of 54...
+[2026-03-18 17:40:10] Error in part 4: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:10] Processing part 5 of 54...
+[2026-03-18 17:40:15] Error in part 5: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:15] Processing part 6 of 54...
+[2026-03-18 17:40:19] Error in part 6: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:19] Processing part 7 of 54...
+[2026-03-18 17:40:25] Error in part 7: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:25] Processing part 8 of 54...
+[2026-03-18 17:40:30] Error in part 8: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:30] Processing part 9 of 54...
+[2026-03-18 17:40:35] Error in part 9: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:35] Processing part 10 of 54...
+[2026-03-18 17:40:38] Error in part 10: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:38] Processing part 11 of 54...
+[2026-03-18 17:40:43] Error in part 11: 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'API key expired. Please renew the API key.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.ErrorInfo', 'reason': 'API_KEY_INVALID', 'domain': 'googleapis.com', 'metadata': {'service': 'generativelanguage.googleapis.com'}}, {'@type': 'type.googleapis.com/google.rpc.LocalizedMessage', 'locale': 'en-US', 'message': 'API key expired. Please renew the API key.'}]}}
+[2026-03-18 17:40:43] Process stopped by user.
+[2026-03-18 17:53:52] Starting PDF splitting...
+[2026-03-18 17:53:55] PDF split into 54 parts.
+[2026-03-18 17:53:55] Processing part 1 of 54...
+[2026-03-18 17:53:59] Error in part 1: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:53:59] Processing part 2 of 54...
+[2026-03-18 17:54:01] Error in part 2: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:01] Processing part 3 of 54...
+[2026-03-18 17:54:04] Error in part 3: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:04] Processing part 4 of 54...
+[2026-03-18 17:54:07] Error in part 4: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:07] Processing part 5 of 54...
+[2026-03-18 17:54:10] Error in part 5: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:10] Processing part 6 of 54...
+[2026-03-18 17:54:12] Error in part 6: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:12] Processing part 7 of 54...
+[2026-03-18 17:54:15] Error in part 7: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:15] Processing part 8 of 54...
+[2026-03-18 17:54:18] Error in part 8: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:18] Processing part 9 of 54...
+[2026-03-18 17:54:22] Error in part 9: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:22] Processing part 10 of 54...
+[2026-03-18 17:54:25] Error in part 10: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:25] Processing part 11 of 54...
+[2026-03-18 17:54:28] Error in part 11: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:28] Processing part 12 of 54...
+[2026-03-18 17:54:30] Error in part 12: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:30] Processing part 13 of 54...
+[2026-03-18 17:54:34] Error in part 13: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:34] Processing part 14 of 54...
+[2026-03-18 17:54:36] Error in part 14: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:36] Processing part 15 of 54...
+[2026-03-18 17:54:39] Error in part 15: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:39] Processing part 16 of 54...
+[2026-03-18 17:54:41] Error in part 16: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:41] Processing part 17 of 54...
+[2026-03-18 17:54:43] Error in part 17: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:43] Processing part 18 of 54...
+[2026-03-18 17:54:47] Error in part 18: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 17:54:47] Processing part 19 of 54...
+[2026-03-18 18:00:34] Starting PDF splitting...
+[2026-03-18 18:00:40] PDF split into 54 parts.
+[2026-03-18 18:00:40] Processing part 1 of 54...
+[2026-03-18 18:00:45] Error in part 1: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:00:45] Processing part 2 of 54...
+[2026-03-18 18:00:49] Error in part 2: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:00:49] Processing part 3 of 54...
+[2026-03-18 18:00:53] Error in part 3: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:00:53] Processing part 4 of 54...
+[2026-03-18 18:00:58] Error in part 4: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:00:58] Processing part 5 of 54...
+[2026-03-18 18:01:03] Error in part 5: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:03] Processing part 6 of 54...
+[2026-03-18 18:01:08] Error in part 6: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:08] Processing part 7 of 54...
+[2026-03-18 18:01:13] Error in part 7: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:13] Processing part 8 of 54...
+[2026-03-18 18:01:15] Error in part 8: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:15] Processing part 9 of 54...
+[2026-03-18 18:01:19] Error in part 9: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:19] Processing part 10 of 54...
+[2026-03-18 18:01:24] Error in part 10: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:24] Processing part 11 of 54...
+[2026-03-18 18:01:29] Error in part 11: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:29] Processing part 12 of 54...
+[2026-03-18 18:01:32] Error in part 12: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:32] Processing part 13 of 54...
+[2026-03-18 18:01:36] Error in part 13: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:36] Processing part 14 of 54...
+[2026-03-18 18:01:39] Error in part 14: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:39] Processing part 15 of 54...
+[2026-03-18 18:01:43] Error in part 15: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:43] Processing part 16 of 54...
+[2026-03-18 18:01:46] Error in part 16: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:46] Processing part 17 of 54...
+[2026-03-18 18:01:51] Error in part 17: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:51] Processing part 18 of 54...
+[2026-03-18 18:01:55] Error in part 18: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:55] Processing part 19 of 54...
+[2026-03-18 18:01:57] Error in part 19: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:01:57] Processing part 20 of 54...
+[2026-03-18 18:02:00] Error in part 20: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:00] Processing part 21 of 54...
+[2026-03-18 18:02:03] Error in part 21: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:03] Processing part 22 of 54...
+[2026-03-18 18:02:07] Error in part 22: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:07] Processing part 23 of 54...
+[2026-03-18 18:02:12] Error in part 23: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:12] Processing part 24 of 54...
+[2026-03-18 18:02:15] Error in part 24: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:15] Processing part 25 of 54...
+[2026-03-18 18:02:18] Error in part 25: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:18] Processing part 26 of 54...
+[2026-03-18 18:02:24] Error in part 26: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:24] Processing part 27 of 54...
+[2026-03-18 18:02:29] Error in part 27: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:29] Processing part 28 of 54...
+[2026-03-18 18:02:32] Error in part 28: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:32] Processing part 29 of 54...
+[2026-03-18 18:02:35] Error in part 29: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:35] Processing part 30 of 54...
+[2026-03-18 18:02:37] Error in part 30: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:37] Processing part 31 of 54...
+[2026-03-18 18:02:39] Error in part 31: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:39] Processing part 32 of 54...
+[2026-03-18 18:02:41] Error in part 32: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:41] Processing part 33 of 54...
+[2026-03-18 18:02:44] Error in part 33: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:44] Processing part 34 of 54...
+[2026-03-18 18:02:47] Error in part 34: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:47] Processing part 35 of 54...
+[2026-03-18 18:02:50] Error in part 35: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:50] Processing part 36 of 54...
+[2026-03-18 18:02:53] Error in part 36: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:53] Processing part 37 of 54...
+[2026-03-18 18:02:56] Error in part 37: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:56] Processing part 38 of 54...
+[2026-03-18 18:02:59] Error in part 38: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:02:59] Processing part 39 of 54...
+[2026-03-18 18:03:01] Error in part 39: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:01] Processing part 40 of 54...
+[2026-03-18 18:03:04] Error in part 40: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:04] Processing part 41 of 54...
+[2026-03-18 18:03:07] Error in part 41: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:07] Processing part 42 of 54...
+[2026-03-18 18:03:10] Error in part 42: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:10] Processing part 43 of 54...
+[2026-03-18 18:03:13] Error in part 43: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:13] Processing part 44 of 54...
+[2026-03-18 18:03:15] Error in part 44: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:15] Processing part 45 of 54...
+[2026-03-18 18:03:16] Error in part 45: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:16] Processing part 46 of 54...
+[2026-03-18 18:03:20] Error in part 46: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:20] Processing part 47 of 54...
+[2026-03-18 18:03:22] Error in part 47: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:22] Processing part 48 of 54...
+[2026-03-18 18:03:25] Error in part 48: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:25] Processing part 49 of 54...
+[2026-03-18 18:03:27] Error in part 49: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:28] Processing part 50 of 54...
+[2026-03-18 18:03:30] Error in part 50: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:30] Processing part 51 of 54...
+[2026-03-18 18:03:33] Error in part 51: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:33] Processing part 52 of 54...
+[2026-03-18 18:03:35] Error in part 52: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:35] Processing part 53 of 54...
+[2026-03-18 18:03:38] Error in part 53: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'This model models/gemini-2.0-flash is no longer available to new users. Please update your code to use a newer model for the latest features and improvements.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:03:38] Processing part 54 of 54...
+[2026-03-18 18:04:30] Starting PDF splitting...
+[2026-03-18 18:04:49] PDF split into 54 parts.
+[2026-03-18 18:04:49] Processing part 1 of 54...
+[2026-03-18 18:04:52] Error in part 1: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:04:52] Processing part 2 of 54...
+[2026-03-18 18:04:56] Error in part 2: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:04:56] Processing part 3 of 54...
+[2026-03-18 18:04:59] Error in part 3: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:04:59] Processing part 4 of 54...
+[2026-03-18 18:05:02] Error in part 4: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:02] Processing part 5 of 54...
+[2026-03-18 18:05:05] Error in part 5: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:05] Processing part 6 of 54...
+[2026-03-18 18:05:09] Error in part 6: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:09] Processing part 7 of 54...
+[2026-03-18 18:05:12] Error in part 7: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:12] Processing part 8 of 54...
+[2026-03-18 18:05:14] Error in part 8: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:15] Processing part 9 of 54...
+[2026-03-18 18:05:17] Error in part 9: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:17] Processing part 10 of 54...
+[2026-03-18 18:05:21] Error in part 10: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:21] Processing part 11 of 54...
+[2026-03-18 18:05:25] Error in part 11: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:25] Processing part 12 of 54...
+[2026-03-18 18:05:29] Error in part 12: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:29] Processing part 13 of 54...
+[2026-03-18 18:05:33] Error in part 13: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:33] Processing part 14 of 54...
+[2026-03-18 18:05:36] Error in part 14: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:36] Processing part 15 of 54...
+[2026-03-18 18:05:39] Error in part 15: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:39] Processing part 16 of 54...
+[2026-03-18 18:05:44] Error in part 16: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:44] Processing part 17 of 54...
+[2026-03-18 18:05:46] Error in part 17: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:46] Processing part 18 of 54...
+[2026-03-18 18:05:49] Error in part 18: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:49] Processing part 19 of 54...
+[2026-03-18 18:05:52] Error in part 19: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:52] Processing part 20 of 54...
+[2026-03-18 18:05:54] Error in part 20: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:54] Processing part 21 of 54...
+[2026-03-18 18:05:56] Error in part 21: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:56] Processing part 22 of 54...
+[2026-03-18 18:05:59] Error in part 22: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:05:59] Processing part 23 of 54...
+[2026-03-18 18:06:02] Error in part 23: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:02] Processing part 24 of 54...
+[2026-03-18 18:06:05] Error in part 24: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:05] Processing part 25 of 54...
+[2026-03-18 18:06:07] Error in part 25: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:07] Processing part 26 of 54...
+[2026-03-18 18:06:10] Error in part 26: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:10] Processing part 27 of 54...
+[2026-03-18 18:06:13] Error in part 27: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:13] Processing part 28 of 54...
+[2026-03-18 18:06:16] Error in part 28: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:16] Processing part 29 of 54...
+[2026-03-18 18:06:19] Error in part 29: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:19] Processing part 30 of 54...
+[2026-03-18 18:06:22] Error in part 30: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:22] Processing part 31 of 54...
+[2026-03-18 18:06:24] Error in part 31: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:24] Processing part 32 of 54...
+[2026-03-18 18:06:28] Error in part 32: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:28] Processing part 33 of 54...
+[2026-03-18 18:06:30] Error in part 33: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:30] Processing part 34 of 54...
+[2026-03-18 18:06:32] Error in part 34: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:32] Processing part 35 of 54...
+[2026-03-18 18:06:35] Error in part 35: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:35] Processing part 36 of 54...
+[2026-03-18 18:06:37] Error in part 36: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:37] Processing part 37 of 54...
+[2026-03-18 18:06:41] Error in part 37: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:41] Processing part 38 of 54...
+[2026-03-18 18:06:44] Error in part 38: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:44] Processing part 39 of 54...
+[2026-03-18 18:06:47] Error in part 39: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:47] Processing part 40 of 54...
+[2026-03-18 18:06:50] Error in part 40: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:50] Processing part 41 of 54...
+[2026-03-18 18:06:53] Error in part 41: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:53] Processing part 42 of 54...
+[2026-03-18 18:06:57] Error in part 42: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:57] Processing part 43 of 54...
+[2026-03-18 18:06:59] Error in part 43: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:06:59] Processing part 44 of 54...
+[2026-03-18 18:07:03] Error in part 44: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:03] Processing part 45 of 54...
+[2026-03-18 18:07:05] Error in part 45: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:05] Processing part 46 of 54...
+[2026-03-18 18:07:09] Error in part 46: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:09] Processing part 47 of 54...
+[2026-03-18 18:07:11] Error in part 47: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:11] Processing part 48 of 54...
+[2026-03-18 18:07:14] Error in part 48: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:14] Processing part 49 of 54...
+[2026-03-18 18:07:17] Error in part 49: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:17] Processing part 50 of 54...
+[2026-03-18 18:07:20] Error in part 50: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:20] Processing part 51 of 54...
+[2026-03-18 18:07:22] Error in part 51: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:22] Processing part 52 of 54...
+[2026-03-18 18:07:26] Error in part 52: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:26] Processing part 53 of 54...
+[2026-03-18 18:07:28] Error in part 53: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:28] Processing part 54 of 54...
+[2026-03-18 18:07:32] Error in part 54: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:07:32] All parts processed successfully.
+[2026-03-18 18:13:00] Phase 1: Converting PDF pages to high-res images...
+[2026-03-18 18:13:02] Saved: page_001.png
+[2026-03-18 18:13:03] Saved: page_002.png
+[2026-03-18 18:13:05] Saved: page_003.png
+[2026-03-18 18:13:06] Saved: page_004.png
+[2026-03-18 18:13:07] Saved: page_005.png
+[2026-03-18 18:13:08] Saved: page_006.png
+[2026-03-18 18:13:09] Saved: page_007.png
+[2026-03-18 18:13:10] Saved: page_008.png
+[2026-03-18 18:13:11] Saved: page_009.png
+[2026-03-18 18:13:12] Saved: page_010.png
+[2026-03-18 18:13:13] Saved: page_011.png
+[2026-03-18 18:13:15] Saved: page_012.png
+[2026-03-18 18:13:16] Saved: page_013.png
+[2026-03-18 18:13:18] Saved: page_014.png
+[2026-03-18 18:13:19] Saved: page_015.png
+[2026-03-18 18:13:21] Saved: page_016.png
+[2026-03-18 18:13:22] Saved: page_017.png
+[2026-03-18 18:13:23] Saved: page_018.png
+[2026-03-18 18:13:25] Saved: page_019.png
+[2026-03-18 18:13:26] Saved: page_020.png
+[2026-03-18 18:13:28] Saved: page_021.png
+[2026-03-18 18:13:29] Saved: page_022.png
+[2026-03-18 18:13:30] Saved: page_023.png
+[2026-03-18 18:13:31] Saved: page_024.png
+[2026-03-18 18:13:33] Saved: page_025.png
+[2026-03-18 18:13:34] Saved: page_026.png
+[2026-03-18 18:13:35] Saved: page_027.png
+[2026-03-18 18:13:35] Phase 2: Slicing each page into two parts (top & bottom)...
+[2026-03-18 18:13:36] Sliced page 1 into page_001_top.png and page_001_bottom.png
+[2026-03-18 18:13:38] Sliced page 2 into page_002_top.png and page_002_bottom.png
+[2026-03-18 18:13:39] Sliced page 3 into page_003_top.png and page_003_bottom.png
+[2026-03-18 18:13:40] Sliced page 4 into page_004_top.png and page_004_bottom.png
+[2026-03-18 18:13:41] Sliced page 5 into page_005_top.png and page_005_bottom.png
+[2026-03-18 18:13:42] Sliced page 6 into page_006_top.png and page_006_bottom.png
+[2026-03-18 18:13:43] Sliced page 7 into page_007_top.png and page_007_bottom.png
+[2026-03-18 18:13:44] Sliced page 8 into page_008_top.png and page_008_bottom.png
+[2026-03-18 18:13:45] Sliced page 9 into page_009_top.png and page_009_bottom.png
+[2026-03-18 18:13:46] Sliced page 10 into page_010_top.png and page_010_bottom.png
+[2026-03-18 18:13:48] Sliced page 11 into page_011_top.png and page_011_bottom.png
+[2026-03-18 18:13:49] Sliced page 12 into page_012_top.png and page_012_bottom.png
+[2026-03-18 18:13:50] Sliced page 13 into page_013_top.png and page_013_bottom.png
+[2026-03-18 18:13:51] Sliced page 14 into page_014_top.png and page_014_bottom.png
+[2026-03-18 18:13:51] Sliced page 15 into page_015_top.png and page_015_bottom.png
+[2026-03-18 18:13:52] Sliced page 16 into page_016_top.png and page_016_bottom.png
+[2026-03-18 18:13:53] Sliced page 17 into page_017_top.png and page_017_bottom.png
+[2026-03-18 18:13:54] Sliced page 18 into page_018_top.png and page_018_bottom.png
+[2026-03-18 18:13:55] Sliced page 19 into page_019_top.png and page_019_bottom.png
+[2026-03-18 18:13:56] Sliced page 20 into page_020_top.png and page_020_bottom.png
+[2026-03-18 18:13:57] Sliced page 21 into page_021_top.png and page_021_bottom.png
+[2026-03-18 18:13:58] Sliced page 22 into page_022_top.png and page_022_bottom.png
+[2026-03-18 18:13:59] Sliced page 23 into page_023_top.png and page_023_bottom.png
+[2026-03-18 18:14:01] Sliced page 24 into page_024_top.png and page_024_bottom.png
+[2026-03-18 18:14:02] Sliced page 25 into page_025_top.png and page_025_bottom.png
+[2026-03-18 18:14:03] Sliced page 26 into page_026_top.png and page_026_bottom.png
+[2026-03-18 18:14:04] Sliced page 27 into page_027_top.png and page_027_bottom.png
+[2026-03-18 18:14:04] Phase 3: Initiating AI analysis for each slice...
+[2026-03-18 18:14:04] Sending slice 1 of 54 to Gemini...
+[2026-03-18 18:14:10] ⚠️ Error in slice 1: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:14:10] Sending slice 2 of 54 to Gemini...
+[2026-03-18 18:14:15] ⚠️ Error in slice 2: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:14:15] Sending slice 3 of 54 to Gemini...
+[2026-03-18 18:14:22] ⚠️ Error in slice 3: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:14:22] Sending slice 4 of 54 to Gemini...
+[2026-03-18 18:14:28] ⚠️ Error in slice 4: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:14:28] Sending slice 5 of 54 to Gemini...
+[2026-03-18 18:14:33] ⚠️ Error in slice 5: 404 NOT_FOUND. {'error': {'code': 404, 'message': 'models/gemini-1.5-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.', 'status': 'NOT_FOUND'}}
+[2026-03-18 18:17:15] Phase 1: Converting PDF pages to high-res images...
+[2026-03-18 18:17:16] Saved: page_001.png
+[2026-03-18 18:17:16] Saved: page_002.png
+[2026-03-18 18:17:17] Saved: page_003.png
+[2026-03-18 18:17:18] Saved: page_004.png
+[2026-03-18 18:17:18] Saved: page_005.png
+[2026-03-18 18:17:19] Saved: page_006.png
+[2026-03-18 18:17:19] Saved: page_007.png
+[2026-03-18 18:17:20] Saved: page_008.png
+[2026-03-18 18:17:21] Saved: page_009.png
+[2026-03-18 18:17:21] Saved: page_010.png
+[2026-03-18 18:17:22] Saved: page_011.png
+[2026-03-18 18:17:22] Saved: page_012.png
+[2026-03-18 18:17:23] Saved: page_013.png
+[2026-03-18 18:17:24] Saved: page_014.png
+[2026-03-18 18:17:24] Saved: page_015.png
+[2026-03-18 18:17:25] Saved: page_016.png
+[2026-03-18 18:17:26] Saved: page_017.png
+[2026-03-18 18:17:27] Saved: page_018.png
+[2026-03-18 18:17:27] Saved: page_019.png
+[2026-03-18 18:17:28] Saved: page_020.png
+[2026-03-18 18:17:29] Saved: page_021.png
+[2026-03-18 18:17:30] Saved: page_022.png
+[2026-03-18 18:17:31] Saved: page_023.png
+[2026-03-18 18:17:32] Saved: page_024.png
+[2026-03-18 18:17:32] Saved: page_025.png
+[2026-03-18 18:17:33] Saved: page_026.png
+[2026-03-18 18:17:34] Saved: page_027.png
+[2026-03-18 18:17:34] Phase 2: Slicing each page into two parts (top & bottom)...
+[2026-03-18 18:17:35] Sliced page 1 into page_001_top.png and page_001_bottom.png
+[2026-03-18 18:17:35] Sliced page 2 into page_002_top.png and page_002_bottom.png
+[2026-03-18 18:17:36] Sliced page 3 into page_003_top.png and page_003_bottom.png
+[2026-03-18 18:17:36] Sliced page 4 into page_004_top.png and page_004_bottom.png
+[2026-03-18 18:17:37] Sliced page 5 into page_005_top.png and page_005_bottom.png
+[2026-03-18 18:17:38] Sliced page 6 into page_006_top.png and page_006_bottom.png
+[2026-03-18 18:17:39] Sliced page 7 into page_007_top.png and page_007_bottom.png
+[2026-03-18 18:17:39] Sliced page 8 into page_008_top.png and page_008_bottom.png
+[2026-03-18 18:17:40] Sliced page 9 into page_009_top.png and page_009_bottom.png
+[2026-03-18 18:17:40] Sliced page 10 into page_010_top.png and page_010_bottom.png
+[2026-03-18 18:17:41] Sliced page 11 into page_011_top.png and page_011_bottom.png
+[2026-03-18 18:17:42] Sliced page 12 into page_012_top.png and page_012_bottom.png
+[2026-03-18 18:17:43] Sliced page 13 into page_013_top.png and page_013_bottom.png
+[2026-03-18 18:17:43] Sliced page 14 into page_014_top.png and page_014_bottom.png
+[2026-03-18 18:17:44] Sliced page 15 into page_015_top.png and page_015_bottom.png
+[2026-03-18 18:17:45] Sliced page 16 into page_016_top.png and page_016_bottom.png
+[2026-03-18 18:17:45] Sliced page 17 into page_017_top.png and page_017_bottom.png
+[2026-03-18 18:17:46] Sliced page 18 into page_018_top.png and page_018_bottom.png
+[2026-03-18 18:17:46] Sliced page 19 into page_019_top.png and page_019_bottom.png
+[2026-03-18 18:17:47] Sliced page 20 into page_020_top.png and page_020_bottom.png
+[2026-03-18 18:17:48] Sliced page 21 into page_021_top.png and page_021_bottom.png
+[2026-03-18 18:17:48] Sliced page 22 into page_022_top.png and page_022_bottom.png
+[2026-03-18 18:17:49] Sliced page 23 into page_023_top.png and page_023_bottom.png
+[2026-03-18 18:17:50] Sliced page 24 into page_024_top.png and page_024_bottom.png
+[2026-03-18 18:17:51] Sliced page 25 into page_025_top.png and page_025_bottom.png
+[2026-03-18 18:17:51] Sliced page 26 into page_026_top.png and page_026_bottom.png
+[2026-03-18 18:17:52] Sliced page 27 into page_027_top.png and page_027_bottom.png
+[2026-03-18 18:17:52] Phase 3: Initiating AI analysis for each slice...
+[2026-03-18 18:17:52] Sending slice 1 of 54 to Gemini...
+[2026-03-18 18:18:24] 🛑 Pipeline failure: Database objects do not implement truth value testing or bool(). Please compare with None instead: database is not None
+[2026-03-18 18:20:52] Phase 1: Converting PDF pages to high-res images...
+[2026-03-18 18:20:53] Saved: page_001.png
+[2026-03-18 18:20:54] Saved: page_002.png
+[2026-03-18 18:20:55] Saved: page_003.png
+[2026-03-18 18:20:56] Saved: page_004.png
+[2026-03-18 18:20:56] Saved: page_005.png
+[2026-03-18 18:20:57] Saved: page_006.png
+[2026-03-18 18:20:58] Saved: page_007.png
+[2026-03-18 18:20:59] Saved: page_008.png
+[2026-03-18 18:20:59] Saved: page_009.png
+[2026-03-18 18:21:00] Saved: page_010.png
+[2026-03-18 18:21:01] Saved: page_011.png
+[2026-03-18 18:21:01] Saved: page_012.png
+[2026-03-18 18:21:02] Saved: page_013.png
+[2026-03-18 18:21:03] Saved: page_014.png
+[2026-03-18 18:21:03] Saved: page_015.png
+[2026-03-18 18:21:04] Saved: page_016.png
+[2026-03-18 18:21:05] Saved: page_017.png
+[2026-03-18 18:21:06] Saved: page_018.png
+[2026-03-18 18:21:06] Saved: page_019.png
+[2026-03-18 18:21:07] Saved: page_020.png
+[2026-03-18 18:21:08] Saved: page_021.png
+[2026-03-18 18:21:09] Saved: page_022.png
+[2026-03-18 18:21:10] Saved: page_023.png
+[2026-03-18 18:21:11] Saved: page_024.png
+[2026-03-18 18:21:11] Saved: page_025.png
+[2026-03-18 18:21:12] Saved: page_026.png
+[2026-03-18 18:21:13] Saved: page_027.png
+[2026-03-18 18:21:13] Phase 2: Slicing each page into two parts (top & bottom)...
+[2026-03-18 18:21:14] Sliced page 1 into page_001_top.png and page_001_bottom.png
+[2026-03-18 18:21:14] Sliced page 2 into page_002_top.png and page_002_bottom.png
+[2026-03-18 18:21:15] Sliced page 3 into page_003_top.png and page_003_bottom.png
+[2026-03-18 18:21:16] Sliced page 4 into page_004_top.png and page_004_bottom.png
+[2026-03-18 18:21:16] Sliced page 5 into page_005_top.png and page_005_bottom.png
+[2026-03-18 18:21:17] Sliced page 6 into page_006_top.png and page_006_bottom.png
+[2026-03-18 18:21:18] Sliced page 7 into page_007_top.png and page_007_bottom.png
+[2026-03-18 18:21:19] Sliced page 8 into page_008_top.png and page_008_bottom.png
+[2026-03-18 18:21:19] Sliced page 9 into page_009_top.png and page_009_bottom.png
+[2026-03-18 18:21:20] Sliced page 10 into page_010_top.png and page_010_bottom.png
+[2026-03-18 18:21:21] Sliced page 11 into page_011_top.png and page_011_bottom.png
+[2026-03-18 18:21:22] Sliced page 12 into page_012_top.png and page_012_bottom.png
+[2026-03-18 18:21:23] Sliced page 13 into page_013_top.png and page_013_bottom.png
+[2026-03-18 18:21:23] Sliced page 14 into page_014_top.png and page_014_bottom.png
+[2026-03-18 18:21:24] Sliced page 15 into page_015_top.png and page_015_bottom.png
+[2026-03-18 18:21:25] Sliced page 16 into page_016_top.png and page_016_bottom.png
+[2026-03-18 18:21:25] Sliced page 17 into page_017_top.png and page_017_bottom.png
+[2026-03-18 18:21:26] Sliced page 18 into page_018_top.png and page_018_bottom.png
+[2026-03-18 18:21:27] Sliced page 19 into page_019_top.png and page_019_bottom.png
+[2026-03-18 18:21:28] Sliced page 20 into page_020_top.png and page_020_bottom.png
+[2026-03-18 18:21:29] Sliced page 21 into page_021_top.png and page_021_bottom.png
+[2026-03-18 18:21:30] Sliced page 22 into page_022_top.png and page_022_bottom.png
+[2026-03-18 18:21:31] Sliced page 23 into page_023_top.png and page_023_bottom.png
+[2026-03-18 18:21:31] Sliced page 24 into page_024_top.png and page_024_bottom.png
+[2026-03-18 18:21:32] Sliced page 25 into page_025_top.png and page_025_bottom.png
+[2026-03-18 18:21:32] Sliced page 26 into page_026_top.png and page_026_bottom.png
+[2026-03-18 18:21:33] Sliced page 27 into page_027_top.png and page_027_bottom.png
+[2026-03-18 18:21:33] Phase 3: Initiating AI analysis for each slice...
+[2026-03-18 18:21:33] Sending slice 1 of 54 to Gemini...
+[2026-03-18 18:22:09] No match found in DB for: Prof. Dr. K. UMESH SHETTY (COMMERCE)
+[2026-03-18 18:22:09] Sending slice 2 of 54 to Gemini...
+[2026-03-18 18:22:50] Matched faculty: Mrs. VEENA V. BHAT -> Mrs. Veena V. Bhat (BBHCF005)
+[2026-03-18 18:40:20] Phase 1: Converting PDF pages to high-res images...
+[2026-03-18 18:40:21] Saved: page_001.png
+[2026-03-18 18:40:21] Saved: page_002.png
+[2026-03-18 18:40:22] Saved: page_003.png
+[2026-03-18 18:40:22] Saved: page_004.png
+[2026-03-18 18:40:22] Saved: page_005.png
+[2026-03-18 18:40:23] Saved: page_006.png
+[2026-03-18 18:40:23] Saved: page_007.png
+[2026-03-18 18:40:24] Saved: page_008.png
+[2026-03-18 18:40:24] Saved: page_009.png
+[2026-03-18 18:40:25] Saved: page_010.png
+[2026-03-18 18:40:25] Saved: page_011.png
+[2026-03-18 18:40:25] Saved: page_012.png
+[2026-03-18 18:40:26] Saved: page_013.png
+[2026-03-18 18:40:26] Saved: page_014.png
+[2026-03-18 18:40:26] Saved: page_015.png
+[2026-03-18 18:40:27] Saved: page_016.png
+[2026-03-18 18:40:27] Saved: page_017.png
+[2026-03-18 18:40:27] Saved: page_018.png
+[2026-03-18 18:40:28] Saved: page_019.png
+[2026-03-18 18:40:28] Saved: page_020.png
+[2026-03-18 18:40:29] Saved: page_021.png
+[2026-03-18 18:40:29] Saved: page_022.png
+[2026-03-18 18:40:29] Saved: page_023.png
+[2026-03-18 18:40:30] Saved: page_024.png
+[2026-03-18 18:40:30] Saved: page_025.png
+[2026-03-18 18:40:31] Saved: page_026.png
+[2026-03-18 18:40:31] Saved: page_027.png
+[2026-03-18 18:40:31] Phase 2: Slicing each page into two parts (top & bottom)...
+[2026-03-18 18:40:31] Sliced page 1 into page_001_top.png and page_001_bottom.png
+[2026-03-18 18:40:31] Sliced page 2 into page_002_top.png and page_002_bottom.png
+[2026-03-18 18:40:32] Sliced page 3 into page_003_top.png and page_003_bottom.png
+[2026-03-18 18:40:32] Sliced page 4 into page_004_top.png and page_004_bottom.png
+[2026-03-18 18:40:32] Sliced page 5 into page_005_top.png and page_005_bottom.png
+[2026-03-18 18:40:33] Sliced page 6 into page_006_top.png and page_006_bottom.png
+[2026-03-18 18:40:33] Sliced page 7 into page_007_top.png and page_007_bottom.png
+[2026-03-18 18:40:33] Sliced page 8 into page_008_top.png and page_008_bottom.png
+[2026-03-18 18:40:33] Sliced page 9 into page_009_top.png and page_009_bottom.png
+[2026-03-18 18:40:34] Sliced page 10 into page_010_top.png and page_010_bottom.png
+[2026-03-18 18:40:34] Sliced page 11 into page_011_top.png and page_011_bottom.png
+[2026-03-18 18:40:34] Sliced page 12 into page_012_top.png and page_012_bottom.png
+[2026-03-18 18:40:34] Sliced page 13 into page_013_top.png and page_013_bottom.png
+[2026-03-18 18:40:35] Sliced page 14 into page_014_top.png and page_014_bottom.png
+[2026-03-18 18:40:35] Sliced page 15 into page_015_top.png and page_015_bottom.png
+[2026-03-18 18:40:35] Sliced page 16 into page_016_top.png and page_016_bottom.png
+[2026-03-18 18:40:35] Sliced page 17 into page_017_top.png and page_017_bottom.png
+[2026-03-18 18:40:36] Sliced page 18 into page_018_top.png and page_018_bottom.png
+[2026-03-18 18:40:36] Sliced page 19 into page_019_top.png and page_019_bottom.png
+[2026-03-18 18:40:36] Sliced page 20 into page_020_top.png and page_020_bottom.png
+[2026-03-18 18:40:37] Sliced page 21 into page_021_top.png and page_021_bottom.png
+[2026-03-18 18:40:37] Sliced page 22 into page_022_top.png and page_022_bottom.png
+[2026-03-18 18:40:37] Sliced page 23 into page_023_top.png and page_023_bottom.png
+[2026-03-18 18:40:37] Sliced page 24 into page_024_top.png and page_024_bottom.png
+[2026-03-18 18:40:38] Sliced page 25 into page_025_top.png and page_025_bottom.png
+[2026-03-18 18:40:38] Sliced page 26 into page_026_top.png and page_026_bottom.png
+[2026-03-18 18:40:38] Sliced page 27 into page_027_top.png and page_027_bottom.png
+[2026-03-18 18:40:38] Phase 3: Initiating AI analysis for each slice...
+[2026-03-18 18:40:38] Sending slice 1 of 54 to Gemini...
+[2026-03-18 18:41:21] Matched faculty: Prof. Dr. K. UMESH SHETTY -> Mr. Rajesh Shetty (BBHCF006)
+[2026-03-18 18:41:21] Sending slice 2 of 54 to Gemini...
+[2026-03-18 18:49:53] Phase 1: Converting PDF pages to high-res images...
+[2026-03-18 18:49:54] Saved: page_001.png
+[2026-03-18 18:49:55] Saved: page_002.png
+[2026-03-18 18:49:55] Saved: page_003.png
+[2026-03-18 18:49:56] Saved: page_004.png
+[2026-03-18 18:49:57] Saved: page_005.png
+[2026-03-18 18:49:57] Saved: page_006.png
+[2026-03-18 18:49:58] Saved: page_007.png
+[2026-03-18 18:49:59] Saved: page_008.png
+[2026-03-18 18:49:59] Saved: page_009.png
+[2026-03-18 18:50:00] Saved: page_010.png
+[2026-03-18 18:50:00] Saved: page_011.png
+[2026-03-18 18:50:01] Saved: page_012.png
+[2026-03-18 18:50:02] Saved: page_013.png
+[2026-03-18 18:50:02] Saved: page_014.png
+[2026-03-18 18:50:03] Saved: page_015.png
+[2026-03-18 18:50:04] Saved: page_016.png
+[2026-03-18 18:50:05] Saved: page_017.png
+[2026-03-18 18:50:05] Saved: page_018.png
+[2026-03-18 18:50:06] Saved: page_019.png
+[2026-03-18 18:50:07] Saved: page_020.png
+[2026-03-18 18:50:07] Saved: page_021.png
+[2026-03-18 18:50:08] Saved: page_022.png
+[2026-03-18 18:50:09] Saved: page_023.png
+[2026-03-18 18:50:09] Saved: page_024.png
+[2026-03-18 18:50:10] Saved: page_025.png
+[2026-03-18 18:50:11] Saved: page_026.png
+[2026-03-18 18:50:11] Saved: page_027.png
+[2026-03-18 18:50:11] Phase 2: Slicing each page into two parts (top & bottom)...
+[2026-03-18 18:50:12] Sliced page 1 into page_001_top.png and page_001_bottom.png
+[2026-03-18 18:50:12] Sliced page 2 into page_002_top.png and page_002_bottom.png
+[2026-03-18 18:50:13] Sliced page 3 into page_003_top.png and page_003_bottom.png
+[2026-03-18 18:50:13] Sliced page 4 into page_004_top.png and page_004_bottom.png
+[2026-03-18 18:50:14] Sliced page 5 into page_005_top.png and page_005_bottom.png
+[2026-03-18 18:50:14] Sliced page 6 into page_006_top.png and page_006_bottom.png
+[2026-03-18 18:50:15] Sliced page 7 into page_007_top.png and page_007_bottom.png
+[2026-03-18 18:50:16] Sliced page 8 into page_008_top.png and page_008_bottom.png
+[2026-03-18 18:50:16] Sliced page 9 into page_009_top.png and page_009_bottom.png
+[2026-03-18 18:50:17] Sliced page 10 into page_010_top.png and page_010_bottom.png
+[2026-03-18 18:50:17] Sliced page 11 into page_011_top.png and page_011_bottom.png
+[2026-03-18 18:50:18] Sliced page 12 into page_012_top.png and page_012_bottom.png
+[2026-03-18 18:50:18] Sliced page 13 into page_013_top.png and page_013_bottom.png
+[2026-03-18 18:50:19] Sliced page 14 into page_014_top.png and page_014_bottom.png
+[2026-03-18 18:50:19] Sliced page 15 into page_015_top.png and page_015_bottom.png
+[2026-03-18 18:50:20] Sliced page 16 into page_016_top.png and page_016_bottom.png
+[2026-03-18 18:50:20] Sliced page 17 into page_017_top.png and page_017_bottom.png
+[2026-03-18 18:50:21] Sliced page 18 into page_018_top.png and page_018_bottom.png
+[2026-03-18 18:50:21] Sliced page 19 into page_019_top.png and page_019_bottom.png
+[2026-03-18 18:50:22] Sliced page 20 into page_020_top.png and page_020_bottom.png
+[2026-03-18 18:50:23] Sliced page 21 into page_021_top.png and page_021_bottom.png
+[2026-03-18 18:50:23] Sliced page 22 into page_022_top.png and page_022_bottom.png
+[2026-03-18 18:50:24] Sliced page 23 into page_023_top.png and page_023_bottom.png
+[2026-03-18 18:50:25] Sliced page 24 into page_024_top.png and page_024_bottom.png
+[2026-03-18 18:50:25] Sliced page 25 into page_025_top.png and page_025_bottom.png
+[2026-03-18 18:50:26] Sliced page 26 into page_026_top.png and page_026_bottom.png
+[2026-03-18 18:50:26] Sliced page 27 into page_027_top.png and page_027_bottom.png
+[2026-03-18 18:50:26] Phase 3: Initiating AI analysis for each slice...
+[2026-03-18 18:50:26] Sending slice 1 of 54 to Gemini...
+[2026-03-18 18:50:27] 🛑 Pipeline failure: extract_from_image() got an unexpected keyword argument 'faculty_list'. Did you mean 'faculty_hint'?
+[2026-03-18 18:55:43] Phase 1: Converting PDF pages to high-res images...
+[2026-03-18 18:55:43] Saved: page_001.png
+[2026-03-18 18:55:44] Saved: page_002.png
+[2026-03-18 18:55:44] Saved: page_003.png
+[2026-03-18 18:55:44] Saved: page_004.png
+[2026-03-18 18:55:45] Saved: page_005.png
+[2026-03-18 18:55:45] Saved: page_006.png
+[2026-03-18 18:55:46] Saved: page_007.png
+[2026-03-18 18:55:46] Saved: page_008.png
+[2026-03-18 18:55:46] Saved: page_009.png
+[2026-03-18 18:55:46] Saved: page_010.png
+[2026-03-18 18:55:47] Saved: page_011.png
+[2026-03-18 18:55:47] Saved: page_012.png
+[2026-03-18 18:55:47] Saved: page_013.png
+[2026-03-18 18:55:48] Saved: page_014.png
+[2026-03-18 18:55:48] Saved: page_015.png
+[2026-03-18 18:55:48] Saved: page_016.png
+[2026-03-18 18:55:49] Saved: page_017.png
+[2026-03-18 18:55:49] Saved: page_018.png
+[2026-03-18 18:55:50] Saved: page_019.png
+[2026-03-18 18:55:50] Saved: page_020.png
+[2026-03-18 18:55:50] Saved: page_021.png
+[2026-03-18 18:55:51] Saved: page_022.png
+[2026-03-18 18:55:51] Saved: page_023.png
+[2026-03-18 18:55:51] Saved: page_024.png
+[2026-03-18 18:55:52] Saved: page_025.png
+[2026-03-18 18:55:52] Saved: page_026.png
+[2026-03-18 18:55:52] Saved: page_027.png
+[2026-03-18 18:55:52] Phase 2: Slicing each page into two parts (top & bottom)...
+[2026-03-18 18:55:53] Sliced page 1 into page_001_top.png and page_001_bottom.png
+[2026-03-18 18:55:53] Sliced page 2 into page_002_top.png and page_002_bottom.png
+[2026-03-18 18:55:53] Sliced page 3 into page_003_top.png and page_003_bottom.png
+[2026-03-18 18:55:53] Sliced page 4 into page_004_top.png and page_004_bottom.png
+[2026-03-18 18:55:54] Sliced page 5 into page_005_top.png and page_005_bottom.png
+[2026-03-18 18:55:54] Sliced page 6 into page_006_top.png and page_006_bottom.png
+[2026-03-18 18:55:54] Sliced page 7 into page_007_top.png and page_007_bottom.png
+[2026-03-18 18:55:55] Sliced page 8 into page_008_top.png and page_008_bottom.png
+[2026-03-18 18:55:55] Sliced page 9 into page_009_top.png and page_009_bottom.png
+[2026-03-18 18:55:55] Sliced page 10 into page_010_top.png and page_010_bottom.png
+[2026-03-18 18:55:55] Sliced page 11 into page_011_top.png and page_011_bottom.png
+[2026-03-18 18:55:56] Sliced page 12 into page_012_top.png and page_012_bottom.png
+[2026-03-18 18:55:56] Sliced page 13 into page_013_top.png and page_013_bottom.png
+[2026-03-18 18:55:56] Sliced page 14 into page_014_top.png and page_014_bottom.png
+[2026-03-18 18:55:56] Sliced page 15 into page_015_top.png and page_015_bottom.png
+[2026-03-18 18:55:57] Sliced page 16 into page_016_top.png and page_016_bottom.png
+[2026-03-18 18:55:57] Sliced page 17 into page_017_top.png and page_017_bottom.png
+[2026-03-18 18:55:57] Sliced page 18 into page_018_top.png and page_018_bottom.png
+[2026-03-18 18:55:57] Sliced page 19 into page_019_top.png and page_019_bottom.png
+[2026-03-18 18:55:58] Sliced page 20 into page_020_top.png and page_020_bottom.png
+[2026-03-18 18:55:58] Sliced page 21 into page_021_top.png and page_021_bottom.png
+[2026-03-18 18:55:59] Sliced page 22 into page_022_top.png and page_022_bottom.png
+[2026-03-18 18:55:59] Sliced page 23 into page_023_top.png and page_023_bottom.png
+[2026-03-18 18:55:59] Sliced page 24 into page_024_top.png and page_024_bottom.png
+[2026-03-18 18:56:00] Sliced page 25 into page_025_top.png and page_025_bottom.png
+[2026-03-18 18:56:00] Sliced page 26 into page_026_top.png and page_026_bottom.png
+[2026-03-18 18:56:00] Sliced page 27 into page_027_top.png and page_027_bottom.png
+[2026-03-18 18:56:00] Phase 3: Initiating AI analysis for each slice...
+[2026-03-18 18:56:00] Sending slice 1 of 54 to Gemini...
+[2026-03-18 18:56:30] Python matched via tokens (2): Prof. Dr. K. UMESH SHETTY -> Mr.Umesh Shetty
+[2026-03-18 18:56:30] Sending slice 2 of 54 to Gemini...
+[2026-03-18 18:57:04] Python matched via tokens (2): Mrs. VEENA V. BHAT -> Mrs. Veena V. Bhat
+[2026-03-18 18:57:04] Sending slice 3 of 54 to Gemini...
+[2026-03-18 18:57:41] Python matched via tokens (2): Mr. RAJESH SHETTY -> Mr. Rajesh Shetty
+[2026-03-18 18:57:41] Sending slice 4 of 54 to Gemini...
+[2026-03-18 18:58:10] Python matched via tokens (2): Mr. RAKSHITH RAO -> Mr. Rakshith Rao
+[2026-03-18 18:58:10] Sending slice 5 of 54 to Gemini...
+[2026-03-18 18:58:38] Python matched via tokens (2): Mr. SATISH SHETTY -> Mr. Satish Shetty
+[2026-03-18 18:58:38] Sending slice 6 of 54 to Gemini...
+[2026-03-18 18:59:08] Python matched via tokens (2): Mrs. PREETI HEGDE -> Mrs. Preeti Hegde
+[2026-03-18 18:59:08] Sending slice 7 of 54 to Gemini...
+[2026-03-18 18:59:42] Python matched via tokens (2): Mr. SUDHIR KUMAR -> Mr. Sudhir Kumar
+[2026-03-18 18:59:42] Sending slice 8 of 54 to Gemini...
+[2026-03-18 19:00:16] Python matched via tokens (2): Mrs. PRITHVISHRI G. SHETTY -> Mrs. Prithvishri G. Shetty
+[2026-03-18 19:00:16] Sending slice 9 of 54 to Gemini...
+[2026-03-18 19:00:54] Python matched via tokens (1): Mr. YOGEESH -> Mr. Yogeesh
+[2026-03-18 19:00:54] Sending slice 10 of 54 to Gemini...
+[2026-03-18 19:01:22] Python matched via tokens (2): Mr. SATHISH KANCHAN -> Mr. Sathish Kanchan
+[2026-03-18 19:01:22] Sending slice 11 of 54 to Gemini...
+[2026-03-18 19:02:08] Python matched via tokens (2): Ms. DEEPA POOJARY -> Ms. Deepa Poojary
+[2026-03-18 19:02:08] Sending slice 12 of 54 to Gemini...
+[2026-03-18 19:02:58] Python matched via tokens (2): Mrs. VINAYA V. SHETTY -> Mrs. Vinaya V. Shetty
+[2026-03-18 19:02:58] Sending slice 13 of 54 to Gemini...
+[2026-03-18 19:03:29] Python matched via tokens (2): Mr. SHARATH KUMAR -> Mr. Sharath Kumar
+[2026-03-18 19:03:29] Sending slice 14 of 54 to Gemini...
+[2026-03-18 19:04:02] Python matched via tokens (2): Mr. AKSHAY KUMAR -> Mr. Akshay Kumar
+[2026-03-18 19:04:02] Sending slice 15 of 54 to Gemini...
+[2026-03-18 19:04:36] Python matched via tokens (1): Ms. POOJA -> Ms. Pooja
+[2026-03-18 19:04:36] Sending slice 16 of 54 to Gemini...
+[2026-03-18 19:05:11] Python matched via tokens (3): Mr. KISHOR KRISHNA MARAKALA -> Mr. Kishor Krishna Marakala
+[2026-03-18 19:05:11] Sending slice 17 of 54 to Gemini...
+[2026-03-18 19:05:59] Python matched via tokens (2): Mr. VINOD KUMAR K. -> Mr. Vinod Kumar K
+[2026-03-18 19:05:59] Sending slice 18 of 54 to Gemini...
+[2026-03-18 19:06:33] Python matched via tokens (1): Mr. SHREYAS -> Mr. Shreyas
+[2026-03-18 19:06:33] Sending slice 19 of 54 to Gemini...
+[2026-03-18 19:07:04] Python matched via tokens (1): Mr. RAGHURAM SHETTY -> Mr.Umesh Shetty
+[2026-03-18 19:07:04] Sending slice 20 of 54 to Gemini...
+[2026-03-18 19:07:45] Python matched via tokens (1): Mr. ANNAPPA SHETTY -> Mr.Umesh Shetty
+[2026-03-18 19:07:45] Sending slice 21 of 54 to Gemini...
+[2026-03-18 19:08:16] Python matched via tokens (1): Mrs. PREETHI SHETTY -> Mr.Umesh Shetty
+[2026-03-18 19:08:16] Sending slice 22 of 54 to Gemini...
+[2026-03-18 19:08:48] Python matched via tokens (2): Mrs. NANDA RAI -> Mrs. Nanda Rai
+[2026-03-18 19:08:48] Sending slice 23 of 54 to Gemini...
+[2026-03-18 19:09:23] Python matched via tokens (2): Mrs. AVITHA M. CORREA -> Mrs. Avitha M. Correa
+[2026-03-18 19:09:23] Sending slice 24 of 54 to Gemini...
+[2026-03-18 19:10:06] Python matched via tokens (1): Mr. HAREESHA B. -> Mr. Hareesha B.
+[2026-03-18 19:10:06] Sending slice 25 of 54 to Gemini...
+[2026-03-18 19:10:37] Python matched via tokens (2): Mr. RAJATH BANGERA -> Mr. Rajath Bangera
+[2026-03-18 19:10:37] Sending slice 26 of 54 to Gemini...
+[2026-03-18 19:11:09] Python matched via tokens (2): Mr. PRAVEEN MOGAVEERA -> Mr. Praveen Mogaveera
+[2026-03-18 19:11:09] Sending slice 27 of 54 to Gemini...
+[2026-03-18 19:11:38] Python matched via tokens (1): Ms. VISHALAKSHI S. -> Ms. Vishalakshi S
+[2026-03-18 19:11:38] Sending slice 28 of 54 to Gemini...
+[2026-03-18 19:32:45] Phase 1: Converting PDF pages to high-res images...
+[2026-03-18 19:32:46] Saved: page_001.png
+[2026-03-18 19:32:46] Saved: page_002.png
+[2026-03-18 19:32:46] Saved: page_003.png
+[2026-03-18 19:32:47] Saved: page_004.png
+[2026-03-18 19:32:47] Saved: page_005.png
+[2026-03-18 19:32:48] Saved: page_006.png
+[2026-03-18 19:32:48] Saved: page_007.png
+[2026-03-18 19:32:48] Saved: page_008.png
+[2026-03-18 19:32:48] Saved: page_009.png
+[2026-03-18 19:32:49] Saved: page_010.png
+[2026-03-18 19:32:49] Saved: page_011.png
+[2026-03-18 19:32:49] Saved: page_012.png
+[2026-03-18 19:32:50] Saved: page_013.png
+[2026-03-18 19:32:50] Saved: page_014.png
+[2026-03-18 19:32:50] Saved: page_015.png
+[2026-03-18 19:32:51] Saved: page_016.png
+[2026-03-18 19:32:51] Saved: page_017.png
+[2026-03-18 19:32:51] Saved: page_018.png
+[2026-03-18 19:32:52] Saved: page_019.png
+[2026-03-18 19:32:52] Saved: page_020.png
+[2026-03-18 19:32:52] Saved: page_021.png
+[2026-03-18 19:32:53] Saved: page_022.png
+[2026-03-18 19:32:53] Saved: page_023.png
+[2026-03-18 19:32:53] Saved: page_024.png
+[2026-03-18 19:32:54] Saved: page_025.png
+[2026-03-18 19:32:54] Saved: page_026.png
+[2026-03-18 19:32:54] Saved: page_027.png
+[2026-03-18 19:32:54] Phase 2: Slicing each page into two parts (top & bottom)...
+[2026-03-18 19:32:55] Sliced page 1 into page_001_top.png and page_001_bottom.png
+[2026-03-18 19:32:55] Sliced page 2 into page_002_top.png and page_002_bottom.png
+[2026-03-18 19:32:55] Sliced page 3 into page_003_top.png and page_003_bottom.png
+[2026-03-18 19:32:55] Sliced page 4 into page_004_top.png and page_004_bottom.png
+[2026-03-18 19:32:56] Sliced page 5 into page_005_top.png and page_005_bottom.png
+[2026-03-18 19:32:56] Sliced page 6 into page_006_top.png and page_006_bottom.png
+[2026-03-18 19:32:56] Sliced page 7 into page_007_top.png and page_007_bottom.png
+[2026-03-18 19:32:56] Sliced page 8 into page_008_top.png and page_008_bottom.png
+[2026-03-18 19:32:57] Sliced page 9 into page_009_top.png and page_009_bottom.png
+[2026-03-18 19:32:57] Sliced page 10 into page_010_top.png and page_010_bottom.png
+[2026-03-18 19:32:57] Sliced page 11 into page_011_top.png and page_011_bottom.png
+[2026-03-18 19:32:58] Sliced page 12 into page_012_top.png and page_012_bottom.png
+[2026-03-18 19:32:58] Sliced page 13 into page_013_top.png and page_013_bottom.png
+[2026-03-18 19:32:58] Sliced page 14 into page_014_top.png and page_014_bottom.png
+[2026-03-18 19:32:58] Sliced page 15 into page_015_top.png and page_015_bottom.png
+[2026-03-18 19:32:58] Sliced page 16 into page_016_top.png and page_016_bottom.png
+[2026-03-18 19:32:59] Sliced page 17 into page_017_top.png and page_017_bottom.png
+[2026-03-18 19:32:59] Sliced page 18 into page_018_top.png and page_018_bottom.png
+[2026-03-18 19:32:59] Sliced page 19 into page_019_top.png and page_019_bottom.png
+[2026-03-18 19:32:59] Sliced page 20 into page_020_top.png and page_020_bottom.png
+[2026-03-18 19:32:59] Sliced page 21 into page_021_top.png and page_021_bottom.png
+[2026-03-18 19:32:59] Sliced page 22 into page_022_top.png and page_022_bottom.png
+[2026-03-18 19:33:00] Sliced page 23 into page_023_top.png and page_023_bottom.png
+[2026-03-18 19:33:00] Sliced page 24 into page_024_top.png and page_024_bottom.png
+[2026-03-18 19:33:00] Sliced page 25 into page_025_top.png and page_025_bottom.png
+[2026-03-18 19:33:00] Sliced page 26 into page_026_top.png and page_026_bottom.png
+[2026-03-18 19:33:00] Sliced page 27 into page_027_top.png and page_027_bottom.png
+[2026-03-18 19:33:00] Phase 3: Initiating AI analysis for each slice...
+[2026-03-18 19:33:00] Sending slice 1 of 54 to Gemini...
+[2026-03-18 19:33:35] Python matched via tokens (2.1): Prof. Dr. K. UMESH SHETTY -> Mr.Umesh Shetty
+[2026-03-18 19:33:35] Sending slice 2 of 54 to Gemini...
+[2026-03-18 19:34:13] Python matched via tokens (2.1): Mrs. VEENA V. BHAT -> Mrs. Veena V. Bhat
+[2026-03-18 19:34:13] Sending slice 3 of 54 to Gemini...
+[2026-03-18 19:34:47] Python matched via tokens (2.1): Mr. RAJESH SHETTY -> Mr. Rajesh Shetty
+[2026-03-18 19:34:47] Sending slice 4 of 54 to Gemini...
+[2026-03-18 19:35:15] Python matched via tokens (2.1): Mr. RAKSHITH RAO -> Mr. Rakshith Rao
+[2026-03-18 19:35:15] Sending slice 5 of 54 to Gemini...
+[2026-03-18 19:35:44] Python matched via tokens (2.1): Mr. SATISH SHETTY -> Mr. Satish Shetty
+[2026-03-18 19:35:44] Sending slice 6 of 54 to Gemini...
+[2026-03-18 19:36:15] Python matched via tokens (2.1): Mrs. PREETI HEGDE -> Mrs. Preeti Hegde
+[2026-03-18 19:36:15] Sending slice 7 of 54 to Gemini...
+[2026-03-18 19:37:01] Python matched via tokens (2.1): Mr. SUDHIR KUMAR -> Mr. Sudhir Kumar
+[2026-03-18 19:37:01] Sending slice 8 of 54 to Gemini...
+[2026-03-18 19:37:29] Python matched via tokens (2.1): Mrs. PRITHVISHRI G. SHETTY -> Mrs. Prithvishri G. Shetty
+[2026-03-18 19:37:29] Sending slice 9 of 54 to Gemini...
+[2026-03-18 19:38:08] Python matched via tokens (1.1): Mr. YOGEESH -> Mr. Yogeesh
+[2026-03-18 19:38:08] Sending slice 10 of 54 to Gemini...
+[2026-03-18 19:38:37] Python matched via tokens (2.1): Mr. SATHISH KANCHAN -> Mr. Sathish Kanchan
+[2026-03-18 19:38:37] Sending slice 11 of 54 to Gemini...
+[2026-03-18 19:39:08] Python matched via tokens (2.1): Ms. DEEPA POOJARY -> Ms. Deepa Poojary
+[2026-03-18 19:39:08] Sending slice 12 of 54 to Gemini...
+[2026-03-18 19:39:41] Python matched via tokens (2.1): Mrs. VINAYA V. SHETTY -> Mrs. Vinaya V. Shetty
+[2026-03-18 19:39:41] Sending slice 13 of 54 to Gemini...
+[2026-03-18 19:40:18] Python matched via tokens (2.1): Mr. SHARATH KUMAR -> Mr. Sharath Kumar
+[2026-03-18 19:40:18] Sending slice 14 of 54 to Gemini...
+[2026-03-18 19:40:54] Python matched via tokens (2.1): Mr. AKSHAY KUMAR -> Mr. Akshay Kumar
+[2026-03-18 19:40:54] Sending slice 15 of 54 to Gemini...
+[2026-03-18 19:41:29] Python matched via tokens (1.1): Ms. POOJA -> Ms. Pooja
+[2026-03-18 19:41:29] Sending slice 16 of 54 to Gemini...
+[2026-03-18 19:42:00] Python matched via tokens (3.1): Mr. KISHOR KRISHNA MARAKALA -> Mr. Kishor Krishna Marakala
+[2026-03-18 19:42:00] Sending slice 17 of 54 to Gemini...
+[2026-03-18 19:42:40] Python matched via tokens (2.1): Mr. VINOD KUMAR K. -> Mr. Vinod Kumar K
+[2026-03-18 19:42:40] Sending slice 18 of 54 to Gemini...
+[2026-03-18 19:43:09] Python matched via tokens (1.1): Mr. SHREYAS -> Mr. Shreyas
+[2026-03-18 19:43:09] Sending slice 19 of 54 to Gemini...
+[2026-03-18 19:43:37] ❌ No match found in DB for: Mr. RAGHURAM SHETTY (DEPARTMENT OF COMMERCE)
+[2026-03-18 19:43:37] Sending slice 20 of 54 to Gemini...
+[2026-03-18 19:44:07] ❌ No match found in DB for: Mr. ANNAPPA SHETTY (DEPARTMENT OF COMMERCE)
+[2026-03-18 19:44:07] Sending slice 21 of 54 to Gemini...
+[2026-03-18 19:44:35] Python matched via tokens (1.1): Mrs. PREETHI SHETTY -> Mrs. Preethi
+[2026-03-18 19:44:35] Sending slice 22 of 54 to Gemini...
+[2026-03-18 19:48:37] Phase 1: PDF pages to high-res images...
+[2026-03-18 19:48:37] Skipping (Exists): page_001.png
+[2026-03-18 19:48:37] Skipping (Exists): page_002.png
+[2026-03-18 19:48:37] Skipping (Exists): page_003.png
+[2026-03-18 19:48:37] Skipping (Exists): page_004.png
+[2026-03-18 19:48:37] Skipping (Exists): page_005.png
+[2026-03-18 19:48:37] Skipping (Exists): page_006.png
+[2026-03-18 19:48:37] Skipping (Exists): page_007.png
+[2026-03-18 19:48:37] Skipping (Exists): page_008.png
+[2026-03-18 19:48:37] Skipping (Exists): page_009.png
+[2026-03-18 19:48:37] Skipping (Exists): page_010.png
+[2026-03-18 19:48:37] Skipping (Exists): page_011.png
+[2026-03-18 19:48:37] Skipping (Exists): page_012.png
+[2026-03-18 19:48:37] Skipping (Exists): page_013.png
+[2026-03-18 19:48:37] Skipping (Exists): page_014.png
+[2026-03-18 19:48:37] Skipping (Exists): page_015.png
+[2026-03-18 19:48:37] Skipping (Exists): page_016.png
+[2026-03-18 19:48:37] Skipping (Exists): page_017.png
+[2026-03-18 19:48:37] Skipping (Exists): page_018.png
+[2026-03-18 19:48:37] Skipping (Exists): page_019.png
+[2026-03-18 19:48:37] Skipping (Exists): page_020.png
+[2026-03-18 19:48:37] Skipping (Exists): page_021.png
+[2026-03-18 19:48:38] Skipping (Exists): page_022.png
+[2026-03-18 19:48:38] Skipping (Exists): page_023.png
+[2026-03-18 19:48:38] Skipping (Exists): page_024.png
+[2026-03-18 19:48:38] Skipping (Exists): page_025.png
+[2026-03-18 19:48:38] Skipping (Exists): page_026.png
+[2026-03-18 19:48:38] Skipping (Exists): page_027.png
+[2026-03-18 19:48:38] Phase 2: Slicing into parts...
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 1
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 2
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 3
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 4
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 5
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 6
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 7
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 8
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 9
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 10
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 11
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 12
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 13
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 14
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 15
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 16
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 17
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 18
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 19
+[2026-03-18 19:48:38] Skipping (Exists): Slices for page 20
+[2026-03-18 19:48:40] Skipping (Exists): Slices for page 21
+[2026-03-18 19:48:40] Skipping (Exists): Slices for page 22
+[2026-03-18 19:48:40] Skipping (Exists): Slices for page 23
+[2026-03-18 19:48:40] Skipping (Exists): Slices for page 24
+[2026-03-18 19:48:40] Skipping (Exists): Slices for page 25
+[2026-03-18 19:48:40] Skipping (Exists): Slices for page 26
+[2026-03-18 19:48:40] Skipping (Exists): Slices for page 27
+[2026-03-18 19:48:40] Phase 3: AI Analysis...
+[2026-03-18 19:48:40] Sending slice 1 (page_001_top.png) to Gemini...
+[2026-03-18 19:48:40] 🛑 Pipeline failure: name 'faculty_ref' is not defined
+[2026-03-18 19:49:40] Phase 1: PDF pages to high-res images...
+[2026-03-18 19:49:40] Skipping (Exists): page_001.png
+[2026-03-18 19:49:40] Skipping (Exists): page_002.png
+[2026-03-18 19:49:40] Skipping (Exists): page_003.png
+[2026-03-18 19:49:40] Skipping (Exists): page_004.png
+[2026-03-18 19:49:40] Skipping (Exists): page_005.png
+[2026-03-18 19:49:40] Skipping (Exists): page_006.png
+[2026-03-18 19:49:40] Skipping (Exists): page_007.png
+[2026-03-18 19:49:40] Skipping (Exists): page_008.png
+[2026-03-18 19:49:40] Skipping (Exists): page_009.png
+[2026-03-18 19:49:40] Skipping (Exists): page_010.png
+[2026-03-18 19:49:40] Skipping (Exists): page_011.png
+[2026-03-18 19:49:40] Skipping (Exists): page_012.png
+[2026-03-18 19:49:40] Skipping (Exists): page_013.png
+[2026-03-18 19:49:40] Skipping (Exists): page_014.png
+[2026-03-18 19:49:40] Skipping (Exists): page_015.png
+[2026-03-18 19:49:40] Skipping (Exists): page_016.png
+[2026-03-18 19:49:40] Skipping (Exists): page_017.png
+[2026-03-18 19:49:40] Skipping (Exists): page_018.png
+[2026-03-18 19:49:40] Skipping (Exists): page_019.png
+[2026-03-18 19:49:40] Skipping (Exists): page_020.png
+[2026-03-18 19:49:40] Skipping (Exists): page_021.png
+[2026-03-18 19:49:40] Skipping (Exists): page_022.png
+[2026-03-18 19:49:40] Skipping (Exists): page_023.png
+[2026-03-18 19:49:40] Skipping (Exists): page_024.png
+[2026-03-18 19:49:40] Skipping (Exists): page_025.png
+[2026-03-18 19:49:40] Skipping (Exists): page_026.png
+[2026-03-18 19:49:40] Skipping (Exists): page_027.png
+[2026-03-18 19:49:40] Phase 2: Slicing into parts...
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 1
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 2
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 3
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 4
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 5
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 6
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 7
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 8
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 9
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 10
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 11
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 12
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 13
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 14
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 15
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 16
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 17
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 18
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 19
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 20
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 21
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 22
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 23
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 24
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 25
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 26
+[2026-03-18 19:49:40] Skipping (Exists): Slices for page 27
+[2026-03-18 19:49:40] Phase 3: AI Analysis...
+[2026-03-18 19:49:40] Sending slice 1 (page_001_top.png) to Gemini...
+[2026-03-18 19:50:13] Python matched via tokens (2.1): Prof. Dr. K. UMESH SHETTY -> Mr.Umesh Shetty
+[2026-03-18 19:50:13] Sending slice 2 (page_001_bottom.png) to Gemini...
+[2026-03-18 19:50:47] Python matched via tokens (2.1): Mrs. VEENA V. BHAT -> Mrs. Veena V. Bhat
+[2026-03-18 19:50:47] Sending slice 3 (page_002_top.png) to Gemini...
+[2026-03-18 19:51:15] Python matched via tokens (2.1): Mr. RAJESH SHETTY -> Mr. Rajesh Shetty
+[2026-03-18 19:51:15] Sending slice 4 (page_002_bottom.png) to Gemini...
+[2026-03-18 19:51:47] Python matched via tokens (2.1): Mr. RAKSHITH RAO -> Mr. Rakshith Rao
+[2026-03-18 19:51:47] Sending slice 5 (page_003_top.png) to Gemini...
+[2026-03-18 19:52:17] Python matched via tokens (2.1): Mr. SATISH SHETTY -> Mr. Satish Shetty
+[2026-03-18 19:52:17] Sending slice 6 (page_003_bottom.png) to Gemini...
+[2026-03-18 19:52:50] Python matched via tokens (2.1): Mrs. PREETI HEGDE -> Mrs. Preeti Hegde
+[2026-03-18 19:52:50] Sending slice 7 (page_004_top.png) to Gemini...
+[2026-03-18 19:53:31] Python matched via tokens (2.1): Mr. SUDHIR KUMAR -> Mr. Sudhir Kumar
+[2026-03-18 19:53:31] Sending slice 8 (page_004_bottom.png) to Gemini...
+[2026-03-18 19:54:06] Python matched via tokens (2.1): Mrs. PRITHVISHRI G. SHETTY -> Mrs. Prithvishri G. Shetty
+[2026-03-18 19:54:06] Sending slice 9 (page_005_top.png) to Gemini...
+[2026-03-18 19:54:36] Python matched via tokens (1.1): Mr. YOGEESH -> Mr. Yogeesh
+[2026-03-18 19:54:36] Sending slice 10 (page_005_bottom.png) to Gemini...
+[2026-03-18 19:55:14] Python matched via tokens (2.1): Mr. SATHISH KANCHAN -> Mr. Sathish Kanchan
+[2026-03-18 19:55:14] Sending slice 11 (page_006_top.png) to Gemini...
+[2026-03-18 19:55:44] Python matched via tokens (2.1): Ms. DEEPA POOJARY -> Ms. Deepa Poojary
+[2026-03-18 19:55:44] Sending slice 12 (page_006_bottom.png) to Gemini...
+[2026-03-18 19:56:17] Python matched via tokens (2.1): Mrs. VINAYA V. SHETTY -> Mrs. Vinaya V. Shetty
+[2026-03-18 19:56:17] Sending slice 13 (page_007_top.png) to Gemini...
+[2026-03-18 19:56:46] Python matched via tokens (2.1): Mr. SHARATH KUMAR -> Mr. Sharath Kumar
+[2026-03-18 19:56:46] Sending slice 14 (page_007_bottom.png) to Gemini...
+[2026-03-18 19:57:19] Python matched via tokens (2.1): Mr. AKSHAY KUMAR -> Mr. Akshay Kumar
+[2026-03-18 19:57:19] Sending slice 15 (page_008_top.png) to Gemini...
+[2026-03-18 19:57:54] Python matched via tokens (1.1): Ms. POOJA -> Ms. Pooja
+[2026-03-18 19:57:54] Sending slice 16 (page_008_bottom.png) to Gemini...
+[2026-03-18 19:58:30] Python matched via tokens (3.1): Mr. KISHOR KRISHNA MARAKALA -> Mr. Kishor Krishna Marakala
+[2026-03-18 19:58:30] Sending slice 17 (page_009_top.png) to Gemini...
+[2026-03-18 19:59:04] Python matched via tokens (2.1): Mr. VINOD KUMAR K. -> Mr. Vinod Kumar K
+[2026-03-18 19:59:04] Sending slice 18 (page_009_bottom.png) to Gemini...
+[2026-03-18 19:59:37] Python matched via tokens (1.1): Mr. SHREYAS -> Mr. Shreyas
+[2026-03-18 19:59:37] Sending slice 19 (page_010_top.png) to Gemini...
+[2026-03-18 20:00:12] ❌ No match found in DB for: Mr. RAGHURAM SHETTY (DEPARTMENT OF COMMERCE)
+[2026-03-18 20:00:12] Sending slice 20 (page_010_bottom.png) to Gemini...
+[2026-03-18 20:00:48] ❌ No match found in DB for: Mr. ANNAPPA SHETTY (DEPARTMENT OF COMMERCE)
+[2026-03-18 20:00:48] Sending slice 21 (page_011_top.png) to Gemini...
+[2026-03-18 20:01:18] Python matched via tokens (1.1): Mrs. PREETHI SHETTY -> Mrs. Preethi
+[2026-03-18 20:01:18] Sending slice 22 (page_011_bottom.png) to Gemini...
+[2026-03-18 20:01:56] Python matched via tokens (2.1): Mrs. NANDA RAI -> Mrs. Nanda Rai
+[2026-03-18 20:01:56] Sending slice 23 (page_012_top.png) to Gemini...
+[2026-03-18 20:02:39] Python matched via tokens (2.1): Mrs. AVITHA M. CORREA -> Mrs. Avitha M. Correa
+[2026-03-18 20:02:39] Sending slice 24 (page_012_bottom.png) to Gemini...
+[2026-03-18 20:03:14] Python matched via tokens (1.1): Mr. HAREESHA B. -> Mr. Hareesha B.
+[2026-03-18 20:03:14] Sending slice 25 (page_013_top.png) to Gemini...
+[2026-03-18 20:03:51] Python matched via tokens (2.1): Mr. RAJATH BANGERA -> Mr. Rajath Bangera
+[2026-03-18 20:03:51] Sending slice 26 (page_013_bottom.png) to Gemini...
+[2026-03-18 20:04:31] Python matched via tokens (2.1): Mr. PRAVEEN MOGAVEERA -> Mr. Praveen Mogaveera
+[2026-03-18 20:04:31] Sending slice 27 (page_014_top.png) to Gemini...
+[2026-03-18 20:05:10] Python matched via tokens (1.1): Ms. VISHALAKSHI S. -> Ms. Vishalakshi S
+[2026-03-18 20:05:10] Sending slice 28 (page_014_bottom.png) to Gemini...
+[2026-03-18 20:06:00] Python matched via tokens (2.1): Dr. CHETHAN SHETTY K. -> Dr. Chethan Shetty K
+[2026-03-18 20:06:00] Sending slice 29 (page_015_top.png) to Gemini...
+[2026-03-18 20:06:31] Python matched via tokens (2.1): Mrs. RESHMA SHETTY -> Mrs. Reshma Shetty
+[2026-03-18 20:06:32] Sending slice 30 (page_015_bottom.png) to Gemini...
+[2026-03-18 20:07:15] Python matched via tokens (2.1): Mrs. PRAVEENA M. POOJARY -> Mrs. Praveena M Poojary
+[2026-03-18 20:07:15] Sending slice 31 (page_016_top.png) to Gemini...
+[2026-03-18 20:07:57] Python matched via tokens (2.1): Ms. RASHMITHA SHETTY -> Ms. Rashmitha Shetty
+[2026-03-18 20:07:57] Sending slice 32 (page_016_bottom.png) to Gemini...
+[2026-03-18 20:08:25] Python matched via tokens (1.1): Dr. DEEPA -> Ms. Deepa Poojary
+[2026-03-18 20:08:25] Sending slice 33 (page_017_top.png) to Gemini...
+[2026-03-18 20:09:06] Python matched via tokens (1.1): Mrs. REVATHI D. -> Mrs. Revathi D.
+[2026-03-18 20:09:06] Sending slice 34 (page_017_bottom.png) to Gemini...
+[2026-03-18 20:09:45] Python matched via tokens (1.1): Mrs. DEEPIKA G. -> Mrs. Deepika  G
+[2026-03-18 20:09:46] Sending slice 35 (page_018_top.png) to Gemini...
+[2026-03-18 20:10:19] Python matched via tokens (1.1): Ms. RAVINA C. POOJARY -> Ms. Deepa Poojary
+[2026-03-18 20:10:19] Sending slice 36 (page_018_bottom.png) to Gemini...
+[2026-03-18 20:10:53] Python matched via tokens (2.1): Mrs. SWATHI G. RAO -> Mrs. Swathi G.  Rao
+[2026-03-18 20:10:53] Sending slice 37 (page_019_top.png) to Gemini...
+[2026-03-18 20:11:39] Python matched via tokens (1.1): Mrs. SUREKHA ACHARYA -> Mrs. Surekha
+[2026-03-18 20:11:39] Sending slice 38 (page_019_bottom.png) to Gemini...
+[2026-03-18 20:12:25] Python matched via tokens (2.1): Mrs. MEGHA S. BHAT -> Mrs. Megha S  Bhat
+[2026-03-18 20:12:25] Sending slice 39 (page_020_top.png) to Gemini...
+[2026-03-18 20:12:59] Python matched via tokens (2.1): Mr. MAHESH KUMAR -> Mr. Mahesh Kumar
+[2026-03-18 20:12:59] Sending slice 40 (page_020_bottom.png) to Gemini...
+[2026-03-18 20:13:34] Python matched via tokens (2.1): Mr. GIRIRAJ BHAT -> Mr. Giriraj Bhat
+[2026-03-18 20:13:34] Sending slice 41 (page_021_top.png) to Gemini...
+[2026-03-18 20:14:16] Python matched via tokens (2.1): Mr. HARISH KANCHAN -> Mr. Harish Kanchan
+[2026-03-18 20:14:17] Sending slice 42 (page_021_bottom.png) to Gemini...
+[2026-03-18 20:14:49] Python matched via tokens (2.1): Mrs. WILMA SHARAL -> Mrs. Wilma Sharal Cornelio
+[2026-03-18 20:14:49] Sending slice 43 (page_022_top.png) to Gemini...
+[2026-03-18 20:15:29] Python matched via tokens (1.1): Mrs. JAYALAKSHMI K. -> Mrs. Jayalakshmi K
+[2026-03-18 20:15:29] Sending slice 44 (page_022_bottom.png) to Gemini...
+[2026-03-18 20:16:11] Python matched via tokens (2.1): Ms. RASHMI GAVADI -> Ms. Rashmi Gavadi
+[2026-03-18 20:16:11] Sending slice 45 (page_023_top.png) to Gemini...
+[2026-03-18 20:17:08] Python matched via tokens (1.1): Mr. SHREEKANTH -> Mr. Shreekanth
+[2026-03-18 20:17:08] Sending slice 46 (page_023_bottom.png) to Gemini...
+[2026-03-18 20:17:40] Python matched via tokens (2.1): Mr. PRANAM R. BETRABET -> Mr. Pranam  R Betrabet
+[2026-03-18 20:17:40] Sending slice 47 (page_024_top.png) to Gemini...
+[2026-03-18 20:18:19] Python matched via tokens (1.1): Ms. MEGHA -> Mrs. Megha S  Bhat
+[2026-03-18 20:18:19] Sending slice 48 (page_024_bottom.png) to Gemini...
+[2026-03-18 20:19:00] ❌ No match found in DB for: Mrs. VIJAYASHREE A. (DEPARTMENT OF COMPUTER APPLICATIONS)
+[2026-03-18 20:19:00] Sending slice 49 (page_025_top.png) to Gemini...
+[2026-03-18 20:19:32] Python matched via tokens (2.1): Ms. SHIVANI ADIGA -> Ms. Shivani Adiga
+[2026-03-18 20:19:32] Sending slice 50 (page_025_bottom.png) to Gemini...
+[2026-03-18 20:20:22] Python matched via tokens (2.1): Mr. MAHESH POOJARI -> Mr. Mahesh Poojari
+[2026-03-18 20:20:22] Sending slice 51 (page_026_top.png) to Gemini...
+[2026-03-18 20:20:54] ❌ No match found in DB for: Mrs. Poornima (DEPARTMENT OF COMPUTER APPLICATIONS)
+[2026-03-18 20:20:54] Sending slice 52 (page_026_bottom.png) to Gemini...
+[2026-03-18 20:21:32] Python matched via tokens (1.1): Mrs. NIRMALA -> Mrs.  Nirmala  B.
+[2026-03-18 20:21:32] Sending slice 53 (page_027_top.png) to Gemini...
+[2026-03-18 20:22:21] Python matched via tokens (1.1): Mr. THIMMAPPA D.S. -> Mr. Thimmappa D.S
+[2026-03-18 20:22:21] Sending slice 54 (page_027_bottom.png) to Gemini...
+[2026-03-18 20:23:00] Python matched via tokens (2.1): Mr. MAHESH NAIK -> Mr. Mahesh Naik
+[2026-03-18 20:23:00] Bulk processing complete. All files saved.
+[2026-03-19 12:20:24] Phase 1: PDF pages to high-res images...
+[2026-03-19 12:20:25] Saved: page_001.png
+[2026-03-19 12:20:26] Saved: page_002.png
+[2026-03-19 12:20:26] Saved: page_003.png
+[2026-03-19 12:20:26] Saved: page_004.png
+[2026-03-19 12:20:27] Saved: page_005.png
+[2026-03-19 12:20:27] Saved: page_006.png
+[2026-03-19 12:20:27] Saved: page_007.png
+[2026-03-19 12:20:28] Saved: page_008.png
+[2026-03-19 12:20:28] Saved: page_009.png
+[2026-03-19 12:20:29] Saved: page_010.png
+[2026-03-19 12:20:29] Saved: page_011.png
+[2026-03-19 12:20:29] Saved: page_012.png
+[2026-03-19 12:20:30] Saved: page_013.png
+[2026-03-19 12:20:30] Saved: page_014.png
+[2026-03-19 12:20:30] Saved: page_015.png
+[2026-03-19 12:20:31] Saved: page_016.png
+[2026-03-19 12:20:31] Saved: page_017.png
+[2026-03-19 12:20:31] Saved: page_018.png
+[2026-03-19 12:20:32] Saved: page_019.png
+[2026-03-19 12:20:32] Saved: page_020.png
+[2026-03-19 12:20:32] Saved: page_021.png
+[2026-03-19 12:20:33] Saved: page_022.png
+[2026-03-19 12:20:33] Saved: page_023.png
+[2026-03-19 12:20:34] Saved: page_024.png
+[2026-03-19 12:20:34] Saved: page_025.png
+[2026-03-19 12:20:34] Saved: page_026.png
+[2026-03-19 12:20:35] Saved: page_027.png
+[2026-03-19 12:20:35] Phase 2: Slicing into parts...
+[2026-03-19 12:20:35] Sliced page 1 into top/bottom
+[2026-03-19 12:20:35] Sliced page 2 into top/bottom
+[2026-03-19 12:20:35] Sliced page 3 into top/bottom
+[2026-03-19 12:20:36] Sliced page 4 into top/bottom
+[2026-03-19 12:20:36] Sliced page 5 into top/bottom
+[2026-03-19 12:20:36] Sliced page 6 into top/bottom
+[2026-03-19 12:20:37] Sliced page 7 into top/bottom
+[2026-03-19 12:20:37] Sliced page 8 into top/bottom
+[2026-03-19 12:20:37] Sliced page 9 into top/bottom
+[2026-03-19 12:20:37] Sliced page 10 into top/bottom
+[2026-03-19 12:20:38] Sliced page 11 into top/bottom
+[2026-03-19 12:20:38] Sliced page 12 into top/bottom
+[2026-03-19 12:20:38] Sliced page 13 into top/bottom
+[2026-03-19 12:20:39] Sliced page 14 into top/bottom
+[2026-03-19 12:20:39] Sliced page 15 into top/bottom
+[2026-03-19 12:20:39] Sliced page 16 into top/bottom
+[2026-03-19 12:20:39] Sliced page 17 into top/bottom
+[2026-03-19 12:20:40] Sliced page 18 into top/bottom
+[2026-03-19 12:20:40] Sliced page 19 into top/bottom
+[2026-03-19 12:20:40] Sliced page 20 into top/bottom
+[2026-03-19 12:20:40] Sliced page 21 into top/bottom
+[2026-03-19 12:20:41] Sliced page 22 into top/bottom
+[2026-03-19 12:20:41] Sliced page 23 into top/bottom
+[2026-03-19 12:20:41] Sliced page 24 into top/bottom
+[2026-03-19 12:20:42] Sliced page 25 into top/bottom
+[2026-03-19 12:20:42] Sliced page 26 into top/bottom
+[2026-03-19 12:20:42] Sliced page 27 into top/bottom
+[2026-03-19 12:20:42] Phase 3: AI Analysis...
+[2026-03-19 12:20:42] Sending slice 1 (page_001_top.png) to Gemini...
+[2026-03-19 12:21:18] Python matched via tokens (2.1): Prof. Dr. K. UMESH SHETTY -> Mr.Umesh Shetty
+[2026-03-19 12:21:18] Sending slice 2 (page_001_bottom.png) to Gemini...
+[2026-03-19 12:21:53] Python matched via tokens (2.1): Mrs. VEENA V. BHAT -> Mrs. Veena V. Bhat
+[2026-03-19 12:21:53] Sending slice 3 (page_002_top.png) to Gemini...
+[2026-03-19 12:22:29] Python matched via tokens (2.1): Mr. RAJESH SHETTY -> Mr. Rajesh Shetty
+[2026-03-19 12:22:29] Sending slice 4 (page_002_bottom.png) to Gemini...
+[2026-03-19 12:23:02] Python matched via tokens (2.1): Mr. RAKSHITH RAO -> Mr. Rakshith Rao
+[2026-03-19 12:23:02] Sending slice 5 (page_003_top.png) to Gemini...
+[2026-03-19 12:23:53] Python matched via tokens (2.1): Mr. SATISH SHETTY -> Mr. Satish Shetty
+[2026-03-19 12:23:53] Sending slice 6 (page_003_bottom.png) to Gemini...
+[2026-03-19 12:24:33] Python matched via tokens (2.1): Mrs. PREETI HEGDE -> Mrs. Preeti Hegde
+[2026-03-19 12:24:34] Sending slice 7 (page_004_top.png) to Gemini...
+[2026-03-19 12:25:08] Python matched via tokens (2.1): Mr. SUDHIR KUMAR -> Mr. Sudhir Kumar
+[2026-03-19 12:25:08] Sending slice 8 (page_004_bottom.png) to Gemini...
+[2026-03-19 12:25:47] Python matched via tokens (2.1): Mrs. PRITHVISHRI G. SHETTY -> Mrs. Prithvishri G. Shetty
+[2026-03-19 12:25:47] Sending slice 9 (page_005_top.png) to Gemini...
+[2026-03-19 12:26:19] Python matched via tokens (1.1): Mr. YOGEESH -> Mr. Yogeesh
+[2026-03-19 12:26:19] Sending slice 10 (page_005_bottom.png) to Gemini...
+[2026-03-19 12:27:11] Python matched via tokens (2.1): Mr. SATHISH KANCHAN -> Mr. Sathish Kanchan
+[2026-03-19 12:27:11] Sending slice 11 (page_006_top.png) to Gemini...
+[2026-03-19 12:27:43] Python matched via tokens (2.1): Ms. DEEPA POOJARY -> Ms. Deepa Poojary
+[2026-03-19 12:27:43] Sending slice 12 (page_006_bottom.png) to Gemini...
+[2026-03-19 12:28:12] Python matched via tokens (2.1): Mrs. VINAYA V. SHETTY -> Mrs. Vinaya V. Shetty
+[2026-03-19 12:28:12] Sending slice 13 (page_007_top.png) to Gemini...
+[2026-03-19 12:28:43] Python matched via tokens (2.1): Mr. SHARATH KUMAR -> Mr. Sharath Kumar
+[2026-03-19 12:28:43] Sending slice 14 (page_007_bottom.png) to Gemini...
+[2026-03-19 12:29:27] Python matched via tokens (2.1): Mr. AKSHAY KUMAR -> Mr. Akshay Kumar
+[2026-03-19 12:29:27] Sending slice 15 (page_008_top.png) to Gemini...
+[2026-03-19 12:29:59] Python matched via tokens (1.1): Ms. POOJA -> Ms. Pooja
+[2026-03-19 12:29:59] Sending slice 16 (page_008_bottom.png) to Gemini...
+[2026-03-19 12:30:33] Python matched via tokens (3.1): Mr. KISHOR KRISHNA MARAKALA -> Mr. Kishor Krishna Marakala
+[2026-03-19 12:30:33] Sending slice 17 (page_009_top.png) to Gemini...
+[2026-03-19 12:31:11] Python matched via tokens (2.1): Mr. VINOD KUMAR K. -> Mr. Vinod Kumar K
+[2026-03-19 12:31:11] Sending slice 18 (page_009_bottom.png) to Gemini...
+[2026-03-19 12:31:43] Python matched via tokens (1.1): Mr. SHREYAS -> Mr. Shreyas
+[2026-03-19 12:31:43] Sending slice 19 (page_010_top.png) to Gemini...
+[2026-03-19 12:32:28] ❌ No match found in DB for: Mr. RAGHURAM SHETTY (DEPARTMENT OF COMMERCE)
+[2026-03-19 12:32:28] Sending slice 20 (page_010_bottom.png) to Gemini...
+[2026-03-19 12:33:01] ❌ No match found in DB for: Mr. ANNAPPA SHETTY (DEPARTMENT OF COMMERCE)
+[2026-03-19 12:33:01] Sending slice 21 (page_011_top.png) to Gemini...
+[2026-03-19 12:33:40] Python matched via tokens (1.1): Mrs. PREETHI SHETTY -> Mrs. Preethi
+[2026-03-19 12:33:40] Sending slice 22 (page_011_bottom.png) to Gemini...
+[2026-03-19 12:34:10] Python matched via tokens (2.1): Mrs. NANDA RAI -> Mrs. Nanda Rai
+[2026-03-19 12:34:10] Sending slice 23 (page_012_top.png) to Gemini...
+[2026-03-19 12:34:46] Python matched via tokens (2.1): Mrs. AVITHA M. CORREA -> Mrs. Avitha M. Correa
+[2026-03-19 12:34:46] Sending slice 24 (page_012_bottom.png) to Gemini...
+[2026-03-19 12:35:30] Python matched via tokens (1.1): Mr. HAREESHA B. -> Mr. Hareesha B.
+[2026-03-19 12:35:30] Sending slice 25 (page_013_top.png) to Gemini...
+[2026-03-19 12:36:04] Python matched via tokens (2.1): Mr. RAJATH BANGERA -> Mr. Rajath Bangera
+[2026-03-19 12:36:04] Sending slice 26 (page_013_bottom.png) to Gemini...
+[2026-03-19 12:36:35] Python matched via tokens (2.1): Mr. PRAVEEN MOGAVEERA -> Mr. Praveen Mogaveera
+[2026-03-19 12:36:35] Sending slice 27 (page_014_top.png) to Gemini...
+[2026-03-19 12:37:07] Python matched via tokens (1.1): Ms. VISHALAKSHI S. -> Ms. Vishalakshi S
+[2026-03-19 12:37:07] Sending slice 28 (page_014_bottom.png) to Gemini...
+[2026-03-19 12:37:45] Python matched via tokens (2.1): Dr. CHETHAN SHETTY K. -> Dr. Chethan Shetty K
+[2026-03-19 12:37:45] Sending slice 29 (page_015_top.png) to Gemini...
+[2026-03-19 12:38:16] Python matched via tokens (2.1): Mrs. RESHMA SHETTY -> Mrs. Reshma Shetty
+[2026-03-19 12:38:16] Sending slice 30 (page_015_bottom.png) to Gemini...
+[2026-03-19 12:39:05] Python matched via tokens (2.1): Mrs. PRAVEENA M. POOJARY -> Mrs. Praveena M Poojary
+[2026-03-19 12:39:05] Sending slice 31 (page_016_top.png) to Gemini...
+[2026-03-19 12:39:35] Python matched via tokens (2.1): Ms. RASHMITHA SHETTY -> Ms. Rashmitha Shetty
+[2026-03-19 12:39:35] Sending slice 32 (page_016_bottom.png) to Gemini...
+[2026-03-19 12:40:09] Python matched via tokens (1.1): Dr. DEEPA -> Dr. Deepa
+[2026-03-19 12:40:09] Sending slice 33 (page_017_top.png) to Gemini...
+[2026-03-19 12:40:53] Python matched via tokens (1.1): Mrs. REVATHI D. -> Mrs. Revathi D.
+[2026-03-19 12:40:53] Sending slice 34 (page_017_bottom.png) to Gemini...
+[2026-03-19 12:41:38] Python matched via tokens (1.1): Mrs. DEEPIKA G. -> Mrs. Deepika  G
+[2026-03-19 12:41:38] Sending slice 35 (page_018_top.png) to Gemini...
+[2026-03-19 12:42:21] Python matched via tokens (1.1): Ms. RAVINA C. POOJARY -> Ms. Deepa Poojary
+[2026-03-19 12:42:21] Sending slice 36 (page_018_bottom.png) to Gemini...
+[2026-03-19 12:42:56] Python matched via tokens (2.1): Mrs. SWATHI G. RAO -> Mrs. Swathi G.  Rao
+[2026-03-19 12:42:56] Sending slice 37 (page_019_top.png) to Gemini...
+[2026-03-19 12:43:32] Python matched via tokens (1.1): Mrs. SUREKHA ACHARYA -> Mrs. Surekha
+[2026-03-19 12:43:33] Sending slice 38 (page_019_bottom.png) to Gemini...
+[2026-03-19 12:44:21] Python matched via tokens (2.1): Mrs. MEGHA S. BHAT -> Mrs. Megha S  Bhat
+[2026-03-19 12:44:21] Sending slice 39 (page_020_top.png) to Gemini...
+[2026-03-19 12:45:02] Python matched via tokens (2.1): Mr. MAHESH KUMAR -> Mr. Mahesh Kumar
+[2026-03-19 12:45:02] Sending slice 40 (page_020_bottom.png) to Gemini...
+[2026-03-19 12:45:38] Python matched via tokens (2.1): Mr. GIRIRAJ BHAT -> Mr. Giriraj Bhat
+[2026-03-19 12:45:38] Sending slice 41 (page_021_top.png) to Gemini...
+[2026-03-19 12:46:08] Python matched via tokens (2.1): Mr. HARISH KANCHAN -> Mr. Harish Kanchan
+[2026-03-19 12:46:08] Sending slice 42 (page_021_bottom.png) to Gemini...
+[2026-03-19 12:46:47] Python matched via tokens (2.1): Mrs. WILMA SHARAL -> Mrs. Wilma Sharal Cornelio
+[2026-03-19 12:46:47] Sending slice 43 (page_022_top.png) to Gemini...
+[2026-03-19 12:47:25] Python matched via tokens (1.1): Mrs. JAYALAKSHMI K. -> Mrs. Jayalakshmi K
+[2026-03-19 12:47:25] Sending slice 44 (page_022_bottom.png) to Gemini...
+[2026-03-19 12:47:58] Python matched via tokens (2.1): Ms. RASHMI GAVADI -> Ms. Rashmi Gavadi
+[2026-03-19 12:47:58] Sending slice 45 (page_023_top.png) to Gemini...
+[2026-03-19 12:48:35] Python matched via tokens (1.1): Mr. SHREEKANTH -> Mr. Shreekanth
+[2026-03-19 12:48:35] Sending slice 46 (page_023_bottom.png) to Gemini...
+[2026-03-19 12:49:07] Python matched via tokens (2.1): Mr. PRANAM R. BETRABET -> Mr. Pranam  R Betrabet
+[2026-03-19 12:49:07] Sending slice 47 (page_024_top.png) to Gemini...
+[2026-03-19 12:49:36] Python matched via tokens (1.1): Ms. MEGHA -> Mrs. Megha S  Bhat
+[2026-03-19 12:49:36] Sending slice 48 (page_024_bottom.png) to Gemini...
+[2026-03-19 12:50:11] ❌ No match found in DB for: Mrs. VIJAYASHREE A. (DEPARTMENT OF COMPUTER APPLICATIONS)
+[2026-03-19 12:50:11] Sending slice 49 (page_025_top.png) to Gemini...
+[2026-03-19 12:50:54] Python matched via tokens (2.1): Ms. SHIVANI ADIGA -> Ms. Shivani Adiga
+[2026-03-19 12:50:54] Sending slice 50 (page_025_bottom.png) to Gemini...
+[2026-03-19 12:51:44] Python matched via tokens (2.1): Mr. MAHESH POOJARI -> Mr. Mahesh Poojari
+[2026-03-19 12:51:44] Sending slice 51 (page_026_top.png) to Gemini...
+[2026-03-19 12:52:29] ❌ No match found in DB for: Mrs. Poornima (DEPARTMENT OF COMPUTER APPLICATIONS)
+[2026-03-19 12:52:29] Sending slice 52 (page_026_bottom.png) to Gemini...
+[2026-03-19 12:53:08] Python matched via tokens (1.1): Mrs. NIRMALA -> Mrs.  Nirmala  B.
+[2026-03-19 12:53:08] Sending slice 53 (page_027_top.png) to Gemini...
+[2026-03-19 12:53:41] Python matched via tokens (1.1): Mr. THIMMAPPA D.S. -> Mr. Thimmappa D.S
+[2026-03-19 12:53:41] Sending slice 54 (page_027_bottom.png) to Gemini...
+[2026-03-19 12:54:23] Python matched via tokens (2.1): Mr. MAHESH NAIK -> Mr. Mahesh Naik
+[2026-03-19 12:54:23] Bulk processing complete. All files saved.

@@ -3,7 +3,7 @@ from flask_socketio import SocketIO, emit
 from io import BytesIO
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from utils.db import users, leaves, salaries, timetable, init_db
+from utils.db import users, leaves, salaries, timetable, init_db, db
 from bson.objectid import ObjectId
 import os
 
@@ -62,7 +62,7 @@ def logout():
 
 from utils.auth import admin_required, lecturer_required
 from datetime import datetime
-from utils.timetable_processor import pdf_to_faculty_images, extract_timetable_structure, log_event
+from utils.timetable_processor import log_event
 from difflib import get_close_matches
 import json
 import re
@@ -714,119 +714,11 @@ def admin_leaves_delete_all():
     return redirect(url_for('admin_leaves'))
 
 
-@app.route('/admin/timetables', methods=['GET', 'POST'])
+@app.route('/admin/timetables', methods=['GET'])
 @login_required
 @admin_required
 def admin_timetables():
-    """
-    Upload a PDF containing multiple individual faculty timetables.
-    Each page is treated as one faculty timetable.
-    """
-    message = None
-    error = None
-
-    if request.method == 'POST':
-        file = request.files.get('timetable_pdf')
-        if not file or file.filename == '':
-            error = "Please select a PDF file."
-        elif not file.filename.lower().endswith('.pdf'):
-            error = "Only PDF files are supported."
-        else:
-            try:
-                pdf_bytes = file.read()
-
-                # Optionally save each full page as an image into static/timetable_images
-                static_root = os.path.join(os.path.dirname(__file__), "static")
-                page_images_folder = os.path.join(static_root, "timetable_images")
-                os.makedirs(page_images_folder, exist_ok=True)
-
-                with fitz.open(stream=pdf_bytes, filetype="pdf") as doc_pages:
-                    for idx in range(len(doc_pages)):
-                        page = doc_pages.load_page(idx)
-                        pix = page.get_pixmap(dpi=200)
-                        page_name = f"page_{idx + 1:02d}.png"
-                        page_path = os.path.join(page_images_folder, page_name)
-                        pix.save(page_path)
-
-                # Build lecturer list and faculty details BEFORE OCR so we can pass
-                # all known faculty names into the PDF processor (for pages that
-                # don't explicitly contain a 'FACULTY:' label).
-                # Only consider teaching faculty staff IDs like BBHCF001, BBHCF002...
-                # Do NOT match non-faculty patterns like BBHCFN001.
-                staff_id_regex = r"^BBHCF\d+$"
-                all_lecturers = list(
-                    users.find(
-                        {
-                            "role": "lecturer",
-                            "staff_id": {"$regex": staff_id_regex, "$options": "i"},
-                        }
-                    )
-                )
-
-                faculty_details_path = os.path.join(os.path.dirname(__file__), "faculty_detail.json")
-                faculty_details = {}
-                if os.path.exists(faculty_details_path):
-                    with open(faculty_details_path, encoding="utf-8") as f:
-                        faculty_details = json.load(f)
-
-                # Collect all known faculty display names (from JSON + DB)
-                known_faculty_names = []
-                for info in faculty_details.values():
-                    name = (info.get("name") or "").strip()
-                    if name:
-                        known_faculty_names.append(name)
-                for lect in all_lecturers:
-                    name = (lect.get("name") or "").strip()
-                    if name:
-                        known_faculty_names.append(name)
-
-                # Map staff_id -> lecturer document
-                lecturers_by_staff_id = {
-                    lect.get("staff_id"): lect for lect in all_lecturers if lect.get("staff_id")
-                }
-
-                # Map normalized lecturer name -> lecturer (direct DB lookup)
-                lecturers_by_norm_name = {}
-                lecturers_by_surname = {}
-                for lect in all_lecturers:
-                    norm = normalize_name(lect.get("name", ""))
-                    if norm:
-                        lecturers_by_norm_name[norm] = lect
-                        sk = surname_key(norm)
-                        if sk:
-                            lecturers_by_surname.setdefault(sk, []).append(lect)
-
-                # Map normalized name from JSON -> staff_id (only teaching faculty)
-                norm_json_name_to_staff_id = {}
-                for staff_id, info in faculty_details.items():
-                    if info.get("category") != "Teaching Faculty":
-                        continue
-                    if not re.match(staff_id_regex, str(staff_id or ""), flags=re.IGNORECASE):
-                        continue
-                    norm = normalize_name(info.get("name", ""))
-                    if norm:
-                        norm_json_name_to_staff_id[norm] = staff_id
-
-                # Use absolute path for Windows stability
-                static_root = os.path.join(os.path.dirname(__file__), "static")
-                upload_folder = os.path.join(static_root, "timetables")
-                json_folder = os.path.join(static_root, "timetables_json")
-                os.makedirs(upload_folder, exist_ok=True)
-                os.makedirs(json_folder, exist_ok=True)
-
-                import threading
-                threading.Thread(target=process_timetable_async, args=(
-                    pdf_bytes, known_faculty_names, all_lecturers, lecturers_by_staff_id, 
-                    lecturers_by_norm_name, lecturers_by_surname, norm_json_name_to_staff_id, 
-                    upload_folder, json_folder
-                )).start()
-
-                message = "PDF uploaded successfully. Processing started in the background."
-            except Exception as e:
-                error = f"Error processing PDF: {str(e)}"
-
-    # For display: list all lecturers with timetable status
-    # Only show teaching faculty staff IDs like BBHCF001, BBHCF002...
+    # Fetch all lecturers
     staff_id_regex = r"^BBHCF\d+$"
     all_lecturers = list(
         users.find(
@@ -834,42 +726,180 @@ def admin_timetables():
                 "role": "lecturer",
                 "staff_id": {"$regex": staff_id_regex, "$options": "i"},
             }
-        )
+        ).sort("staff_id", 1)
     )
-    timetable_docs = {doc.get("lecturer_id"): doc for doc in timetable.find({})}
-
-    lecturer_rows = []
+    
+    # Path for JSON timetables
+    json_dir = os.path.join(os.path.dirname(__file__), "static", "json_timetables")
+    os.makedirs(json_dir, exist_ok=True)
+    
+    # Map staff_id to whether it exists on disk
+    existing_files = {f.split('.')[0] for f in os.listdir(json_dir) if f.endswith('.json')}
+    
+    lecturers_data = []
     uploaded_count = 0
     for lect in all_lecturers:
-        lect_id = str(lect["_id"])
-        tt_doc = timetable_docs.get(lect_id)
-        has_tt = tt_doc is not None
-        image_url = ""
-        if has_tt:
-            image_path = (tt_doc.get("image_path") or "").replace("\\", "/")
-            image_url = url_for("static", filename=image_path)
-        if has_tt:
-            uploaded_count += 1
-        lecturer_rows.append({
-            "id": lect_id,
-            "name": lect.get("name", ""),
-            "staff_id": lect.get("staff_id", ""),
-            "has_timetable": has_tt,
-            "timetable": tt_doc,
-            "timetable_image_url": image_url,
+        staff_id = lect.get("staff_id")
+        has_tt = staff_id in existing_files
+        if has_tt: uploaded_count += 1
+        
+        lecturers_data.append({
+            "id": str(lect["_id"]),
+            "staff_id": staff_id,
+            "name": lect.get("name"),
+            "department": lect.get("department"),
+            "has_timetable": has_tt
         })
-
-    pending_count = len(all_lecturers) - uploaded_count
-
+    
     return render_template(
         'admin/timetables.html',
-        lecturers=lecturer_rows,
-        uploaded_count=uploaded_count,
-        pending_count=pending_count,
+        lecturers=lecturers_data,
         total=len(all_lecturers),
-        message=message,
-        error=error,
+        uploaded_count=uploaded_count,
+        pending_count=len(all_lecturers) - uploaded_count,
+        error=request.args.get('error'),
+        message=request.args.get('message')
     )
+
+@app.route('/admin/timetables/upload', methods=['POST'])
+@login_required
+@admin_required
+def admin_timetables_upload():
+    file = request.files.get('timetable_pdf')
+    if not file or file.filename == '':
+        return redirect(url_for('admin_timetables', error="No PDF file selected."))
+    
+    if not file.filename.lower().endswith('.pdf'):
+        return redirect(url_for('admin_timetables', error="Only PDF files are allowed."))
+
+    try:
+        pdf_bytes = file.read()
+        import threading
+        from utils.timetable_processor import process_background_pipeline, stop_events
+        
+        task_id = "main_worker"
+        if task_id in stop_events:
+            return redirect(url_for('admin_timetables', error="A bulk process is already running. Please stop it or wait for it to finish."))
+            
+        # Register the stop event BEFORE starting the thread
+        stop_events[task_id] = threading.Event()
+        
+        threading.Thread(target=process_background_pipeline, args=(
+            pdf_bytes, task_id, socketio, db
+        )).start()
+        
+        return redirect(url_for('admin_timetables', message="PDF upload successful. Processing started..."))
+    except Exception as e:
+        return redirect(url_for('admin_timetables', error=f"Upload error: {str(e)}"))
+
+@app.route('/admin/timetables/upload-image', methods=['POST'])
+@login_required
+@admin_required
+def admin_timetables_upload_image():
+    file = request.files.get('timetable_image')
+    if not file or file.filename == '':
+        return redirect(url_for('admin_timetables', error="No image file selected."))
+
+    try:
+        img_bytes = file.read()
+        from utils.timetable_processor import extract_from_image, match_and_save
+        
+        # Single image processing is synchronous for simplicity or we could background it
+        data = extract_from_image(img_bytes)
+        if "error" in data:
+            return redirect(url_for('admin_timetables', error=f"AI Error: {data['error']}"))
+        
+        match_and_save(data, db, socketio)
+        return redirect(url_for('admin_timetables', message=f"Processed image for faculty: {data.get('faculty', 'Unknown')}"))
+    except Exception as e:
+        return redirect(url_for('admin_timetables', error=f"Image upload error: {str(e)}"))
+
+@app.route('/admin/timetables/stop', methods=['POST'])
+@login_required
+@admin_required
+def admin_timetables_stop():
+    from utils.timetable_processor import stop_events
+    task_id = "main_worker"
+    if task_id in stop_events:
+        stop_events[task_id].set()
+        # Also log it
+        from utils.timetable_processor import log_event
+        log_event("🛑 Manual stop requested by admin.", socketio=socketio, status="warning")
+        return jsonify({"success": True, "message": "Stopping... Please wait for current slice to finish."})
+    return jsonify({"success": False, "message": "No active process found."})
+
+@app.route('/admin/timetables/delete/<staff_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_timetable_delete(staff_id):
+    json_path = os.path.join(os.path.dirname(__file__), "static", "json_timetables", f"{staff_id}.json")
+    if os.path.exists(json_path):
+        os.remove(json_path)
+    
+    # Also clear from DB
+    lecturer = users.find_one({"staff_id": staff_id})
+    if lecturer:
+        timetable.delete_one({"lecturer_id": str(lecturer["_id"])})
+        
+    return redirect(url_for('admin_timetables', message=f"Timetable for {staff_id} deleted."))
+
+@app.route('/admin/timetables/bulk-delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_timetables_bulk_delete():
+    import shutil
+    
+    # Directories to clear
+    dirs_to_clear = [
+        os.path.join(os.path.dirname(__file__), "static", "json_timetables"),
+        os.path.join(os.path.dirname(__file__), "static", "timetables_json"),
+        os.path.join(os.path.dirname(__file__), "static", "timetable_splits"),
+        os.path.join(os.path.dirname(__file__), "static", "timetable_images"),
+        os.path.join(os.path.dirname(__file__), "static", "timetables")
+    ]
+    
+    for d in dirs_to_clear:
+        if os.path.exists(d):
+            shutil.rmtree(d)
+        os.makedirs(d, exist_ok=True)
+    
+    # Also delete tracking file
+    track_file = os.path.join(os.path.dirname(__file__), "static", "processed_slices.json")
+    if os.path.exists(track_file):
+        os.remove(track_file)
+    
+    # Clear Table from DB
+    timetable.delete_many({})
+    
+    return redirect(url_for('admin_timetables', message="All JSONs, images, tracking files, and database records cleared."))
+
+@app.route('/admin/timetables/edit/<staff_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_timetable_edit(staff_id):
+    json_path = os.path.join(os.path.dirname(__file__), "static", "json_timetables", f"{staff_id}.json")
+    if not os.path.exists(json_path):
+        flash("JSON file not found for this faculty.", "danger")
+        return redirect(url_for('admin_timetables'))
+    
+    # Load JSON
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    json_str = json.dumps(data, indent=4, ensure_ascii=False)
+    
+    if request.method == 'POST':
+        new_json = request.form.get('json_data')
+        try:
+            data = json.loads(new_json)
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+            flash("Timetable JSON updated.", "success")
+            return redirect(url_for('admin_timetables'))
+        except Exception as e:
+            flash(f"Invalid JSON: {e}", "danger")
+            json_str = new_json
+
+    return render_template('admin/edit_json.html', staff_id=staff_id, json_str=json_str)
 
 @app.route('/admin/leave/<id>/<status>', methods=['GET', 'POST'])
 @login_required
@@ -1727,6 +1757,23 @@ def edit_lecturer_timetable():
             {"_id": tt_doc["_id"]},
             {"$set": {"structured": data}},
         )
+
+        timetable.update_one(
+            {"_id": tt_doc["_id"]},
+            {"$set": {"structured": data}},
+        )
+
+        # Persistence: Sync back to the original JSON file if possible
+        # Filenames are typically "BBHCF048.json" matching the username
+        json_filename = f"{current_user.username.upper()}.json"
+        json_path = os.path.join("f:\\HRMS\\static\\json_timetables", json_filename)
+        
+        try:
+            with open(json_path, "w", encoding="utf-8") as f_json:
+                _json.dump(data, f_json, indent=4, ensure_ascii=False)
+        except Exception as json_err:
+            print(f"Error saving JSON file at {json_path}: {json_err}")
+
         flash("Timetable updated.", "success")
         return redirect(url_for('lecturer_timetable'))
 
@@ -1734,6 +1781,7 @@ def edit_lecturer_timetable():
         'lecturer/edit_timetable.html',
         structured_json=structured_text,
     )
+
 
 
 if __name__ == '__main__':

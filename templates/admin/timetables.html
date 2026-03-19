@@ -7,445 +7,296 @@
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Faculty Timetables</h1>
         <p class="text-sm text-slate-500 mt-1">
-            Upload a PDF containing individual faculty timetables. Each page should correspond to one faculty member.
+            Manage faculty timetables using AI-powered OCR.
         </p>
     </div>
     <div class="flex flex-wrap gap-2">
-        <button type="button" onclick="showApiKeysModal()"
-            class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold shadow-sm transition-colors">
-            <i class="fas fa-key mr-2"></i>
-            API Keys
-        </button>
+        <form action="{{ url_for('admin_timetables_bulk_delete') }}" method="POST" onsubmit="return confirm('Are you sure you want to delete ALL split images and JSON files? This cannot be undone.')">
+            <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-semibold shadow-sm transition-colors border border-rose-100">
+                <i class="fas fa-trash-alt mr-2"></i>
+                Bulk Delete All
+            </button>
+        </form>
         <button type="button" onclick="showLogsModal()"
             class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-semibold shadow-sm transition-colors">
             <i class="fas fa-list-ul mr-2"></i>
-            Logs
+            History Logs
         </button>
-        <form action="{{ url_for('admin_clear_logs') }}" method="POST"
-            onsubmit="return confirm('Are you sure you want to clear all logs?')">
-            <button type="submit"
-                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-semibold shadow-sm transition-colors">
-                <i class="fas fa-trash-alt mr-2"></i>
-                Clear Logs
-            </button>
-        </form>
         <a href="{{ url_for('admin_dashboard') }}"
             class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold shadow-sm">
             <i class="fas fa-arrow-left mr-2"></i>
-            Back to Dashboard
+            Back
         </a>
     </div>
 </div>
 
-<!-- Processing / Result Modal -->
-<div id="processModal"
-    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div id="processModalIcon"
-                    class="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600">
-                    <i class="fas fa-spinner fa-spin"></i>
-                </div>
-                <div>
-                    <h3 id="processModalTitle" class="text-sm font-extrabold text-slate-900">Processing Timetable</h3>
-                    <p id="processModalSubtitle" class="text-xs text-slate-500">Please wait…</p>
-                </div>
-            </div>
-            <button type="button" onclick="hideProcessModal()" class="text-slate-400 hover:text-slate-600 text-lg">
-                &times;
-            </button>
+<!-- LIVE STATUS SECTION (Persistent on page) -->
+<div id="liveStatusSection" class="hidden mb-8 bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+    <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div id="statusPulse" class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
+            <h2 class="text-sm font-bold text-white uppercase tracking-widest">AI Timetable Processor Active</h2>
         </div>
-        <div class="p-5">
-            <!-- Progress Bar -->
-            <div id="progressWrapper" class="mb-4">
-                <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">
-                    <span id="progressLabel">Initializing...</span>
-                    <span id="progressPercent">0%</span>
-                </div>
-                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div id="progressBar" class="bg-indigo-600 h-full rounded-full transition-all duration-300"
-                        style="width: 0%"></div>
-                </div>
-            </div>
-
-            <!-- Real-time Log Area -->
-            <div id="realtimeLogsWrapper" class="mb-4">
-                <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">Live Processing
-                    Log</label>
-                <div id="realtimeLogs"
-                    class="bg-slate-900 text-emerald-400 font-mono text-[10px] p-3 rounded-xl h-48 overflow-y-auto whitespace-pre-wrap border border-slate-800">
-                </div>
-            </div>
-
-            <div id="processModalBody" class="text-sm text-slate-700 whitespace-pre-line hidden"></div>
-
-            <div class="mt-5 flex justify-end gap-2">
-                <button type="button" onclick="hideProcessModal()"
-                    class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="mb-8 bg-white rounded-2xl border border-slate-100 shadow-lg shadow-black/15 p-6">
-    <h2 class="text-lg font-semibold text-slate-800 mb-4">Upload Timetable PDF</h2>
-    <form id="uploadForm" method="post" enctype="multipart/form-data" class="space-y-4">
-        <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">Select PDF file</label>
-            <input type="file" name="timetable_pdf" accept="application/pdf"
-                class="block w-full text-sm text-slate-700 border border-slate-300 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500" />
-            <p class="mt-1 text-xs text-slate-400">
-                The system will read each page, detect the <span class="font-semibold">FACULTY: Name</span> line, and
-                link it to the matching lecturer record.
-            </p>
-        </div>
-        <button type="submit"
-            class="inline-flex items-center px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold shadow-sm">
-            <i class="fas fa-upload mr-2"></i>
-            Upload &amp; Process
+        <button onclick="stopProcessing()" class="px-3 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-bold uppercase tracking-tighter transition-all border border-rose-500/30">
+            <i class="fas fa-stop mr-1"></i> Stop Process
         </button>
-    </form>
+    </div>
+    <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="md:col-span-1">
+            <div class="flex justify-between text-[10px] font-bold text-slate-400 mb-2 uppercase">
+                <span id="liveProgressLabel">Processing Parts...</span>
+                <span id="liveProgressPercent">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                <div id="liveProgressBar" class="bg-indigo-500 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" style="width: 0%"></div>
+            </div>
+            <p id="currentAction" class="mt-3 text-xs text-slate-400 italic">Initializing pipeline...</p>
+        </div>
+        <div class="md:col-span-2">
+            <div id="liveLogs" class="bg-black/40 rounded-xl p-4 h-32 overflow-y-auto font-mono text-[10px] text-emerald-400 border border-white/5 custom-scrollbar">
+                <div class="opacity-40 italic">Waiting for logs...</div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- PDF Upload Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-lg p-6 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+                <i class="fas fa-file-pdf"></i>
+            </div>
+            <h2 class="text-lg font-bold text-slate-800">Bulk PDF Upload</h2>
+        </div>
+        <form action="{{ url_for('admin_timetables_upload') }}" method="POST" enctype="multipart/form-data">
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-violet-300 transition-colors group cursor-pointer relative" onclick="document.getElementById('pdfInput').click()">
+                <input type="file" id="pdfInput" name="timetable_pdf" accept="application/pdf" class="hidden" onchange="updateFileName(this, 'pdfName')">
+                <i class="fas fa-cloud-upload-alt text-4xl text-slate-300 group-hover:text-violet-400 mb-3 transition-colors"></i>
+                <p id="pdfName" class="text-sm text-slate-500 group-hover:text-slate-700">Click to select PDF file</p>
+                <p class="text-[10px] text-slate-400 mt-2 uppercase tracking-widest font-bold">Max 50MB</p>
+            </div>
+            <button type="submit" class="w-full mt-4 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm shadow-lg shadow-violet-200 transition-all active:scale-[0.98]">
+                Start Bulk Processing
+            </button>
+        </form>
+    </div>
+
+    <!-- Single Image Upload Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-lg p-6 hover:shadow-xl transition-shadow">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <i class="fas fa-file-image"></i>
+            </div>
+            <h2 class="text-lg font-bold text-slate-800">Single Image Process</h2>
+        </div>
+        <form action="{{ url_for('admin_timetables_upload_image') }}" method="POST" enctype="multipart/form-data">
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-indigo-300 transition-colors group cursor-pointer relative" onclick="document.getElementById('imgInput').click()">
+                <input type="file" id="imgInput" name="timetable_image" accept="image/*" class="hidden" onchange="updateFileName(this, 'imgName')">
+                <i class="fas fa-image text-4xl text-slate-300 group-hover:text-indigo-400 mb-3 transition-colors"></i>
+                <p id="imgName" class="text-sm text-slate-500 group-hover:text-slate-700">Select single faculty image</p>
+                <p class="text-[10px] text-slate-400 mt-2 uppercase tracking-widest font-bold">JPG, PNG, WEBP</p>
+            </div>
+            <button type="submit" class="w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-200 transition-all active:scale-[0.98]">
+                Process This Image
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Stats Bar -->
 <div class="mb-4 flex flex-wrap gap-3 items-center">
-    <div class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold">
-        Total Lecturers: {{ total }}
+    <div class="px-4 py-2 rounded-xl bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest shadow-sm">
+        Total: {{ total }}
     </div>
-    <div class="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-semibold">
-        Timetables Uploaded: {{ uploaded_count }}
+    <div class="px-4 py-2 rounded-xl bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-widest shadow-sm">
+        Uploaded: {{ uploaded_count }}
     </div>
-    <div class="px-3 py-2 rounded-lg bg-amber-50 text-amber-800 text-xs font-semibold">
+    <div class="px-4 py-2 rounded-xl bg-amber-500 text-white text-[11px] font-bold uppercase tracking-widest shadow-sm">
         Pending: {{ pending_count }}
     </div>
 </div>
 
-<div class="bg-white rounded-2xl border border-slate-100 shadow-lg shadow-black/15 overflow-hidden">
-    <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-2 border-b border-slate-100">
-        <h2 class="text-sm font-semibold text-slate-700">Lecturers</h2>
-        <div class="w-full sm:w-64">
-            <div class="relative">
-                <input id="staff-search" type="text" placeholder="Search by name, ID"
-                    class="w-full pr-9 pl-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                <button type="button" onclick="applyStaffSearch()"
-                    class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-indigo-600">
-                    <i class="fas fa-search text-sm"></i>
-                </button>
-            </div>
+<!-- Table Section -->
+<div class="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden mb-12">
+    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <h2 class="text-sm font-extrabold text-slate-700 uppercase tracking-wider">Faculty Directory</h2>
+        <div class="relative w-64">
+            <input id="staff-search" type="text" placeholder="Filter by name..." class="w-full pl-9 pr-4 py-2 rounded-xl border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
         </div>
     </div>
-    <table class="w-full text-left text-sm" id="staff-table">
-        <thead class="bg-gradient-to-r from-slate-700 to-slate-800 text-white text-xs uppercase tracking-wider">
-            <tr>
-                <th class="px-6 py-4 font-bold">Staff ID</th>
-                <th class="px-6 py-4 font-bold">Lecturer Name</th>
-                <th class="px-6 py-4 font-bold">Status</th>
-                <th class="px-6 py-4 font-bold">Timetable</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50" id="staff-table-body">
-            {% for row in lecturers %}
-            <tr>
-                <td class="px-6 py-3 text-slate-700 text-xs font-mono">
-                    {{ row.staff_id or "-" }}
-                </td>
-                <td class="px-6 py-3 text-slate-800 font-medium">
-                    {{ row.name }}
-                </td>
-                <td class="px-6 py-3">
-                    {% if row.has_timetable %}
-                    <span
-                        class="inline-flex items-center px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold uppercase">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
-                        Uploaded
-                    </span>
-                    {% else %}
-                    <span
-                        class="inline-flex items-center px-2 py-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold uppercase">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5"></span>
-                        Pending
-                    </span>
-                    {% endif %}
-                </td>
-                <td class="px-6 py-3">
-                    {% if row.has_timetable and row.timetable_image_url %}
-                    <button type="button" class="text-xs font-semibold text-violet-600 hover:text-violet-800 underline"
-                        onclick="openTimetableModal('{{ row.timetable_image_url }}', '{{ row.name|escape }}')">
-                        View
-                    </button>
-                    {% elif row.has_timetable %}
-                    <span class="text-xs text-amber-600">File saved, but URL missing</span>
-                    {% else %}
-                    <span class="text-xs text-slate-400">No file</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-</div>
-</div>
-
-<!-- API Keys Modal -->
-<div id="apiKeysModal"
-    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 class="text-sm font-extrabold text-slate-900">Manage API Keys</h3>
-            <button type="button" onclick="document.getElementById('apiKeysModal').classList.add('hidden')"
-                class="text-slate-400 hover:text-slate-600 text-lg">
-                &times;
-            </button>
-        </div>
-        <div class="p-5">
-            <div id="apiKeysList" class="space-y-2 mb-4 max-h-40 overflow-y-auto">
-                <p class="text-xs text-slate-500">Loading keys...</p>
-            </div>
-            <form action="{{ url_for('admin_api_keys') }}" method="POST" class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Add New Key</label>
-                    <input type="text" name="new_key" placeholder="AIza..." required
-                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                </div>
-                <button type="submit"
-                    class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
-                    Add Key
-                </button>
-            </form>
-        </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left" id="staff-table">
+            <thead>
+                <tr class="bg-slate-100/50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                    <th class="px-8 py-4">ID</th>
+                    <th class="px-8 py-4">Name</th>
+                    <th class="px-8 py-4">Department</th>
+                    <th class="px-8 py-4">Status</th>
+                    <th class="px-8 py-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50" id="staff-table-body">
+                {% for row in lecturers %}
+                <tr class="hover:bg-slate-50/80 transition-colors group">
+                    <td class="px-8 py-4 font-mono text-[11px] text-slate-500">{{ row.staff_id }}</td>
+                    <td class="px-8 py-4">
+                        <div class="text-sm font-bold text-slate-800">{{ row.name }}</div>
+                    </td>
+                    <td class="px-8 py-4 text-xs text-slate-500">{{ row.department }}</td>
+                    <td class="px-8 py-4">
+                        {% if row.has_timetable %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase border border-emerald-200">
+                            <i class="fas fa-check-circle mr-1.5"></i> Ready
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-slate-400 text-[10px] font-bold uppercase border border-slate-200">
+                            <i class="fas fa-clock mr-1.5"></i> Missing
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-8 py-4">
+                        {% if row.has_timetable %}
+                        <div class="flex items-center gap-2">
+                            <a href="{{ url_for('static', filename='json_timetables/' + row.staff_id + '.json') }}" download class="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-[10px] font-bold uppercase transition-colors" title="Download JSON">
+                                <i class="fas fa-file-download mr-1"></i> JSON
+                            </a>
+                            <a href="{{ url_for('admin_timetable_edit', staff_id=row.staff_id) }}" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-bold uppercase transition-colors" title="Edit JSON Data">
+                                <i class="fas fa-edit mr-1"></i> Edit
+                            </a>
+                            <form action="{{ url_for('admin_timetable_delete', staff_id=row.staff_id) }}" method="POST" onsubmit="return confirm('Delete timetable for {{ row.staff_id }}?')" class="inline-block">
+                                <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold uppercase transition-colors" title="Delete Record">
+                                    <i class="fas fa-trash mr-1"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span class="text-[10px] italic text-slate-300">No data available</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 <!-- Logs Modal -->
-<div id="logsModal"
-    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm px-4">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h3 class="text-sm font-extrabold text-slate-900">Reconstruction Logs</h3>
-            <button type="button" onclick="document.getElementById('logsModal').classList.add('hidden')"
-                class="text-slate-400 hover:text-slate-600 text-lg">
-                &times;
+<div id="logsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur px-4">
+    <div class="bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="text-xs font-black text-white uppercase tracking-widest">Reconstruction History</h3>
+            <button onclick="document.getElementById('logsModal').classList.add('hidden')" class="text-slate-500 hover:text-white transition-colors">
+                <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="p-5">
-            <pre id="logsContent"
-                class="text-[10px] font-mono bg-slate-50 p-4 rounded-xl max-h-96 overflow-y-auto whitespace-pre-wrap text-slate-700"></pre>
-            <div class="mt-4 flex justify-end">
-                <button type="button" onclick="document.getElementById('logsModal').classList.add('hidden')"
-                    class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold font-semibold">
-                    Close
-                </button>
-            </div>
+        <div class="p-6">
+            <pre id="logsContent" class="text-[10px] font-mono bg-black/50 p-6 rounded-xl max-h-96 overflow-y-auto whitespace-pre-wrap text-emerald-500 border border-white/5"></pre>
         </div>
     </div>
 </div>
 
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
-    function showProcessModal({ type, title, subtitle, body }) {
-        const modal = document.getElementById('processModal');
-        const icon = document.getElementById('processModalIcon');
-        const titleEl = document.getElementById('processModalTitle');
-        const subEl = document.getElementById('processModalSubtitle');
-        const bodyEl = document.getElementById('processModalBody');
-
-        titleEl.textContent = title || 'Processing';
-        subEl.textContent = subtitle || '';
-        bodyEl.textContent = body || '';
-
-        icon.className = 'w-10 h-10 rounded-xl flex items-center justify-center';
-        if (type === 'success') {
-            icon.classList.add('bg-emerald-50', 'text-emerald-600');
-            icon.innerHTML = '<i class="fas fa-check"></i>';
-        } else if (type === 'error') {
-            icon.classList.add('bg-rose-50', 'text-rose-600');
-            icon.innerHTML = '<i class="fas fa-triangle-exclamation"></i>';
-        } else {
-            icon.classList.add('bg-indigo-50', 'text-indigo-600');
-            icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    function updateFileName(input, targetId) {
+        const file = input.files[0];
+        if (file) {
+            document.getElementById(targetId).textContent = file.name;
         }
-
-        modal.classList.remove('hidden');
     }
 
-    function hideProcessModal() {
-        const modal = document.getElementById('processModal');
-        modal.classList.add('hidden');
-    }
-
-    // Socket.IO Integration
     const socket = io();
+    const liveStatusSection = document.getElementById('liveStatusSection');
+    const liveLogs = document.getElementById('liveLogs');
+    const liveProgressBar = document.getElementById('liveProgressBar');
+    const liveProgressPercent = document.getElementById('liveProgressPercent');
+    const liveProgressLabel = document.getElementById('liveProgressLabel');
+    const currentAction = document.getElementById('currentAction');
 
     socket.on('timetable_log', function (data) {
-        const logArea = document.getElementById('realtimeLogs');
-        if (logArea) {
-            const entry = document.createElement('div');
-            entry.className = 'mb-1 border-l-2 border-emerald-500/30 pl-2 py-0.5 hover:bg-emerald-500/10 transition-colors';
-            entry.textContent = data.message;
-            logArea.appendChild(entry);
-            logArea.scrollTop = logArea.scrollHeight;
-        }
+        liveStatusSection.classList.remove('hidden');
+        // Disable buttons when log starts
+        document.querySelectorAll('button[type="submit"]').forEach(btn => btn.disabled = true);
+        
+        const entry = document.createElement('div');
+        entry.className = 'mb-1 border-l border-emerald-500/20 pl-2 py-0.5';
+        if (data.status === 'error') entry.className += ' text-rose-400';
+        if (data.status === 'warning') entry.className += ' text-amber-400';
+        entry.textContent = data.message;
+        
+        if(liveLogs.innerHTML.includes('Waiting for logs')) liveLogs.innerHTML = '';
+        liveLogs.appendChild(entry);
+        liveLogs.scrollTop = liveLogs.scrollHeight;
     });
 
     socket.on('timetable_progress', function (data) {
-        const bar = document.getElementById('progressBar');
-        const percent = document.getElementById('progressPercent');
-        const label = document.getElementById('progressLabel');
-        const icon = document.getElementById('processModalIcon');
-
-        if (bar) bar.style.width = data.progress + '%';
-        if (percent) percent.textContent = data.progress + '%';
-        if (label) label.textContent = data.status || 'Processing...';
-
-        if (data.error) {
-            icon.className = 'w-10 h-10 rounded-xl flex items-center justify-center bg-rose-50 text-rose-600';
-            icon.innerHTML = '<i class="fas fa-triangle-exclamation"></i>';
-        } else if (data.done) {
-            icon.className = 'w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600';
-            icon.innerHTML = '<i class="fas fa-check"></i>';
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+        liveStatusSection.classList.remove('hidden');
+        liveProgressBar.style.width = data.progress + '%';
+        liveProgressPercent.textContent = data.progress + '%';
+        if (data.status) {
+            currentAction.textContent = data.status;
+            liveProgressLabel.textContent = data.progress === 100 ? 'Completed' : 'Processing...';
+        }
+        
+        if (data.done || data.error) {
+            document.querySelectorAll('button[type="submit"]').forEach(btn => btn.disabled = false);
+            document.getElementById('statusPulse').classList.remove('bg-emerald-500', 'animate-pulse');
+            document.getElementById('statusPulse').classList.add(data.done ? 'bg-blue-500' : 'bg-rose-500');
+            if (data.done && !data.status.includes('stopped')) {
+                setTimeout(() => { location.reload(); }, 3000);
+            }
         }
     });
 
-    function openTimetableModal(src, name) {
-        const modal = document.getElementById('timetable-modal');
-        const img = document.getElementById('timetable-modal-image');
-        const title = document.getElementById('timetable-modal-title');
-        img.src = src;
-        title.textContent = 'Timetable - ' + name;
-        modal.classList.remove('hidden');
-    }
-
-    function closeTimetableModal() {
-        const modal = document.getElementById('timetable-modal');
-        const img = document.getElementById('timetable-modal-image');
-        img.src = '';
-        modal.classList.add('hidden');
-    }
-
-    async function showApiKeysModal() {
-        const modal = document.getElementById('apiKeysModal');
-        const list = document.getElementById('apiKeysList');
-        modal.classList.remove('hidden');
-        list.innerHTML = '<p class="text-xs text-slate-500 animate-pulse">Loading keys...</p>';
-
+    async function stopProcessing() {
+        if (!confirm('Are you sure you want to stop the current process?')) return;
         try {
-            const resp = await fetch('{{ url_for("admin_api_keys") }}');
-            const keys = await resp.json();
-            if (keys.length === 0) {
-                list.innerHTML = '<p class="text-xs text-slate-400 italic">No keys found.</p>';
-            } else {
-                list.innerHTML = keys.map(k => `
-                    <div class="text-[10px] font-mono bg-slate-50 px-2 py-1.5 rounded border border-slate-100 overflow-hidden text-ellipsis whitespace-nowrap text-slate-600">
-                        ${k}
-                    </div>
-                `).join('');
-            }
+            const resp = await fetch('{{ url_for("admin_timetables_stop") }}', { method: 'POST' });
+            const res = await resp.json();
+            alert(res.message);
         } catch (e) {
-            list.innerHTML = '<p class="text-xs text-rose-500">Failed to load keys.</p>';
+            alert('Failed to stop process.');
         }
     }
 
     async function showLogsModal() {
-        const modal = document.getElementById('logsModal');
+        document.getElementById('logsModal').classList.remove('hidden');
         const content = document.getElementById('logsContent');
-        modal.classList.remove('hidden');
-        content.textContent = 'Loading logs...';
-
+        content.textContent = 'Loading history...';
         try {
             const resp = await fetch('{{ url_for("admin_view_logs") }}');
-            const text = await resp.text();
-            content.textContent = text;
+            content.textContent = await resp.text();
             content.scrollTop = content.scrollHeight;
         } catch (e) {
             content.textContent = 'Failed to load logs.';
         }
     }
 
-    function applyStaffSearch() {
-        const input = document.getElementById('staff-search');
-        const filter = (input.value || '').toLowerCase().trim();
-        const tbody = document.getElementById('staff-table-body');
-        if (!tbody) return;
-        const rows = tbody.getElementsByTagName('tr');
-
-        for (let i = 0; i < rows.length; i++) {
-            const cells = rows[i].getElementsByTagName('td');
-            if (cells.length < 2) continue;
-            const staffId = (cells[0].innerText || '').toLowerCase();
-            const name = (cells[1].innerText || '').toLowerCase();
-
-            const text = staffId + ' ' + name;
-            rows[i].style.display = !filter || text.includes(filter) ? '' : 'none';
+    // Search filtering
+    document.getElementById('staff-search').addEventListener('keyup', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.getElementById('staff-table-body').getElementsByTagName('tr');
+        for (let row of rows) {
+            const name = row.cells[1].textContent.toLowerCase();
+            const id = row.cells[0].textContent.toLowerCase();
+            row.style.display = (name.includes(filter) || id.includes(filter)) ? '' : 'none';
         }
-    }
+    });
 
-    document.addEventListener('DOMContentLoaded', function () {
-        // Show result popup if server returned message/error
-        const serverError = {{ (error or '') | tojson }};
-    const serverMsg = {{ (message or '')| tojson }};
-    if (serverError) {
-        showProcessModal({
-            type: 'error',
-            title: 'Error processing PDF',
-            subtitle: 'Please fix the issue and try again.',
-            body: serverError
-        });
-    } else if (serverMsg) {
-        showProcessModal({
-            type: 'success',
-            title: 'Upload complete',
-            subtitle: 'Timetable processing finished successfully.',
-            body: serverMsg
-        });
-    }
-
-    // Show "processing" popup when submitting
-    const form = document.getElementById('uploadForm');
-    if (form) {
-        form.addEventListener('submit', function () {
-            // Initialize Modal for Async UI
-            const logArea = document.getElementById('realtimeLogs');
-            if (logArea) logArea.innerHTML = '<div class="text-slate-500 italic">Initializing background process...</div>';
-
-            const bar = document.getElementById('progressBar');
-            if (bar) bar.style.width = '0%';
-
-            const percent = document.getElementById('progressPercent');
-            if (percent) percent.textContent = '0%';
-
-            const label = document.getElementById('progressLabel');
-            if (label) label.textContent = 'Uploading PDF...';
-
-            const icon = document.getElementById('processModalIcon');
-            icon.className = 'w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-50 text-indigo-600';
-            icon.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-            showProcessModal({
-                type: 'loading',
-                title: 'Processing Timetable PDF',
-                subtitle: 'AI working in background…',
-                body: ''
-            });
-        });
-    }
-
-    const input = document.getElementById('staff-search');
-    if (input) {
-        input.addEventListener('keyup', function (e) {
-            if (e.key === 'Enter') {
-                applyStaffSearch();
-            } else {
-                applyStaffSearch(); // real-time filtering
-            }
-        });
-    }
+    // Handle initial alert messages from Flask
+    document.addEventListener('DOMContentLoaded', function() {
+        const error = {{ (error or '') | tojson }};
+        const message = {{ (message or '') | tojson }};
+        if (error) alert('Error: ' + error);
+        if (message) alert(message);
     });
 </script>
 {% endblock %}

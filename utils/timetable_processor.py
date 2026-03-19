@@ -2,29 +2,29 @@ import os
 import io
 import re
 import json
-import sqlite3
 import time
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
+import threading
 
 import fitz  # PyMuPDF
 from PIL import Image
-import pytesseract
-import easyocr
-import google.generativeai as genai
-from google.api_core import exceptions as google_exceptions
+from google import genai
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
 
-def _configure_tesseract() -> None:
-    """
-    Optional Windows-friendly override.
-    """
-    cmd = (os.getenv("TESSERACT_CMD") or "").strip()
-    if cmd:
-        pytesseract.pytesseract.tesseract_cmd = cmd
+# Global stop event for background tasks
+stop_events = {}
 
+def get_genai_client():
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return None
+    return genai.Client(api_key=api_key)
 
-def log_event(message: str, socketio=None):
+def log_event(message: str, socketio=None, status="info", progress=None):
     """
     Log an event to reconstruction_log.txt and optionally emit via socketio.
     """
@@ -39,474 +39,534 @@ def log_event(message: str, socketio=None):
     print(message)
     if socketio:
         try:
-            socketio.emit('timetable_log', {'message': f"[{timestamp}] {message}"})
+            # Emit both log and progress
+            socketio.emit('timetable_log', {'message': f"[{timestamp}] {message}", 'status': status})
+            if progress is not None:
+                socketio.emit('timetable_progress', {'progress': progress, 'status': message})
         except Exception:
             pass
 
-
-def _extract_faculty_name(text: str) -> str | None:
-    """
-    Try to extract faculty name from OCR text.
-    Looks for lines like: 'FACULTY: Mr. MAHESH KUMAR'
-    """
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-
-    def _cleanup_name(raw: str) -> str:
-        raw = re.sub(r"\s+", " ", (raw or "")).strip()
-        if not raw:
-            return ""
-        raw_upper = raw.upper()
-        cut_keywords = ["MENTOR", "TOTAL", "DEPARTMENT", "DEPT", "PRINCIPAL", "TIME TABLE"]
-        cut_idx = None
-        for kw in cut_keywords:
-            m = re.search(rf"\b{re.escape(kw)}\b", raw_upper)
-            if m:
-                cut_idx = m.start() if cut_idx is None else min(cut_idx, m.start())
-        if cut_idx is not None:
-            raw = raw[:cut_idx].strip()
-        raw = re.sub(r"[\s:\-–—]+$", "", raw).strip()
-        return raw
-
-    for line in lines:
-        norm = re.sub(r"\s+", " ", line.upper())
-        if "TIME TABLE" in norm:
-            continue
-        if norm.startswith("FACULTY:"):
-            parts = line.split(":", 1)
-            if len(parts) == 2:
-                name = _cleanup_name(parts[1])
-                if re.fullmatch(r"[0-9\s\-\(\)IVX]+", name.upper()):
-                    continue
-                if name:
-                    return name
-
-    for line in lines:
-        norm = re.sub(r"\s+", " ", line.upper())
-        if "TIME TABLE" in norm:
-            continue
-        if norm.startswith("FACULTY"):
-            parts = re.split(r"[:\-]", line, maxsplit=1)
-            if len(parts) == 2:
-                name = _cleanup_name(parts[1])
-                if re.fullmatch(r"[0-9\s\-\(\)IVX]+", name.upper()):
-                    continue
-                if name:
-                    return name
-    return None
-
-
-def _normalize_name(text: str) -> str:
-    text = (text or "").upper()
-    text = re.split(r"\b(MENTOR|TOTAL|DEPARTMENT|DEPT)\b", text, maxsplit=1)[0]
-    text = re.sub(r"\b(MR|MRS|MS|MISS|DR|PROF|PROFESSOR)\.?\b", "", text)
-    text = re.sub(r"[^A-Z\s]", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
-
-
-def _fallback_detect_faculty_from_page_text(
-    page_text: str, known_faculty_names: List[str]
-) -> Optional[str]:
-    if not page_text or not known_faculty_names:
-        return None
-    norm_page = _normalize_name(page_text)
-    if not norm_page:
-        return None
-    page_tokens = set(norm_page.split())
-    best_name = None
-    best_score = 0.0
-    from difflib import get_close_matches
-    for name in known_faculty_names:
-        norm_name = _normalize_name(name)
-        if not norm_name:
-            continue
-        name_tokens = set(norm_name.split())
-        if not name_tokens:
-            continue
-        common = page_tokens & name_tokens
-        if not common:
-            continue
-        score = len(common) / len(name_tokens)
-        if score > best_score:
-            best_score = score
-            best_name = name
-    if best_score >= 0.6:
-        return best_name
-    norm_known = [_normalize_name(n) for n in known_faculty_names]
-    best = get_close_matches(norm_page, norm_known, n=1, cutoff=0.8)
-    if best:
-        idx = norm_known.index(best[0])
-        return known_faculty_names[idx]
-    return None
-
-
-def lookup_subject_in_sqlite(faculty_name: str, class_section: str) -> Optional[str]:
-    db_path = os.getenv("MOULYA_DB_PATH") or r"F:\moulya_college.db"
-    if not db_path or not os.path.exists(db_path):
-        return None
-    
+def clean_json_response(text):
+    """Clean Gemini response and extract valid JSON"""
+    text = (text or "").strip()
+    # Remove markdown formatting if present
+    if text.startswith("```"):
+        text = re.sub(r"```(json)?", "", text).strip("`").strip()
     try:
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        def _get_tokens(t):
-            t = (t or "").upper()
-            t = re.sub(r"\b(MR|MRS|MS|MISS|DR|PROF)\b", "", t)
-            t = re.sub(r"[^A-Z0-9]", " ", t)
-            return set(t.split())
-
-        # 1. Find Lecturer ID
-        cursor.execute("SELECT id, name FROM lecturer")
-        lecturers = cursor.fetchall()
-        target_lecturer_id = None
-        
-        ocr_fac_tokens = _get_tokens(faculty_name)
-        if not ocr_fac_tokens:
-            conn.close()
-            return None
-
-        best_score = 0
-        for lid, lname in lecturers:
-            db_tokens = _get_tokens(lname)
-            if not db_tokens: continue
-            
-            # Intersection score
-            common = ocr_fac_tokens & db_tokens
-            score = len(common) / max(len(ocr_fac_tokens), len(db_tokens))
-            
-            if score > best_score:
-                best_score = score
-                target_lecturer_id = lid
-        
-        if best_score < 0.6:
-            target_lecturer_id = None
-            
-        if not target_lecturer_id:
-            conn.close()
-            return None
-
-        # 2. Find Course ID
-        cursor.execute("SELECT id, name FROM course")
-        courses = cursor.fetchall()
-        target_course_id = None
-        
-        ocr_class_tokens = _get_tokens(class_section)
-        if not ocr_class_tokens:
-            conn.close()
-            return None
-
-        best_c_score = 0
-        for cid, cname in courses:
-            db_tokens = _get_tokens(cname)
-            if not db_tokens: continue
-            
-            common = ocr_class_tokens & db_tokens
-            score = len(common) / max(len(ocr_class_tokens), len(db_tokens))
-            
-            if score > best_c_score:
-                best_c_score = score
-                target_course_id = cid
-
-        if best_c_score < 0.6:
-            target_course_id = None
-        
-        if not target_course_id:
-            conn.close()
-            return None
-
-        # 3. Find Unique Subject
-        query = """
-        SELECT DISTINCT s.name 
-        FROM subject_assignment sa
-        JOIN subject s ON sa.subject_id = s.id
-        WHERE sa.lecturer_id = ? AND s.course_id = ? AND sa.is_active = 1
-        """
-        cursor.execute(query, (target_lecturer_id, target_course_id))
-        subjects = [row[0] for row in cursor.fetchall()]
-        
-        conn.close()
-        
-        if len(subjects) == 1:
-            return subjects[0]
-        elif len(subjects) > 1:
-            log_event(f"Ambiguity in DB: Faculty '{faculty_name}' has multiple subjects {subjects} for '{class_section}'. No update.", socketio=socketio)
-            return None
-        return None
-
-    except Exception as e:
-        log_event(f"Moulya DB Error: {e}")
-        return None
-
-
-def extract_timetable_structure(image: Image.Image, faculty_name_hint: Optional[str] = None, socketio=None) -> Optional[Dict]:
-    """
-    AI-powered extraction of structured timetable data using EasyOCR coordinates and Google Gemini.
-    """
-    api_key_env = (os.getenv("GOOGLE_API_KEY") or "").strip()
-    api_keys_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "api_keys.txt")
-    keys = []
-    if os.path.exists(api_keys_path):
-        with open(api_keys_path, "r") as f:
-            keys = [line.strip() for line in f if line.strip() and not line.startswith("#")]
-    if api_key_env and api_key_env not in keys:
-        keys.append(api_key_env)
-    if not keys:
-        return None
-
-    # Step 1: OCR Extraction
-    try:
-        reader = easyocr.Reader(['en'], gpu=False)
-        buf = io.BytesIO()
-        image.save(buf, format="PNG")
-        ocr_results = reader.readtext(buf.getvalue())
-        
-        ocr_payload_list = []
-        for (bbox, text, prob) in ocr_results:
-            cx = sum(p[0] for p in bbox) / 4
-            cy = sum(p[1] for p in bbox) / 4
-            ocr_payload_list.append(f"'{text}' at (x={round(cx)}, y={round(cy)})")
-        
-        full_ocr_text = "\n".join(ocr_payload_list)
-    except Exception as e:
-        log_event(f"OCR Error: {e}", socketio=socketio)
-        return None
-
-    system_prompt = """
-You are a Timetable Data Extraction Expert.
-Extract and reconstruct the structured timetable JSON from the OCR results provided.
-
-CRITICAL INSTRUCTIONS:
-1. Use the provided (X,Y) coordinates to determine cell placement:
-   - X-coordinates help you identify the Period (I to VII).
-   - Y-coordinates help you identify the Day (Monday to Saturday).
-2. For each hour (I, II, III, IV, V, VI, VII), you MUST extract TWO fields:
-   - "class_section": The class and section (e.g., "II BCA B", "I B.Com A").
-   - "subject": The subject name or code (e.g., "Python", "MRP", "Java", "Accounting").
-3. IMPORTANT: If a cell contains a combined string like "MRP III B.COM (E)", the first part is usually the SUBJECT and the rest is the CLASS/SECTION. You MUST split them.
-   - Example "MRP III B.COM (E)" -> subject: "MRP", class_section: "III B.COM (E)"
-   - Example "JAVA III BCA A" -> subject: "JAVA", class_section: "III BCA A"
-4. If a cell contains multi-line text, combine them correctly.
-5. If a cell is empty or unclear, mark both fields as null.
-6. Return *ONLY* valid JSON formatting.
-
-STRUCTURE:
-{
-  "faculty_name": "...",
-  "timetable": {
-    "Monday": {
-      "I": {"class_section": "...", "subject": "..."},
-      "II": {...},
-      ...
-    },
-    ...
-  }
-}
-"""
-
-    for api_key in keys:
-        try:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("models/gemini-3.1-flash-lite-preview")
-            
-            resp = model.generate_content(
-                f"SYSTEM: {system_prompt}\n\nRECONSTRUCT THIS TIMETABLE FROM OCR DATA:\n{full_ocr_text}"
-            )
-
-            text = (resp.text or "").strip()
-            if text.startswith("```"):
-                text = text.strip("`")
-                if text.lower().startswith("json"):
-                    text = text[4:].strip()
-
-            data = json.loads(text)
-            fname = faculty_name_hint or data.get("faculty_name", "")
-            log_event(f"AI Reconstruction successful for {fname or 'Unknown faculty'}", socketio=socketio)
-            
-            # Post-processing: Split heuristic and SQLite Lookup
-            if "timetable" in data:
-                for day, hours in data["timetable"].items():
-                    if not isinstance(hours, dict): continue
-                    for hour, fields in hours.items():
-                        if isinstance(fields, dict) and fields.get("class_section"):
-                            cs = fields["class_section"].strip()
-                            # Heuristic split if subject is missing
-                            if not fields.get("subject"):
-                                # Pattern: [CODE] [YEAR/NUMERAL] [COURSE]
-                                # Example: MRP III B.COM (E)
-                                split_match = re.match(r"^([A-Z0-9]{2,8})\s+((?:I+|[1-3])\s+.*)$", cs, re.IGNORECASE)
-                                if split_match:
-                                    fields["subject"] = split_match.group(1).upper()
-                                    fields["class_section"] = split_match.group(2).strip()
-                                    log_event(f"Heuristic Split: '{cs}' -> sub: '{fields['subject']}', class: '{fields['class_section']}'", socketio=socketio)
-
-                            # If subject still missing, try SQLite
-                            if not fields.get("subject"):
-                                lookup = lookup_subject_in_sqlite(fname, fields["class_section"])
-                                if lookup:
-                                    log_event(f"SQLite Lookup: Found subject '{lookup}' for {fname} at {day} {hour}", socketio=socketio)
-                                    fields["subject"] = lookup
-            
-            return data
-        except Exception as e:
-            log_event(f"Gemini Error with key {api_key[:10]}...: {e}", socketio=socketio)
-            continue
-            
-    return None
-
-
-def pdf_to_faculty_images(
-    pdf_bytes: bytes,
-    known_faculty_names: Optional[List[str]] = None,
-) -> Tuple[List[Dict], List[Dict]]:
-    with io.BytesIO(pdf_bytes) as pdf_stream:
-        doc = fitz.open(stream=pdf_stream.read(), filetype="pdf")
-
-    try:
-        project_root = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
-        static_root = os.path.join(project_root, "static")
-        timetable_images_dir = os.path.join(static_root, "timetable_images")
-        timetable_splits_dir = os.path.join(static_root, "timetable_splits")
-        os.makedirs(timetable_images_dir, exist_ok=True)
-        os.makedirs(timetable_splits_dir, exist_ok=True)
-    except Exception:
-        timetable_images_dir = None
-        timetable_splits_dir = None
-
-    pages_with_name: List[Dict] = []
-    pages_without_name: List[Dict] = []
-
-    _configure_tesseract()
-
-    for page_index in range(len(doc)):
-        page = doc.load_page(page_index)
-        page_number = page_index + 1
-
-        if timetable_images_dir:
+        return json.loads(text)
+    except:
+        # Try to find JSON block manually if it's buried
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if match:
             try:
-                full_pix = page.get_pixmap(dpi=200)
-                full_mode = "RGBA" if full_pix.alpha else "RGB"
-                full_img = Image.frombytes(full_mode, (full_pix.width, full_pix.height), full_pix.samples)
-                full_img.save(os.path.join(timetable_images_dir, f"page_{page_number:02d}.png"), format="PNG")
-            except Exception:
+                return json.loads(match.group(0))
+            except:
                 pass
+        return {"error": "Invalid JSON response from AI", "raw": text}
 
-        blocks = page.get_text("blocks") or []
-        embedded_text = (page.get_text("text") or "").strip()
-        page_rect = page.rect
+def extract_from_image(image_bytes: bytes, faculty_hint: str = None, faculty_list: str = None) -> Dict:
+    """
+    Calls Gemini with the specific structured prompt requested by the user.
+    """
+    client = get_genai_client()
+    if not client:
+        return {"error": "No API key found"}
 
-        segments: List[Dict] = []
-        current: Dict | None = None
-        last_heading_y: float | None = None
+    prompt = """
+## 📜 OBJECTIVE
 
-        for b in blocks:
-            if len(b) < 5: continue
-            x0, y0, x1, y1, text = b[0], b[1], b[2], b[3], b[4]
-            if not isinstance(text, str): continue
-            norm = re.sub(r"\s+", " ", text.upper())
-            if "DR. B. B. HEGDE FIRST GRADE COLLEGE" in norm:
-                last_heading_y = y0
-            if "FACULTY" in norm and "TIME TABLE" not in norm:
-                name_candidate = _extract_faculty_name(text)
-                if name_candidate:
-                    if current and current.get("bottom") is None:
-                        current["bottom"] = y0
-                        segments.append(current)
-                    seg_top = last_heading_y if last_heading_y is not None else y0
-                    current = {"faculty_name": name_candidate, "top": seg_top, "bottom": None}
-                    last_heading_y = None
-                    continue
-            if current and "PRINCIPAL" in norm and y0 > (current.get("top", page_rect.y0) + 80):
-                principal_bottom = min(page_rect.y1, y1 + 10)
-                current["bottom"] = max(current.get("top", page_rect.y0) + 100, principal_bottom)
-                segments.append(current)
-                current = None
+You are an expert OCR and data structuring agent.
+Your task is to extract a structured faculty timetable from the provided image.
+The output MUST be a PURE JSON object without any markdown or conversational text.
 
-        if current:
-            current["bottom"] = page_rect.y1
-            segments.append(current)
+## 🎯 JSON SCHEMA
 
-        seg_counter = 0
-        if not segments:
-            ocr_text = ""
+{
+"faculty": "",
+"faculty_id": "",
+"department": "",
+"mentor": "",
+"total_hours": "",
+"timetable": {
+"periods": [
+{ "period": "0", "time": "" },
+{ "period": "I", "time": "" },
+{ "period": "II", "time": "" },
+{ "period": "III", "time": "" },
+{ "period": "IV", "time": "" },
+{ "period": "V", "time": "" },
+{ "period": "VI", "time": "" },
+{ "period": "VII", "time": "" }
+],
+"days": [
+{
+"day": "MONDAY",
+"slots": {
+"0": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 },
+"I": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 },
+"II": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 },
+"III": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 },
+"IV": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 },
+"V": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 },
+"VI": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 },
+"VII": { "class": null, "section": null, "subject": null, "is_lab": false, "span": 1 }
+}
+}
+]
+}
+}
+
+---
+
+## 📅 DAYS (MANDATORY ORDER)
+
+MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY
+
+---
+
+## 🧩 SLOT STRUCTURE (VERY IMPORTANT)
+
+Each day MUST contain "slots" as an OBJECT (NOT array):
+
+"slots": {
+"0": { slot_object },
+"I": { slot_object },
+"II": { slot_object },
+"III": { slot_object },
+"IV": { slot_object },
+"V": { slot_object },
+"VI": { slot_object },
+"VII": { slot_object }
+}
+
+---
+
+## 📘 SLOT OBJECT FORMAT
+
+Each slot MUST be:
+
+{
+"class": "",
+"section": "",
+"subject": "",
+"is_lab": false,
+"span": 1
+}
+
+---
+
+## ⚪ EMPTY CELLS (MANDATORY FORMAT)
+
+If no class exists:
+
+{
+"class": null,
+"section": null,
+"subject": null,
+"is_lab": false,
+"span": 1
+}
+
+---
+
+## 🧠 TEXT PARSING RULES
+
+Example:
+"III BCA (A) AI"
+
+→ class = "III BCA"
+→ section = "A"
+→ subject = "AI"
+
+Example:
+"II B.COM (D) MV"
+
+→ class = "II B.COM"
+→ section = "D"
+→ subject = "MV"
+
+---
+
+## 📄 MULTI-LINE CELL HANDLING
+
+Example:
+MRP
+III B.COM
+(C)
+
+→ class = "III B.COM"
+→ section = "C"
+→ subject = "MRP"
+
+---
+
+## 🧪 LAB / MERGED CELL HANDLING (CRITICAL)
+
+If a class spans multiple periods (like LAB or arrows):
+
+✅ DO NOT use null placeholders
+✅ DO NOT store only first slot
+
+👉 INSTEAD:
+
+* Repeat SAME slot object in ALL occupied periods
+* Each slot must contain IDENTICAL data
+* Keep "span" SAME in all repeated slots
+
+---
+
+## ✅ LAB EXAMPLE (4 PERIODS)
+
+"II": {
+"class": "II BCA",
+"section": "A",
+"subject": "Python Lab",
+"is_lab": true,
+"span": 4
+},
+"III": {
+"class": "II BCA",
+"section": "A",
+"subject": "Python Lab",
+"is_lab": true,
+"span": 4
+},
+"IV": {
+"class": "II BCA",
+"section": "A",
+"subject": "Python Lab",
+"is_lab": true,
+"span": 4
+},
+"V": {
+"class": "II BCA",
+"section": "A",
+"subject": "Python Lab",
+"is_lab": true,
+"span": 4
+}
+
+---
+
+## 📌 NORMAL CLASSES
+
+* span = 1
+* appears only in one period
+
+---
+
+## 📤 OUTPUT RULES
+
+* MUST be PURE JSON
+* NO markdown
+* NO explanation
+* NO extra text
+* MUST be directly parseable using json.loads()
+
+---
+
+## 🎯 FINAL GOAL
+
+Return a clean, fully expanded, structured timetable JSON where:
+
+* Each period is explicitly defined
+* No merged/hidden data
+* Ready for frontend rendering (React / HTML / Table)
+* No post-processing required
+"""
+    if faculty_hint:
+        prompt += f"\n\nFACULTY NAME HINT: {faculty_hint}"
+
+    try:
+        # Using gemini-2.5-pro as requested
+        model_name = "gemini-2.5-pro"
+        
+        response = client.models.generate_content(
+            model=model_name,
+            contents=[
+                genai.types.Content(
+                    role="user",
+                    parts=[
+                        genai.types.Part.from_text(text=prompt),
+                        genai.types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+                    ]
+                )
+            ]
+        )
+        
+        return clean_json_response(response.text)
+    except Exception as e:
+        return {"error": str(e)}
+
+def split_pdf_to_parts(pdf_bytes: bytes) -> List[Image.Image]:
+    """
+    Splits each PDF page into two parts (Top and Bottom) as requested.
+    """
+    images = []
+    img_dir = os.path.join(os.getcwd(), "static", "timetables")
+    os.makedirs(img_dir, exist_ok=True)
+    
+    with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+        for page_idx in range(len(doc)):
+            page = doc.load_page(page_idx)
+            # High DPI for better OCR
+            pix = page.get_pixmap(dpi=300)
+            img = Image.frombytes("RGBA" if pix.alpha else "RGB", [pix.width, pix.height], pix.samples)
+            
+            # Save original page
+            page_path = os.path.join(img_dir, f"page_{page_idx+1:03d}.png")
+            img.save(page_path, format="PNG")
+            
+            # Split into Top and Bottom half
+            w, h = img.size
+            mid = h // 2
+            
+            top = img.crop((0, 0, w, mid))
+            bottom = img.crop((0, mid, w, h))
+            
+            images.append(top)
+            images.append(bottom)
+    return images
+
+def process_background_pipeline(pdf_bytes: bytes, task_id: str, socketio=None, db=None):
+    """
+    The background pipeline that processes each part one by one.
+    - Phase 1: Split PDF into full page images
+    - Phase 2: Split each page into two slices (top and bottom)
+    - Phase 3: Send slices to Gemini AI
+    """
+    global stop_events
+    stop_event = stop_events.get(task_id)
+    if not stop_event:
+        stop_event = threading.Event()
+        stop_events[task_id] = stop_event
+
+    try:
+        # Directories
+        static_dir = os.path.join(os.getcwd(), "static")
+        page_dir = os.path.join(static_dir, "timetables")
+        slice_dir = os.path.join(static_dir, "timetable_splits")
+        os.makedirs(page_dir, exist_ok=True)
+        os.makedirs(slice_dir, exist_ok=True)
+
+        # Phase 1: PDF pages to images
+        log_event("Phase 1: PDF pages to high-res images...", socketio=socketio, progress=5)
+        page_images = []
+        with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+            total_pages = len(doc)
+            for page_idx in range(total_pages):
+                if stop_event.is_set(): break
+                name = f"page_{page_idx+1:03d}.png"
+                path = os.path.join(page_dir, name)
+                
+                if os.path.exists(path):
+                    img = Image.open(path)
+                    log_event(f"Skipping (Exists): {name}", socketio=socketio)
+                else:
+                    page = doc.load_page(page_idx)
+                    pix = page.get_pixmap(dpi=300)
+                    img = Image.frombytes("RGBA" if pix.alpha else "RGB", [pix.width, pix.height], pix.samples)
+                    img.save(path, format="PNG")
+                    log_event(f"Saved: {name}", socketio=socketio)
+                
+                page_images.append(img)
+                # progress...
+
+        # Phase 2: Each page to two slices
+        log_event("Phase 2: Slicing into parts...", socketio=socketio, progress=20)
+        slice_images = []
+        slice_names = []
+        for i, img in enumerate(page_images):
+            if stop_event.is_set(): break
+            t_name = f"page_{i+1:03d}_top.png"
+            b_name = f"page_{i+1:03d}_bottom.png"
+            t_path = os.path.join(slice_dir, t_name)
+            b_path = os.path.join(slice_dir, b_name)
+
+            if os.path.exists(t_path) and os.path.exists(b_path):
+                slice_images.append(Image.open(t_path))
+                slice_names.append(t_name)
+                slice_images.append(Image.open(b_path))
+                slice_names.append(b_name)
+                log_event(f"Skipping (Exists): Slices for page {i+1}", socketio=socketio)
+            else:
+                w, h = img.size
+                mid = h // 2
+                top = img.crop((0, 0, w, mid))
+                bot = img.crop((0, mid, w, h))
+                top.save(t_path, format="PNG")
+                bot.save(b_path, format="PNG")
+                slice_images.append(top)
+                slice_names.append(t_name)
+                slice_images.append(bot)
+                slice_names.append(b_name)
+                log_event(f"Sliced page {i+1} into top/bottom", socketio=socketio)
+
+        # Phase 3: Gemni API
+        log_event("Phase 3: AI Analysis...", socketio=socketio, progress=35)
+        
+        # Tracking file to avoid re-ocr
+        track_path = os.path.join(static_dir, "processed_slices.json")
+        processed_data = {}
+        if os.path.exists(track_path):
             try:
-                pix_full = page.get_pixmap(dpi=200)
-                mode_full = "RGBA" if pix_full.alpha else "RGB"
-                image_full = Image.frombytes(mode_full, (pix_full.width, pix_full.height), pix_full.samples)
-                ocr_text = pytesseract.image_to_string(image_full)
-            except Exception:
-                image_full = None
+                with open(track_path, "r") as f: processed_data = json.load(f)
+            except: processed_data = {}
 
-            if image_full is not None:
-                try:
-                    data = pytesseract.image_to_data(image_full, output_type=pytesseract.Output.DICT)
-                    lines = {}
-                    n = len(data.get("text", []))
-                    for i in range(n):
-                        word = (data["text"][i] or "").strip()
-                        if not word: continue
-                        key = (data.get("block_num", [0])[i], data.get("par_num", [0])[i], data.get("line_num", [0])[i])
-                        top = int(data.get("top", [0])[i] or 0)
-                        lines.setdefault(key, {"top": top, "words": []})
-                        lines[key]["words"].append(word)
-                    line_items = sorted([{"top": v["top"], "text": " ".join(v["words"])} for v in lines.values()], key=lambda x: x["top"])
-                    faculty_lines = []
-                    header_top = None
-                    principal_tops = []
-                    for item in line_items:
-                        norm = item["text"].upper()
-                        if "DR. B. B. HEGDE FIRST GRADE COLLEGE" in norm and header_top is None: header_top = item["top"]
-                        if "PRINCIPAL" in norm: principal_tops.append(item["top"])
-                        if "FACULTY" in norm and "TIME TABLE" not in norm:
-                            nm = _extract_faculty_name(item["text"])
-                            if nm: faculty_lines.append({"top": item["top"], "faculty_name": nm})
-                    
-                    if faculty_lines:
-                        min_gap = max(180, int(image_full.height * 0.10))
-                        for idx, fline in enumerate(faculty_lines):
-                            top_px = max(0, int(header_top or fline["top"]) - 10)
-                            bottom_px = None
-                            for ptop in principal_tops:
-                                if ptop > top_px + min_gap:
-                                    bottom_px = int(ptop) + 40
-                                    break
-                            if bottom_px is None and idx+1 < len(faculty_lines):
-                                bottom_px = int(faculty_lines[idx+1]["top"]) - 8
-                            if bottom_px is None: bottom_px = image_full.height
-                            cropped = image_full.crop((0, top_px, image_full.width, min(image_full.height, bottom_px)))
-                            if timetable_splits_dir:
-                                suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
-                                cropped.save(os.path.join(timetable_splits_dir, f"page_{page_number:02d}_{suffix}.png"))
-                            seg_counter += 1
-                            pages_with_name.append({"page_index": page_index, "faculty_name": fline["faculty_name"], "image": cropped, "ocr_text": ocr_text or embedded_text})
-                        continue
-                except Exception: pass
+        # Pre-fetch faculty list for AI matching
+        faculty_ref = ""
+        if db is not None:
+            lects = list(db.users.find({"role": "lecturer"}, {"staff_id": 1, "name": 1, "department": 1}))
+            faculty_ref = "\n".join([f"- ID: {l.get('staff_id')} | NAME: {l.get('name')} | DEPT: {l.get('department')}" for l in lects])
+
+        total_slices = len(slice_images)
+        for i, slice_img in enumerate(slice_images):
+            if stop_event.is_set(): break
+            slice_name = slice_names[i]
+
+            # SKIP if already in track file
+            if slice_name in processed_data:
+                log_event(f"Skipping (Done): {slice_name}", socketio=socketio)
+                continue
             
-            faculty_name = _extract_faculty_name(ocr_text) or _extract_faculty_name(embedded_text)
-            if not faculty_name and known_faculty_names:
-                faculty_name = _fallback_detect_faculty_from_page_text((embedded_text or "") + "\n" + (ocr_text or ""), known_faculty_names)
+            progress = 35 + int((i / total_slices) * 65)
+            log_event(f"Sending slice {i+1} ({slice_name}) to Gemini...", socketio=socketio, progress=progress)
+
+            buf = io.BytesIO()
+            slice_img.save(buf, format="PNG")
+            img_bytes = buf.getvalue()
+
+            extracted = extract_from_image(img_bytes, faculty_list=faculty_ref)
+            if "error" in extracted:
+                log_event(f"⚠️ Error {slice_name}: {extracted['error']}", socketio=socketio, status="error")
+                continue
+
+            if db is not None:
+                match_and_save(extracted, db, socketio)
             
-            entry = {"page_index": page_index, "faculty_name": faculty_name, "image": image_full, "ocr_text": ocr_text or embedded_text}
-            if faculty_name: pages_with_name.append(entry)
-            else: pages_without_name.append(entry)
-            continue
+            # Record success
+            processed_data[slice_name] = True
+            with open(track_path, "w") as f: json.dump(processed_data, f)
 
-        max_h = 0
-        for seg in segments:
-            h = int(min(page_rect.y1, seg.get("bottom", page_rect.y1)) - max(page_rect.y0, seg.get("top", page_rect.y0)))
-            if h > max_h: max_h = h
+        if not stop_event.is_set():
+            log_event("Bulk processing complete. All files saved.", socketio=socketio, progress=100)
+            socketio.emit('timetable_progress', {'progress': 100, 'done': True})
+        else:
+            log_event("🛑 Processing halted by user.", socketio=socketio, status="warning")
+            socketio.emit('timetable_progress', {'progress': 0, 'done': True, 'status': "Process stopped."})
 
-        for seg in segments:
-            top, bottom = max(page_rect.y0, seg.get("top", page_rect.y0)), min(page_rect.y1, seg.get("bottom", page_rect.y1))
-            pix = page.get_pixmap(dpi=200, clip=fitz.Rect(page_rect.x0, top, page_rect.x1, bottom))
-            img = Image.frombytes("RGBA" if pix.alpha else "RGB", (pix.width, pix.height), pix.samples)
-            if max_h and img.height < max_h:
-                canvas = Image.new(img.mode, (img.width, max_h), "white")
-                canvas.paste(img, (0, 0))
-                img = canvas
-            if timetable_splits_dir:
-                suffix = "top" if seg_counter == 0 else ("bottom" if seg_counter == 1 else f"part_{seg_counter+1}")
-                img.save(os.path.join(timetable_splits_dir, f"page_{page_number:02d}_{suffix}.png"))
-            seg_counter += 1
-            pages_with_name.append({"page_index": page_index, "faculty_name": seg.get("faculty_name"), "image": img, "ocr_text": embedded_text})
+    except Exception as e:
+        log_event(f"🛑 Pipeline failure: {str(e)}", socketio=socketio, status="error")
+        socketio.emit('timetable_progress', {'progress': 0, 'error': True, 'status': str(e)})
+    finally:
+        if task_id in stop_events:
+            del stop_events[task_id]
 
-    return pages_with_name, pages_without_name
+def match_and_save(data: Dict, db, socketio=None):
+    """
+    Links extracted faculty to MongoDB records and saves to <faculty_id>.json.
+    """
+    faculty_name = data.get("faculty", "")
+    dept_name = data.get("department", "")
+    
+    if not faculty_name:
+        log_event("Skipping: Could not detect faculty name in this part.", socketio=socketio)
+        return
+
+    # Normalize name for search
+    norm_name = re.sub(r"\b(MR|MRS|MS|MISS|DR|PROF)\.?\b", "", faculty_name, flags=re.IGNORECASE).strip()
+    
+    user_doc = None
+    
+    # Common surnames/tokens to ignore for single-token matches
+    GENERIC_TOKENS = {"shetty", "rao", "nayak", "kumar", "singh", "devi", "sharma"}
+
+    # 1. First priority: Use faculty_id if Gemini returned a valid one from our list
+    ai_staff_id = data.get("faculty_id")
+    if ai_staff_id and ai_staff_id != "unknown":
+        user_doc = db.users.find_one({"staff_id": ai_staff_id, "role": "lecturer"})
+        if user_doc:
+            log_event(f"AI matched via ID: {faculty_name} -> {user_doc['name']} ({ai_staff_id})", socketio=socketio)
+
+    # 2. Fallback: Smart token matching in code
+    if not user_doc:
+        clean_norm_list = re.sub(r'[^a-zA-Z\s]', ' ', norm_name).lower().split()
+        clean_norm = set(t for t in clean_norm_list if len(t) > 1) 
+        
+        # Get all lecturers
+        all_lects = list(db.users.find({"role": "lecturer"}))
+        
+        best_match = None
+        max_overlap = 0
+        
+        for l in all_lects:
+            db_name = l.get("name", "").lower()
+            db_clean = set(re.sub(r'[^a-zA-Z\s]', ' ', db_name).lower().split())
+            db_clean = {t for t in db_clean if len(t) > 1}
+            
+            overlap = clean_norm & db_clean
+            
+            # If the ONLY overlap is a generic surname, degrade score
+            if len(overlap) == 1 and list(overlap)[0] in GENERIC_TOKENS:
+                score = 0.5 
+            else:
+                score = len(overlap)
+            
+            # Additional boost if the first/main name matches
+            if any(t in db_clean for t in clean_norm_list if t not in GENERIC_TOKENS):
+                score += 0.1
+
+            # Tie-breaker: If same score, check department
+            if score > max_overlap:
+                max_overlap = score
+                best_match = l
+            elif score == max_overlap and score > 0:
+                l_dept = l.get("department", "").lower()
+                best_dept = best_match.get("department", "").lower()
+                target_dept = dept_name.lower()
+                if target_dept in l_dept and target_dept not in best_dept:
+                    best_match = l
+        
+        # We need at least a score of 1.1 (e.g. at least one non-generic token or two tokens)
+        if max_overlap >= 1.0:
+            user_doc = best_match
+            log_event(f"Python matched via tokens ({max_overlap}): {faculty_name} -> {user_doc['name']}", socketio=socketio)
+
+    faculty_id = "unknown"
+    if user_doc:
+        faculty_id = str(user_doc.get("staff_id", user_doc.get("_id")))
+        data["faculty_id"] = faculty_id
+        
+        # Update DB record with timetable status
+        db.timetable.update_one(
+            {"lecturer_id": str(user_doc["_id"])},
+            {"$set": {
+                "lecturer_id": str(user_doc["_id"]),
+                "lecturer_name": user_doc["name"],
+                "structured": data,
+                "uploaded_at": datetime.now()
+            }},
+            upsert=True
+        )
+    else:
+        log_event(f"❌ No match found in DB for: {faculty_name} ({dept_name})", socketio=socketio, status="warning")
+
+    # Save to file
+    json_dir = os.path.join(os.path.dirname(__file__), "..", "static", "json_timetables")
+    os.makedirs(json_dir, exist_ok=True)
+    
+    if faculty_id == "unknown":
+        # Find next available unknown number
+        i = 1
+        while os.path.exists(os.path.join(json_dir, f"unknown_{i}.json")):
+            i += 1
+        filename = f"unknown_{i}.json"
+    else:
+        filename = f"{faculty_id}.json"
+
+    dest_path = os.path.join(json_dir, filename)
+    try:
+        with open(dest_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        log_event(f"Failed to save JSON file: {e}", socketio=socketio, status="error")

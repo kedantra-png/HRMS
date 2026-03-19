@@ -1,0 +1,411 @@
+{
+    "faculty": "Dr. DEEPA",
+    "faculty_id": "BBHCF037",
+    "department": "HINDI",
+    "mentor": "---",
+    "total_hours": "17 Hrs",
+    "timetable": {
+        "periods": [
+            {
+                "period": "0",
+                "time": "8.50-9.40"
+            },
+            {
+                "period": "I",
+                "time": "9.45-10.35"
+            },
+            {
+                "period": "II",
+                "time": "10.40-11.30"
+            },
+            {
+                "period": "III",
+                "time": "11.35-12.25"
+            },
+            {
+                "period": "IV",
+                "time": "1.05-1.55"
+            },
+            {
+                "period": "V",
+                "time": "2.00-2.50"
+            },
+            {
+                "period": "VI",
+                "time": "2.55-3.45"
+            },
+            {
+                "period": "VII",
+                "time": ""
+            }
+        ],
+        "days": [
+            {
+                "day": "MONDAY",
+                "slots": {
+                    "0": {
+                        "class": "I B.Com",
+                        "section": "D",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "I": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "II": {
+                        "class": "II B.Com",
+                        "section": "D",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "III": {
+                        "class": "II B.Com",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "V": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VI": {
+                        "class": "II B.Com",
+                        "section": "D",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VII": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    }
+                }
+            },
+            {
+                "day": "TUESDAY",
+                "slots": {
+                    "0": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "I": {
+                        "class": "II B.Com",
+                        "section": "D",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "II": {
+                        "class": "II BCA",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "III": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
+                        "class": "I B.Com",
+                        "section": "D",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "V": {
+                        "class": "II B.Com",
+                        "section": "B",
+                        "subject": "MV",
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VI": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VII": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    }
+                }
+            },
+            {
+                "day": "WEDNESDAY",
+                "slots": {
+                    "0": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "I": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "II": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "III": {
+                        "class": "II BCA",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "V": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VI": {
+                        "class": "I BCA",
+                        "section": "A,B&C",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VII": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    }
+                }
+            },
+            {
+                "day": "THURSDAY",
+                "slots": {
+                    "0": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "I": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "II": {
+                        "class": "I BCA",
+                        "section": "A,B&C",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "III": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "V": {
+                        "class": "II B.Com",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VI": {
+                        "class": "II BCA",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VII": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    }
+                }
+            },
+            {
+                "day": "FRIDAY",
+                "slots": {
+                    "0": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "I": {
+                        "class": "I BCA",
+                        "section": "A,B&C",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "II": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "III": {
+                        "class": "I B.Com",
+                        "section": "D",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
+                        "class": "II BCA",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "V": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VI": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VII": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    }
+                }
+            },
+            {
+                "day": "SATURDAY",
+                "slots": {
+                    "0": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "I": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "II": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "III": {
+                        "class": "I BCA",
+                        "section": "A,B&C",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "V": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VI": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "VII": {
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    }
+                }
+            }
+        ]
+    }
+}

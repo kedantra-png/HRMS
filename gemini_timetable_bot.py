@@ -128,6 +128,11 @@ Additional rules:
 - Ensure JSON is valid.
 - Ensure all periods I-VII exist for each day.
 - Ensure empty cells are null.
+
+11. Laboratory (LAB) sessions in Computer Applications  typically span 4 consecutive hours from IV to VII. Always ensure the IV hour is included in the lab span if it is visually continuous across that row block.
+not always 4 span but many time in it will be 4 span horizontally uh have missed the 4 span in the afternoon  be careful about it 
+12. Return ONLY valid JSON.
+Do NOT return explanations or markdown.
 """
 
 def get_ocr_data(img_path):

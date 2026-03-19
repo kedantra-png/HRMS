@@ -10,7 +10,10 @@ torch
 PyMuPDF
 Pillow
 pytesseract
-google-generativeai
+google-genai
 flask-socketio
-easyocr
+
 scikit-learn
+
+paddlepaddle
+numpy

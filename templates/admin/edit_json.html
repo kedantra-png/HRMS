@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Timetable JSON - {{ staff_id }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-900">Edit Timetable Data</h1>
+        <p class="text-sm text-slate-500 mt-1">Editing JSON for Staff ID: <span class="font-mono font-bold text-indigo-600">{{ staff_id }}</span></p>
+    </div>
+    <a href="{{ url_for('admin_timetables') }}" class="inline-flex items-center px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold transition-all">
+        <i class="fas fa-arrow-left mr-2"></i> Back
+    </a>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden">
+    <div class="p-6">
+        <form method="POST">
+            <div class="mb-4">
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Raw JSON Data</label>
+                <textarea name="json_data" rows="25" class="w-full font-mono text-sm p-4 bg-slate-900 text-emerald-400 rounded-xl border border-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none custom-scrollbar">{{ json_str }}</textarea>
+            </div>
+            
+            <div class="flex justify-end gap-3">
+                <button type="submit" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+</style>
+{% endblock %}
