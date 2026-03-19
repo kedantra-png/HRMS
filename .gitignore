@@ -1,0 +1,9 @@
+.env
+venv/
+__pycache__/
+*.pyc
+reconstruction_log.txt
+static/timetables/
+static/timetable_splits/
+static/json_timetables/unknown_*.json
+.DS_Store
