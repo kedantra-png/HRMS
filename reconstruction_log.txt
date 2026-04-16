@@ -13802,3 +13802,7 @@ I
 [2026-03-19 12:54:23] Python matched via tokens (2.1): Mr. MAHESH NAIK -> Mr. Mahesh Naik
 [2026-03-19 12:54:23] Bulk processing complete. All files saved.
 [2026-03-20 14:37:12] ❌ No match found in DB for: Mrs. VIJAYASHREE A. ()
+[2026-04-11 10:56:59] ⚠️ Key quota hit (429). Rotating to next key... (Attempt 1)
+[2026-04-11 10:57:05] ⚠️ Key quota hit (429). Rotating to next key... (Attempt 2)
+[2026-04-11 11:05:16] ⚠️ Key quota hit (429). Rotating to next key... (Attempt 1)
+[2026-04-11 11:05:22] ⚠️ Key quota hit (429). Rotating to next key... (Attempt 2)

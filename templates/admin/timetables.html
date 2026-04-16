@@ -165,9 +165,9 @@
                             <a href="{{ url_for('static', filename='json_timetables/' + row.staff_id + '.json') }}" download class="px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-[10px] font-bold uppercase transition-colors" title="Download JSON">
                                 <i class="fas fa-file-download mr-1"></i> JSON
                             </a>
-                            <a href="{{ url_for('admin_timetable_edit', staff_id=row.staff_id) }}" class="px-2.5 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-[10px] font-bold uppercase transition-colors" title="Edit JSON Data">
+                             <button type="button" onclick="viewTimetableModal('{{ row.staff_id }}', true)" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-[10px] font-bold uppercase transition-colors" title="Open Interactive Editor">
                                 <i class="fas fa-edit mr-1"></i> Edit
-                            </a>
+                            </button>
                             <form action="{{ url_for('admin_timetable_delete', staff_id=row.staff_id) }}" method="POST" onsubmit="return confirm('Delete timetable for {{ row.staff_id }}?')" class="inline-block">
                                 <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold uppercase transition-colors" title="Delete Record">
                                     <i class="fas fa-trash mr-1"></i> Delete
@@ -187,15 +187,65 @@
 
 <!-- View Timetable Modal -->
 <div id="viewTimetableModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur px-4 py-8 transition-all">
-    <div class="bg-white w-full max-w-6xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-full">
+    <div class="bg-white w-full max-w-7xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-full relative">
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-            <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest"><i class="fas fa-table text-indigo-500 mr-2"></i> Timetable Matrix</h3>
+            <div class="flex items-center gap-4">
+                <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest"><i class="fas fa-table text-indigo-500 mr-2"></i> Faculty Timetable</h3>
+                <div class="h-6 w-[1px] bg-slate-300"></div>
+                <div class="flex gap-2">
+                    <button onclick="toggleAdminSplitView()" class="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[10px] font-bold uppercase hover:bg-slate-50 transition-all">
+                        <i class="fas fa-columns mr-1"></i> Split View
+                    </button>
+                    <button id="adminEditToggle" onclick="toggleAdminEditMode()" class="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 text-[10px] font-bold uppercase hover:bg-indigo-100 transition-all">
+                        <i class="fas fa-pen mr-1"></i> Edit Mode
+                    </button>
+                </div>
+            </div>
             <button onclick="document.getElementById('viewTimetableModal').classList.add('hidden')" class="text-slate-400 hover:text-rose-500 transition-colors">
                 <i class="fas fa-times text-lg"></i>
             </button>
         </div>
-        <div class="p-6 overflow-y-auto custom-scrollbar bg-white" id="timetableModalContent">
-            <!-- Table content dynamically injected here -->
+
+        <div id="adminModalViewport" class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 tt-modal-container">
+            <!-- Digital Grid -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden" id="timetableModalContent">
+                <!-- Table content injected here -->
+            </div>
+
+            <!-- Image Reference -->
+            <div id="adminImageCard" class="hidden bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-col">
+                <div class="p-3 bg-slate-50 border-b border-slate-200 text-[10px] font-black uppercase text-slate-500 tracking-widest">Original Reference Scan</div>
+                <div class="flex-1 bg-slate-800 p-4 overflow-auto flex items-center justify-center">
+                    <img id="adminRefImage" src="" alt="Reference" class="max-w-full shadow-2xl rounded">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Save Bar -->
+        <div id="adminSaveBar" class="hidden modal-floating-save bg-white rounded-2xl shadow-2xl border border-slate-200 p-2 flex items-center gap-4 px-4">
+            <span class="text-[10px] font-black text-slate-400 uppercase">Unsaved changes</span>
+            <button onclick="saveAdminEdits()" class="px-4 py-1.5 rounded-xl bg-indigo-600 text-white text-[10px] font-bold uppercase shadow-lg shadow-indigo-100">Sync & Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Edit Cell Modal -->
+<div id="adminEditModal" onclick="this.style.display='none'">
+    <div class="bg-white w-96 rounded-2xl p-6 shadow-2xl ml-auto mr-auto mt-20" onclick="event.stopPropagation()">
+        <h4 class="text-lg font-black text-slate-800 mb-4">Update Slot</h4>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Class</label>
+                <input type="text" id="adminCellClass" class="w-full p-2 border border-slate-200 rounded-lg font-bold">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Subject</label>
+                <input type="text" id="adminCellSubject" class="w-full p-2 border border-slate-200 rounded-lg font-bold">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="document.getElementById('adminEditModal').style.display='none'" class="flex-1 p-2 bg-slate-100 rounded-lg font-bold text-slate-500 text-sm">Cancel</button>
+                <button onclick="applyAdminCellChange()" class="flex-1 p-2 bg-indigo-600 rounded-lg font-bold text-white text-sm shadow-lg shadow-indigo-100">Update</button>
+            </div>
         </div>
     </div>
 </div>
@@ -220,6 +270,111 @@
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Premium Timetable Styles */
+    :root {
+        --tt-border: #1e293b;
+        --tt-header-bg: #f8fafc;
+        --tt-lunch-bg: #fff1f2;
+        --tt-primary: #4f46e5;
+    }
+    .tt-modal-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+        transition: all 0.4s ease;
+    }
+    .tt-modal-container.split-view {
+        grid-template-columns: 1fr 1fr;
+    }
+    .tt-table {
+        width: 100%;
+        min-width: 900px;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+        border: 2px solid var(--tt-border);
+    }
+    .tt-table th, .tt-table td {
+        border: 1px solid #e2e8f0;
+        padding: 0;
+        text-align: center;
+        vertical-align: middle;
+        height: 70px;
+        position: relative;
+    }
+    .tt-table thead th {
+        background-color: var(--tt-header-bg);
+        border-bottom: 2px solid var(--tt-border);
+    }
+    .lunch-col-cell {
+        background-color: var(--tt-lunch-bg) !important;
+        width: 65px;
+        border-left: 2px solid var(--tt-border) !important;
+        border-right: 2px solid var(--tt-border) !important;
+        font-size: 0.75rem;
+        font-weight: 900;
+        vertical-align: middle !important;
+        text-align: center !important;
+        padding: 0 !important;
+    }
+    .lunch-content {
+        writing-mode: vertical-rl;
+        text-orientation: upright;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        font-weight: 900;
+        color: #e11d48;
+        font-size: 0.75rem;
+        height: 100%;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 250px;
+    }
+    .day-header {
+        width: 120px;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        background-color: #f8fafc !important;
+        border-right: 2px solid var(--tt-border) !important;
+    }
+    .slot-content-wrapper {
+        display: inline-block;
+        padding: 4px 8px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .slot-class { font-weight: 800; color: #1e293b; font-size: 0.8rem; }
+    .slot-subject { font-weight: 700; color: var(--tt-primary); font-size: 0.7rem; text-transform: uppercase; }
+    
+    .edit-mode .tt-cell:not(.day-header):not(.lunch-col-cell):hover {
+        background-color: #eef2ff !important;
+        cursor: crosshair;
+        box-shadow: inset 0 0 0 2px var(--tt-primary);
+    }
+    
+    #adminEditModal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 1001;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-floating-save {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 60;
+    }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
@@ -231,118 +386,210 @@
         }
     }
 
-    async function viewTimetableModal(staffId) {
+    let currentAdminStaffId = null;
+    let currentAdminData = null;
+    let isAdminEditMode = false;
+    let currentAdminEditingCell = null;
+
+    async function viewTimetableModal(staffId, autoEdit = false) {
+        currentAdminStaffId = staffId;
         const modal = document.getElementById('viewTimetableModal');
         const content = document.getElementById('timetableModalContent');
+        const saveBar = document.getElementById('adminSaveBar');
+        const imgRef = document.getElementById('adminRefImage');
+        
         modal.classList.remove('hidden');
-        content.innerHTML = '<div class="py-12 flex justify-center items-center"><i class="fas fa-circle-notch fa-spin text-4xl text-indigo-500"></i></div>';
+        saveBar.classList.add('hidden');
+        content.innerHTML = '<div class="py-20 flex justify-center items-center"><i class="fas fa-circle-notch fa-spin text-4xl text-indigo-500"></i></div>';
         
         try {
-            const resp = await fetch('/static/json_timetables/' + staffId + '.json');
-            if (!resp.ok) throw new Error('Failed to load JSON');
-            const data = await resp.json();
+            const resp = await fetch('/api/timetable/' + staffId);
+            if (!resp.ok) throw new Error('Failed to load data');
+            const meta = await resp.json();
+            currentAdminData = meta.structured;
+            imgRef.src = meta.image_url || '';
             
-            let html = '<div class="mb-6 flex flex-wrap gap-x-8 gap-y-2 items-center text-sm font-black text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">';
-            html += `<div><span class="text-slate-400 mr-2">FACULTY:</span> ${data.faculty || staffId}</div>`;
-            if (data.mentor) html += `<div><span class="text-slate-400 mr-2">MENTOR:</span> ${data.mentor}</div>`;
-            if (data.total_hours) html += `<div><span class="text-slate-400 mr-2">TOTAL HOURS:</span> ${data.total_hours}</div>`;
-            html += '</div>';
+            renderAdminGrid();
             
-            html += '<div class="overflow-x-auto rounded-xl border-2 border-slate-800 shadow-sm pb-4">';
-            html += '<table class="w-full text-center border-collapse min-w-[1000px]">';
-            
-            // Header
-            html += '<thead class="bg-slate-100">';
-            html += '<tr><th class="border-2 border-slate-800 p-3 font-black text-slate-800 w-32 uppercase tracking-widest text-xs">DAYS / SESSION</th>';
-            
-            const periods = data.timetable.periods || [];
-            let lunchIdx = -1;
-            
-            for (let i = 0; i < periods.length; i++) {
-                html += `<th class="border-2 border-slate-800 p-2 min-w-[110px]">
-                    <div class="text-indigo-600 font-black text-lg">${periods[i].period}</div>
-                    <div class="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 rounded px-2 py-0.5 mt-1 inline-block shadow-sm">${periods[i].time}</div>
-                </th>`;
-                if (periods[i].period === 'III') {
-                    lunchIdx = i; // lunch comes after III
-                    html += `<th class="border-2 border-slate-800 p-2 bg-rose-50 text-center min-w-[90px] align-middle">
-                        <div class="text-rose-600 font-black text-lg tracking-widest">LUNCH</div>
-                        <div class="text-[10px] font-bold text-rose-500 bg-white border border-rose-200 rounded px-2 py-0.5 mt-1 inline-block shadow-sm whitespace-nowrap">12:25 - 1:10</div>
-                    </th>`;
-                }
+            if (autoEdit) {
+                isAdminEditMode = false; // force toggle
+                toggleAdminEditMode();
+            } else {
+                isAdminEditMode = true; // force toggle off
+                toggleAdminEditMode();
             }
-            html += '</tr></thead><tbody>';
-            
-            const days = data.timetable.days || [];
-            let lunchRowRendered = false;
-            
-            for (let d = 0; d < days.length; d++) {
-                const dayData = days[d];
-                html += '<tr>';
-                html += `<th class="border-2 border-slate-800 p-3 font-black bg-slate-50 uppercase text-slate-700 text-xs tracking-widest">${dayData.day}</th>`;
-                
-                let skipCols = 0;
-                for (let p = 0; p < periods.length; p++) {
-                    const periodName = periods[p].period;
-                    const slot = dayData.slots[periodName];
-                    let span = slot ? parseInt(slot.span || 1) : 1;
-                    
-                    if (skipCols > 0) {
-                        skipCols--;
-                    } else {
-                        // dynamically calculate continuous labs if not crossing lunch
-                        if (slot && slot.class && span === 1) {
-                            let dynSpan = 1;
-                            for (let np = p + 1; np < periods.length; np++) {
-                                if (np - 1 === lunchIdx) break; // Do not span across lunch boundary
-                                const nextSlot = dayData.slots[periods[np].period];
-                                if (nextSlot && nextSlot.class === slot.class && nextSlot.subject === slot.subject) {
-                                    dynSpan++;
-                                } else {
-                                    break;
-                                }
-                            }
-                            span = dynSpan;
-                        }
-                        skipCols = span - 1;
-                        
-                        if (slot && slot.class) {
-                            html += `<td colspan="${span}" class="border-2 border-slate-800 p-2 bg-[#F8FAFC] hover:bg-indigo-50/50 transition-colors relative h-[70px]">`;
-                            if (span > 1) {
-                                // Background lab bridge line
-                                html += '<div class="absolute inset-x-5 top-1/2 h-[2px] bg-slate-800 -translate-y-1/2 z-0"></div>';
-                                html += '<div class="absolute left-[16px] top-1/2 w-2 h-2 border-t-[2.5px] border-l-[2.5px] border-slate-800 -translate-y-1/2 -rotate-45 z-0"></div>';
-                                html += '<div class="absolute right-[16px] top-1/2 w-2 h-2 border-t-[2.5px] border-r-[2.5px] border-slate-800 -translate-y-1/2 rotate-45 z-0"></div>';
-                            }
-                            html += '<div class="relative z-10 inline-block px-3 py-1 bg-white border outline outline-[2.5px] outline-white border-slate-200 rounded-md shadow-sm">';
-                            html += `<div class="font-black text-slate-900 text-[13px] leading-[1.15]">${slot.class} ${slot.section ? '('+slot.section+')' : ''}</div>`;
-                            html += `<div class="font-bold text-indigo-700 text-[11px] mt-[3px] tracking-wide leading-tight uppercase">${slot.subject}</div>`;
-                            html += '</div>';
-                            html += `</td>`;
-                        } else {
-                            html += `<td colspan="${span}" class="border-2 border-slate-800 p-2 bg-white empty-cell"></td>`;
-                        }
-                    }
-                    
-                    if (p === lunchIdx) {
-                        if (!lunchRowRendered) {
-                            html += `<td rowspan="${days.length}" class="border-2 border-slate-800 bg-rose-50 text-rose-600 font-black p-0 align-middle relative min-w-[90px]">
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <div style="writing-mode: vertical-rl; text-orientation: upright; font-size: 14px;" class="tracking-[0.4em] uppercase font-black text-rose-500 opacity-90 mx-auto">
-                                        LUNCH BREAK
-                                    </div>
-                                </div>
-                            </td>`;
-                            lunchRowRendered = true;
-                        }
-                    }
-                }
-                html += '</tr>';
-            }
-            html += '</tbody></table></div>';
-            content.innerHTML = html;
         } catch (e) {
-            content.innerHTML = `<div class="p-8 text-center text-rose-500 bg-rose-50 rounded-xl border border-rose-100 font-bold"><i class="fas fa-exclamation-triangle mr-2"></i> Failed to process timetable: ${e.message}</div>`;
+            content.innerHTML = `<div class="p-8 text-center text-rose-500 font-bold">Error: ${e.message}</div>`;
+        }
+    }
+
+    function renderAdminGrid() {
+        const content = document.getElementById('timetableModalContent');
+        const data = currentAdminData;
+        if (!data || !data.timetable) {
+            content.innerHTML = '<div class="p-10 text-center text-slate-400">Structure not available for this faculty.</div>';
+            return;
+        }
+
+        let html = '<div class="overflow-x-auto">';
+        html += '<table class="tt-table" id="adminTtTable">';
+        
+        // Header
+        html += '<thead><tr><th class="day-header">DAYS</th>';
+        const periods = data.timetable.periods || [];
+        let lunchIdx = -1;
+        for (let i = 0; i < periods.length; i++) {
+            html += `<th>
+                <div class="text-indigo-600 font-black text-sm">${periods[i].period}</div>
+                <div class="text-[9px] font-bold text-slate-400">${periods[i].time || '--'}</div>
+            </th>`;
+            if (periods[i].period === 'III') {
+                lunchIdx = i;
+                html += '<th class="lunch-col-cell">LUNCH</th>';
+            }
+        }
+        html += '</tr></thead><tbody>';
+        
+        const days = data.timetable.days || [];
+        let lunchRowRendered = false;
+        
+        for (let d = 0; d < days.length; d++) {
+            const dayData = days[d];
+            html += '<tr>';
+            html += `<td class="day-header text-center">${dayData.day}</td>`;
+            
+            let skipCols = 0;
+            for (let p = 0; p < periods.length; p++) {
+                const periodName = periods[p].period;
+                const slot = dayData.slots[periodName];
+                let span = slot ? parseInt(slot.span || 1) : 1;
+                
+                if (skipCols > 0) {
+                    skipCols--;
+                } else {
+                    if (slot && slot.class && span === 1) {
+                        let dynSpan = 1;
+                        for (let np = p + 1; np < periods.length; np++) {
+                            if (np - 1 === lunchIdx) break;
+                            const nextSlot = dayData.slots[periods[np].period];
+                            if (nextSlot && nextSlot.class === slot.class && nextSlot.subject === slot.subject) dynSpan++;
+                            else break;
+                        }
+                        span = dynSpan;
+                    }
+                    skipCols = span - 1;
+                    
+                    html += `<td colspan="${span}" class="tt-cell ${slot && slot.class ? 'slot-occupied' : 'empty'}" 
+                                data-day-idx="${d}" data-period="${periodName}" onclick="handleAdminCellClick(this)">`;
+                    if (slot && slot.class) {
+                        html += `
+                            <div class="slot-content-wrapper">
+                                <div class="slot-class">${slot.class} ${slot.section ? '('+slot.section+')' : ''}</div>
+                                <div class="slot-subject">${slot.subject || ''}</div>
+                            </div>
+                        `;
+                    }
+                    html += '</td>';
+                }
+                
+                if (p === lunchIdx) {
+                    if (!lunchRowRendered) {
+                        html += `<td rowspan="${days.length}" class="lunch-col-cell p-0">
+                            <div class="lunch-content">LUNCH BREAK</div>
+                        </td>`;
+                        lunchRowRendered = true;
+                    }
+                }
+            }
+            html += '</tr>';
+        }
+        html += '</tbody></table></div>';
+        content.innerHTML = html;
+        
+        if (isAdminEditMode) {
+            document.getElementById('adminTtTable').classList.add('edit-mode');
+        }
+    }
+
+    function toggleAdminEditMode() {
+        isAdminEditMode = !isAdminEditMode;
+        const btn = document.getElementById('adminEditToggle');
+        const table = document.getElementById('adminTtTable');
+        if (isAdminEditMode) {
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i> Edit On';
+            btn.classList.replace('bg-indigo-50', 'bg-emerald-600');
+            btn.classList.replace('text-indigo-600', 'text-white');
+            if (table) table.classList.add('edit-mode');
+        } else {
+            btn.innerHTML = '<i class="fas fa-pen mr-1"></i> Edit Mode';
+            btn.classList.replace('bg-emerald-600', 'bg-indigo-50');
+            btn.classList.replace('text-white', 'text-indigo-600');
+            if (table) table.classList.remove('edit-mode');
+        }
+    }
+
+    function toggleAdminSplitView() {
+        document.getElementById('adminModalViewport').classList.toggle('split-view');
+        document.getElementById('adminImageCard').classList.toggle('hidden');
+        document.getElementById('adminImageCard').classList.toggle('flex');
+    }
+
+    function handleAdminCellClick(cell) {
+        if (!isAdminEditMode) return;
+        currentAdminEditingCell = cell;
+        const dayIdx = cell.dataset.dayIdx;
+        const period = cell.dataset.period;
+        const slot = currentAdminData.timetable.days[dayIdx].slots[period] || {};
+        
+        document.getElementById('adminCellClass').value = slot.class || '';
+        document.getElementById('adminCellSubject').value = slot.subject || '';
+        document.getElementById('adminEditModal').style.display = 'flex';
+    }
+
+    function applyAdminCellChange() {
+        const cell = currentAdminEditingCell;
+        const dayIdx = cell.dataset.dayIdx;
+        const period = cell.dataset.period;
+        const className = document.getElementById('adminCellClass').value.trim();
+        const subject = document.getElementById('adminCellSubject').value.trim();
+        
+        if (className) {
+            currentAdminData.timetable.days[dayIdx].slots[period] = { class: className, subject: subject, span: 1 };
+            cell.innerHTML = `
+                <div class="slot-content-wrapper">
+                    <div class="slot-class">${className}</div>
+                    <div class="slot-subject">${subject}</div>
+                </div>
+            `;
+            cell.classList.replace('empty', 'slot-occupied');
+        } else {
+            delete currentAdminData.timetable.days[dayIdx].slots[period];
+            cell.innerHTML = '';
+            cell.classList.replace('slot-occupied', 'empty');
+        }
+        
+        document.getElementById('adminSaveBar').classList.remove('hidden');
+        document.getElementById('adminEditModal').style.display = 'none';
+    }
+
+    async function saveAdminEdits() {
+        try {
+            const resp = await fetch("/lecturer/edit-timetable", { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    'staff_id_override': currentAdminStaffId,
+                    'structured_json': JSON.stringify(currentAdminData)
+                })
+            });
+            if (resp.ok) {
+                alert("Successfully saved changes for faculty " + currentAdminStaffId);
+                document.getElementById('adminSaveBar').classList.add('hidden');
+            } else {
+                alert("Failed to save.");
+            }
+        } catch (e) {
+            alert("Error: " + e.message);
         }
     }
 

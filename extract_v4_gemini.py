@@ -200,7 +200,7 @@ def log_status(filename, status, details=None):
         json.dump(logs, f, indent=4)
 
 def run():
-    # Use gemini-1.5-flash (specific version)
+    # Use gemini-2.0-flash (most stable flash model in 2026)
     model = genai.GenerativeModel(
         model_name="gemini-2.0-flash",
         system_instruction=SYSTEM_PROMPT

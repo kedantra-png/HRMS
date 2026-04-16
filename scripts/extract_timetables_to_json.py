@@ -62,7 +62,7 @@ Include one slot for each non-empty cell in the main timetable grid.
 """
 
         resp = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.0-flash",
             contents=[
                 {
                     "role": "user",

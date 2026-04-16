@@ -645,6 +645,39 @@ def admin_staff_bulk_upload():
     
     return render_template('admin/bulk_upload.html')
 
+@app.route('/api/timetable/<staff_id>')
+@login_required
+def get_timetable_metadata(staff_id):
+    """Fetch timetable structured data and image URL for a specific staff member."""
+    # Find the user by staff_id
+    u = users.find_one({"staff_id": {"$regex": f"^{staff_id}$", "$options": "i"}})
+    if not u:
+        return jsonify({"error": "User not found"}), 404
+        
+    tt_doc = timetable.find_one({"lecturer_id": str(u["_id"])})
+    image_url = None
+    if tt_doc and tt_doc.get("image_path"):
+        image_path = (tt_doc.get("image_path") or "").replace("\\", "/")
+        image_url = url_for("static", filename=image_path)
+    
+    # Also fallback to check if JSON exists on disk if not in tt_doc
+    structured = tt_doc.get("structured") if tt_doc else {}
+    if not structured:
+        json_path = os.path.join(os.path.dirname(__file__), "static", "json_timetables", f"{staff_id}.json")
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    structured = json.load(f)
+            except:
+                pass
+                
+    return jsonify({
+        "staff_id": staff_id,
+        "name": u.get("name"),
+        "image_url": image_url,
+        "structured": structured
+    })
+
 @app.route('/admin/leaves')
 @login_required
 @admin_required
@@ -1705,17 +1738,54 @@ def view_salary():
 @login_required
 @lecturer_required
 def lecturer_timetable():
-    """Show the logged-in lecturer's own timetable image (uploaded by admin)."""
+    """Show the logged-in lecturer's own timetable image and structured data."""
+    # 1. Try DB first
     tt_doc = timetable.find_one({"lecturer_id": current_user.id})
+    
+    # 2. Try disk-based JSON if DB is missing or structured is empty
+    structured = tt_doc.get("structured") if tt_doc else {}
+    if not structured:
+        # Try finding by staff_id or username
+        staff_doc = users.find_one({"_id": ObjectId(current_user.id)})
+        staff_id = staff_doc.get("staff_id") if staff_doc else current_user.username.upper()
+        
+        json_path = os.path.join(os.path.dirname(__file__), "static", "json_timetables", f"{staff_id}.json")
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    structured = json.load(f)
+            except:
+                pass
+
+    # 3. Default empty structure if still nothing (allows manual creation)
+    if not structured:
+        structured = {
+            "faculty": current_user.name,
+            "timetable": {
+                "periods": [
+                    {"period": "0", "time": ""},
+                    {"period": "I", "time": "9.45-10.35"},
+                    {"period": "II", "time": "10.40-11.30"},
+                    {"period": "III", "time": "11.35-12.25"},
+                    {"period": "IV", "time": "1.05-1.55"},
+                    {"period": "V", "time": "2.00-2.50"},
+                    {"period": "VI", "time": "2.55-3.45"},
+                    {"period": "VII", "time": ""}
+                ],
+                "days": [{"day": d, "slots": {}} for d in ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"]]
+            }
+        }
+
     image_url = None
     if tt_doc and tt_doc.get("image_path"):
         image_path = (tt_doc.get("image_path") or "").replace("\\", "/")
         image_url = url_for("static", filename=image_path)
+    
     return render_template(
         'lecturer/timetable.html',
         has_timetable=image_url is not None,
         timetable_image_url=image_url,
-        structured=tt_doc.get("structured") if tt_doc else {},
+        structured=structured,
     )
 
 
@@ -1724,62 +1794,60 @@ def lecturer_timetable():
 @lecturer_required
 def edit_lecturer_timetable():
     """
-    Simple JSON-editor for the structured timetable extracted by AI.
-    This lets a lecturer tweak the parsed slots without changing the image.
+    Saves or updates the structured timetable data for the current lecturer.
     """
     tt_doc = timetable.find_one({"lecturer_id": current_user.id})
-    if not tt_doc:
-        flash("No timetable found to edit. Please contact administration.", "warning")
-        return redirect(url_for('lecturer_timetable'))
-
-    import json as _json
-
-    structured = tt_doc.get("structured") or {}
-    structured_text = _json.dumps(structured, indent=2, ensure_ascii=False)
-
+    
     if request.method == 'POST':
         raw = request.form.get("structured_json", "").strip()
         if not raw:
-            flash("Timetable JSON cannot be empty.", "danger")
-            return redirect(url_for('edit_lecturer_timetable'))
+            flash("Timetable data cannot be empty.", "danger")
+            return redirect(url_for('lecturer_timetable'))
         try:
-            data = _json.loads(raw)
+            data = json.loads(raw)
             if not isinstance(data, dict):
-                raise ValueError("Root must be a JSON object.")
+                raise ValueError("Data must be a JSON object.")
         except Exception as exc:
-            flash(f"Invalid JSON: {exc}", "danger")
-            return render_template(
-                'lecturer/edit_timetable.html',
-                structured_json=raw,
-            )
+            flash(f"Invalid data format: {exc}", "danger")
+            return redirect(url_for('lecturer_timetable'))
 
+        # Update or Create in DB
         timetable.update_one(
-            {"_id": tt_doc["_id"]},
-            {"$set": {"structured": data}},
+            {"lecturer_id": current_user.id},
+            {
+                "$set": {
+                    "lecturer_id": current_user.id,
+                    "lecturer_name": current_user.name,
+                    "structured": data,
+                    "updated_at": datetime.now()
+                }
+            },
+            upsert=True
         )
 
-        timetable.update_one(
-            {"_id": tt_doc["_id"]},
-            {"$set": {"structured": data}},
-        )
-
-        # Persistence: Sync back to the original JSON file if possible
-        # Filenames are typically "BBHCF048.json" matching the username
-        json_filename = f"{current_user.username.upper()}.json"
-        json_path = os.path.join("f:\\HRMS\\static\\json_timetables", json_filename)
+        # Persistence: Sync back to the static JSON folder
+        staff_doc = users.find_one({"_id": ObjectId(current_user.id)})
+        staff_id = staff_doc.get("staff_id") if staff_doc else current_user.username.upper()
+        
+        json_dir = os.path.join(os.path.dirname(__file__), "static", "json_timetables")
+        os.makedirs(json_dir, exist_ok=True)
+        json_path = os.path.join(json_dir, f"{staff_id}.json")
         
         try:
             with open(json_path, "w", encoding="utf-8") as f_json:
-                _json.dump(data, f_json, indent=4, ensure_ascii=False)
+                json.dump(data, f_json, indent=4, ensure_ascii=False)
         except Exception as json_err:
             print(f"Error saving JSON file at {json_path}: {json_err}")
 
-        flash("Timetable updated.", "success")
+        flash("Timetable synchronized successfully.", "success")
         return redirect(url_for('lecturer_timetable'))
 
+    # GET request - should ideally not reach here if using modal edit on the main timetable page
+    # but kept for backward compatibility if template uses a separate page.
+    structured = tt_doc.get("structured", {}) if tt_doc else {}
     return render_template(
         'lecturer/edit_timetable.html',
-        structured_json=structured_text,
+        structured_json=json.dumps(structured, indent=2, ensure_ascii=False),
     )
 
 

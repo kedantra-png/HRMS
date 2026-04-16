@@ -18,11 +18,49 @@ load_dotenv()
 # Global stop event for background tasks
 stop_events = {}
 
-def get_genai_client():
-    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-    if not api_key:
+# Global list of keys for rotation
+_api_keys = []
+_current_key_idx = 0
+
+def load_all_keys():
+    """Load keys from .env and api_keys.txt"""
+    global _api_keys
+    keys = set()
+    
+    # 1. From .env
+    env_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if env_key:
+        keys.add(env_key.strip())
+        
+    # 2. From api_keys.txt
+    project_root = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
+    keys_file = os.path.join(project_root, "api_keys.txt")
+    if os.path.exists(keys_file):
+        try:
+            with open(keys_file, "r") as f:
+                for line in f:
+                    k = line.strip()
+                    if k and not k.startswith("#"):
+                        keys.add(k)
+        except:
+            pass
+    
+    _api_keys = list(keys)
+    return _api_keys
+
+def get_genai_client(force_next=False):
+    global _current_key_idx, _api_keys
+    
+    if not _api_keys:
+        load_all_keys()
+        
+    if not _api_keys:
         return None
-    return genai.Client(api_key=api_key)
+        
+    if force_next:
+        _current_key_idx = (_current_key_idx + 1) % len(_api_keys)
+        
+    return genai.Client(api_key=_api_keys[_current_key_idx])
 
 def log_event(message: str, socketio=None, status="info", progress=None):
     """
@@ -277,26 +315,54 @@ Return a clean, fully expanded, structured timetable JSON where:
     if faculty_hint:
         prompt += f"\n\nFACULTY NAME HINT: {faculty_hint}"
 
-    try:
-        # Using gemini-2.5-pro as requested
-        model_name = "gemini-2.5-pro"
-        
-        response = client.models.generate_content(
-            model=model_name,
-            contents=[
-                genai.types.Content(
-                    role="user",
-                    parts=[
-                        genai.types.Part.from_text(text=prompt),
-                        genai.types.Part.from_bytes(data=image_bytes, mime_type="image/png")
-                    ]
-                )
-            ]
-        )
-        
-        return clean_json_response(response.text)
-    except Exception as e:
-        return {"error": str(e)}
+    max_retries = 3
+    retry_delay = 5  # seconds
+    
+    # Try all available keys if we hit quota
+    keys_to_try = len(_api_keys) if _api_keys else 1
+    
+    for key_attempt in range(max_retries):
+        client = get_genai_client(force_next=(key_attempt > 0))
+        if not client:
+            return {"error": "No API key found"}
+            
+        try:
+            # Gemini 2.0 Flash is the best free-tier model for image extraction in 2026
+            model_name = "gemini-2.0-flash" 
+            
+            response = client.models.generate_content(
+                model=model_name,
+                contents=[
+                    genai.types.Content(
+                        role="user",
+                        parts=[
+                            genai.types.Part.from_text(text=prompt),
+                            genai.types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+                        ]
+                    )
+                ]
+            )
+            
+            return clean_json_response(response.text)
+            
+        except Exception as e:
+            error_str = str(e)
+            
+            # Handle Quota / Rate Limit
+            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+                if key_attempt < max_retries - 1:
+                    log_event(f"⚠️ Key quota hit (429). Rotating to next key... (Attempt {key_attempt + 1})")
+                    time.sleep(2) # Short pause before rotation
+                    continue
+                else:
+                    return {"error": "All API keys have exhausted their quota. Please wait or provide more keys."}
+            
+            # Handle Service Unavailable
+            if "503" in error_str and key_attempt < max_retries - 1:
+                time.sleep(retry_delay * (key_attempt + 1))
+                continue
+                
+            return {"error": error_str}
 
 def split_pdf_to_parts(pdf_bytes: bytes) -> List[Image.Image]:
     """
@@ -443,6 +509,9 @@ def process_background_pipeline(pdf_bytes: bytes, task_id: str, socketio=None, d
 
             if db is not None:
                 match_and_save(extracted, db, socketio)
+            
+            # Pacing delay to avoid 429/503 errors during bulk processing (Free Tier friendly)
+            time.sleep(4)
             
             # Record success
             processed_data[slice_name] = True

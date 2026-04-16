@@ -6,445 +6,572 @@
 <style>
     :root {
         --tt-border: #1e293b;
-        --tt-header-bg: #f1f5f9;
+        --tt-header-bg: #f8fafc;
         --tt-lunch-bg: #fff1f2;
         --tt-primary: #4f46e5;
-        --tt-row-alt: #f8fafc;
-    }
-
-    /* Re-Enabled Professional Scrolling Layout */
-    html,
-    body {
-        height: auto;
-        margin: 0;
-        padding: 0;
-        overflow-y: auto;
+        --tt-row-alt: #ffffff;
+        --tt-current: #fef9c3;
+        --tt-current-border: #eab308;
     }
 
     .tt-viewport-wrapper {
         width: 100%;
         display: flex;
         flex-direction: column;
+        background: #f1f5f9;
+        min-height: calc(100vh - 80px);
+        padding: 20px;
+    }
+
+    .tt-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tt-container.split-view {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .tt-main-card {
         background: white;
-        padding: 10px;
-        padding-bottom: 80px;
+        border-radius: 1.5rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
     .tt-top-bar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 0.5rem;
-        padding: 15px;
+        padding: 1.5rem 2rem;
         background: white;
-        border: 2.5px solid var(--tt-border);
-        border-bottom: none;
-        border-radius: 1rem 1rem 0 0;
+        border-bottom: 2px solid #f1f5f9;
     }
 
     .tt-metadata-info {
         display: flex;
+        flex-wrap: wrap;
         gap: 1.5rem;
-        font-weight: 800;
-        color: #334155;
-        font-size: clamp(0.7rem, 1.5vw, 0.95rem);
+        font-weight: 700;
+        color: #475569;
+        font-size: 0.85rem;
     }
 
-    /* Scrollable Grid Container */
+    .tt-metadata-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .tt-metadata-item i {
+        color: var(--tt-primary);
+        opacity: 0.6;
+    }
+
+    /* Table Styling */
     .tt-table-container {
         width: 100%;
         overflow-x: auto;
-        border: 2.5px solid var(--tt-border);
-        background: white;
-        border-radius: 0 0 1rem 1rem;
+        padding: 2rem;
+        position: relative;
     }
 
     .tt-table {
         width: 100%;
-        min-width: 1000px;
-        border-collapse: collapse;
+        min-width: 900px;
+        border-collapse: separate;
+        border-spacing: 0;
         table-layout: fixed;
+        border: 2px solid var(--tt-border);
+        border-radius: 0.5rem;
     }
 
-    .tt-table th,
-    .tt-table td {
-        border: 2px solid var(--tt-border) !important;
-        padding: 1px 1px;
+    .tt-table th, .tt-table td {
+        border: 1px solid #e2e8f0;
+        padding: 0;
         text-align: center;
         vertical-align: middle;
         position: relative;
-        word-wrap: break-word;
-        line-height: 1.0 !important;
-        height: 70px !important;
-        /* Force tight fit on cells */
+        height: 75px;
     }
 
-    .tt-table thead tr {
-        height: 50px;
+    .tt-table thead th {
         background-color: var(--tt-header-bg);
+        border-bottom: 2px solid var(--tt-border);
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
 
-    .tt-table tbody tr {
-        height: 50px !important;
+    .tt-table th:not(:last-child), .tt-table td:not(:last-child) {
+        border-right: 1px solid #e2e8f0;
     }
 
-    .tt-table tbody tr:nth-child(even) {
-        background-color: var(--tt-row-alt);
+    .tt-table tr:last-child td {
+        border-bottom: none;
     }
 
     .day-header {
-        font-weight: 900;
-        width: 130px;
+        font-weight: 800;
+        width: 120px;
         text-transform: uppercase;
-        font-size: 0.85rem;
-        background-color: #f1f5f9 !important;
-        position: sticky;
-        left: 0;
-        z-index: 20;
-        border-right: 3px solid var(--tt-border) !important;
+        font-size: 0.75rem;
+        background-color: #f8fafc !important;
+        color: #1e293b;
+        letter-spacing: 0.1em;
+        border-right: 2px solid var(--tt-border) !important;
     }
 
     .period-header {
-        background-color: var(--tt-header-bg);
-        font-size: 1.1rem;
-        color: #1e293b;
+        padding: 0.75rem !important;
     }
 
     .period-num {
         display: block;
         color: var(--tt-primary);
         font-weight: 900;
+        font-size: 1.1rem;
     }
 
     .period-time {
         display: block;
-        font-size: 0.75rem;
-        font-weight: 900;
-        color: #475569;
-        margin-top: 4px;
-        background: #fff;
-        padding: 3px 6px;
-        border-radius: 6px;
-        border: 1.5px solid var(--tt-border);
-    }
-
-    .lunch-header {
-        background-color: var(--tt-lunch-bg) !important;
-        font-size: 0.9rem;
-        color: #e11d48;
-        font-weight: 900;
-        width: 60px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        margin-top: 2px;
     }
 
     .lunch-col-cell {
         background-color: var(--tt-lunch-bg) !important;
-        width: 60px;
-        padding: 0 !important;
+        width: 65px;
+        border-left: 2px solid var(--tt-border) !important;
+        border-right: 2px solid var(--tt-border) !important;
+        font-size: 0.75rem;
+        font-weight: 900;
     }
 
     .lunch-content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
         writing-mode: vertical-rl;
         text-orientation: upright;
-        letter-spacing: 0.4em;
+        letter-spacing: 0.3em;
         text-transform: uppercase;
         font-weight: 900;
         color: #e11d48;
-        font-size: 0.9rem;
+        font-size: 0.75rem;
         height: 100%;
-        width: 100%;
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+    }
+
+    .tt-cell {
+        transition: all 0.2s ease;
     }
 
     .slot-occupied {
         background-color: #f0f7ff;
-        border-left: 6px solid var(--tt-primary) !important;
     }
 
-    .edit-mode .tt-cell:not(.day-header):hover {
-        background-color: #e8efff;
+    .current-period {
+        background-color: var(--tt-current) !important;
+        outline: 3px solid var(--tt-current-border);
+        outline-offset: -3px;
+        z-index: 5;
+    }
+
+    .edit-mode .tt-cell:not(.day-header):not(.lunch-col-cell):hover {
+        background-color: #eef2ff !important;
         cursor: pointer;
-        outline: 2.5px solid var(--tt-primary);
-        outline-offset: -2px;
+        box-shadow: inset 0 0 0 2px var(--tt-primary);
     }
 
     .slot-class {
-        font-weight: 900;
-        display: block;
-        color: #0f172a;
-        font-size: 0.9rem;
-        line-height: 1.1;
+        font-weight: 800;
+        color: #1e293b;
+        font-size: 0.85rem;
+        margin-bottom: 2px;
     }
 
     .slot-subject {
         font-weight: 700;
-        color: #4f46e5;
-        display: block;
-        line-height: 1.2;
-        font-size: 0.85rem;
-    }
-
-    @media (max-width: 640px) {
-        .tt-table {
-            min-width: 800px;
-        }
-
-        .tt-table tbody tr {
-            height: 80px;
-        }
-
-        .day-header {
-            width: 100px;
-            font-size: 0.7rem;
-        }
-
-        .slot-class {
-            font-size: 0.8rem;
-        }
-
-        .slot-subject {
-            font-size: 0.75rem;
-        }
+        color: var(--tt-primary);
+        font-size: 0.75rem;
+        text-transform: uppercase;
     }
 
     .lab-indicator {
         position: absolute;
         top: 50%;
-        left: 20px;
-        right: 20px;
-        height: 2.5px;
-        background-color: #0f172a; /* Bold black line */
-        z-index: 1;
-        transform: translateY(-50%);
-    }
-
-    .lab-indicator::before,
-    .lab-indicator::after {
-        content: '';
-        position: absolute;
-        width: 8px;
-        height: 8px;
-        border-top: 2.5px solid #0f172a;
-        top: 50%;
-        margin-top: -4px;
-    }
-
-    .lab-indicator::before {
         left: 0;
-        border-left: 2.5px solid #0f172a;
-        transform: rotate(-45deg);
-    }
-
-    .lab-indicator::after {
         right: 0;
-        border-right: 2.5px solid #0f172a;
-        transform: rotate(45deg);
+        height: 2px;
+        background: #94a3b8;
+        z-index: 0;
     }
 
     .slot-content-wrapper {
         position: relative;
-        z-index: 2;
-        background-color: #f0f7ff; /* Mask line behind text */
+        z-index: 1;
+        background: white;
         display: inline-block;
-        padding: 0 15px;
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    /* Image Preview */
+    .tt-image-card {
+        display: none;
+        background: white;
+        border-radius: 1.5rem;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        flex-direction: column;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .tt-container.split-view .tt-image-card {
+        display: flex;
+    }
+
+    .image-viewer {
+        flex: 1;
+        overflow: auto;
+        padding: 1rem;
+        background: #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .image-viewer img {
+        max-width: 100%;
+        box-shadow: 0 0 20px rgba(0,0,0,0.2);
         border-radius: 4px;
     }
 
-    .edit-mode .tt-cell:hover .slot-content-wrapper {
-        background-color: #e8efff; /* Match hover state */
-    }
-
-    /* Modal Styling */
+    /* Modals */
     #editModal {
         display: none;
         position: fixed;
         inset: 0;
         z-index: 1000;
-        background: rgba(15, 23, 42, 0.4);
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
         align-items: center;
         justify-content: center;
-        backdrop-filter: blur(12px);
-        padding: 1rem;
+        padding: 20px;
+    }
+
+    .modal-content {
+        background: white;
+        width: 100%;
+        max-width: 450px;
+        border-radius: 1.5rem;
+        padding: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modalScale {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        border: 2px solid #f1f5f9;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .form-input:focus {
+        border-color: var(--tt-primary);
+        outline: none;
+        background: #f8fafc;
+    }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 0.75rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary { background: var(--tt-primary); color: white; }
+    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    .btn-danger { background: #fee2e2; color: #dc2626; }
+    .btn-danger:hover { background: #fecaca; }
+
+    .animate-spin-slow {
+        animation: spin 3s linear infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @media print {
+        .tt-top-bar, #saveContainer, .btn, .tt-image-card {
+            display: none !important;
+        }
+        .tt-viewport-wrapper { padding: 0; background: white; }
+        .tt-main-card { border: none; box-shadow: none; }
+        .tt-table-container { padding: 0; }
     }
 </style>
 
 <div class="tt-viewport-wrapper">
-    {% if structured and structured.timetable %}
-    <div class="tt-top-bar">
-        <div class="tt-metadata-info">
-            <div class="truncate">FACULTY: {{ current_user.name }}</div>
-            {% if structured.mentor %}
-            <div class="truncate">MENTOR: {{ structured.mentor }}</div>
-            {% endif %}
-            {% if structured.total_hours %}
-            <div class="truncate">TOTAL: {{ structured.total_hours }}</div>
-            {% endif %}
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Lecturer Timetable</h1>
+            <p class="text-slate-500 text-sm font-medium" id="live-timer">Loading current session...</p>
         </div>
-        <div class="flex items-center gap-1">
-            <button id="toggleEditBtn" onclick="toggleEditMode()"
-                class="text-[9px] sm:text-xs bg-white border border-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold transition-all shadow-sm">
-                Edit
+        <div class="flex gap-2">
+            <button onclick="toggleSplitView()" class="btn btn-secondary shadow-sm">
+                <i class="fas fa-columns"></i> <span class="hidden sm:inline">Split View</span>
             </button>
-            <a href="{{ url_for('lecturer_dashboard') }}"
-                class="text-[9px] sm:text-xs bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold shadow-lg">
-                Back
-            </a>
+            <button onclick="window.print()" class="btn btn-secondary shadow-sm">
+                <i class="fas fa-print"></i> <span class="hidden sm:inline">Print</span>
+            </button>
+            <button id="toggleEditBtn" onclick="toggleEditMode()" class="btn btn-primary shadow-lg shadow-indigo-100">
+                <i class="fas fa-edit"></i> Edit Mode
+            </button>
         </div>
     </div>
 
-    <div class="tt-table-container">
-        {% set periods = structured.timetable.periods %}
-        {% set days = structured.timetable.days %}
-        <table class="tt-table" id="ttTable">
-            <thead>
-                <tr>
-                    <th class="day-header">DAYS</th>
-                    {% for period in periods %}
-                    <th class="period-header">
-                        <span class="period-num">{{ period.period }}</span>
-                        <span class="period-time">{{ period.time }}</span>
-                    </th>
-                    {% if period.period == 'III' %}
-                    <th class="lunch-header lunch-col-cell" style="border-bottom: none !important;">
-                        {# Visual placeholder for merged bar #}
-                    </th>
+    <div id="ttContainer" class="tt-container">
+        <!-- Main Digital Grid -->
+        <div class="tt-main-card">
+            <div class="tt-top-bar">
+                <div class="tt-metadata-info">
+                    <div class="tt-metadata-item">
+                        <i class="fas fa-user-circle"></i>
+                        <span>{{ current_user.name }}</span>
+                    </div>
+                    {% if structured.faculty_id %}
+                    <div class="tt-metadata-item">
+                        <i class="fas fa-id-badge"></i>
+                        <span>{{ structured.faculty_id }}</span>
+                    </div>
                     {% endif %}
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
+                    {% if structured.total_hours %}
+                    <div class="tt-metadata-item">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ structured.total_hours }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
 
-                {% for day_idx in range(days|length) %}
-                {% set day_data = days[day_idx] %}
-                <tr>
-                    <td class="day-header">{{ day_data.day[:3] }}</td>
-
-                    {% set ns = namespace(skip_count=0) %}
-                    {% for p_idx in range(periods|length) %}
-                    {% set period = periods[p_idx] %}
-                    
-                    {% if ns.skip_count > 0 %}
-                        {% set ns.skip_count = ns.skip_count - 1 %}
-                        {% if period.period == 'III' and day_idx == 0 %}
-                        <td rowspan="{{ days|length }}" class="lunch-col-cell"
-                            style="border-top: none !important; padding: 0;">
-                            <div class="lunch-content" style="margin-top: -50px;">LUNCH BREAK</div>
-                        </td>
-                        {% endif %}
-                    {% else %}
-                        {% set slot = day_data.slots.get(period.period) %}
-
-                        {% set span = (slot.get('span', 1)|int if slot else 1) %}
-                        {% if slot and slot.class and span == 1 %}
-                            {% set ns_span = namespace(count=1, keep_checking=true) %}
-                            {% for next_idx in range(p_idx + 1, periods|length) %}
-                                {% if ns_span.keep_checking %}
-                                    {% set next_period = periods[next_idx] %}
-                                    {% set next_slot = day_data.slots.get(next_period.period) %}
-                                    {% set prev_period = periods[next_idx - 1] %}
-                                    
-                                    {% if prev_period.period == 'III' %}
-                                        {% set ns_span.keep_checking = false %}
-                                    {% elif next_slot and next_slot.class and 
-                                           (next_slot.class|string|trim == slot.class|string|trim) and 
-                                           (next_slot.section|string|trim == slot.section|string|trim) and 
-                                           (next_slot.subject|string|trim == slot.subject|string|trim) %}
-                                        {% set ns_span.count = ns_span.count + 1 %}
-                                    {% else %}
-                                        {% set ns_span.keep_checking = false %}
-                                    {% endif %}
-                                {% endif %}
+            <div class="tt-table-container custom-scrollbar">
+                {% if structured and structured.timetable %}
+                {% set periods = structured.timetable.periods %}
+                {% set days = structured.timetable.days %}
+                
+                <table class="tt-table" id="ttTable">
+                    <thead>
+                        <tr>
+                            <th class="day-header">DAYS</th>
+                            {% for period in periods %}
+                            <th class="period-header" data-period="{{ period.period }}" data-time="{{ period.time }}">
+                                <span class="period-num">{{ period.period }}</span>
+                                <span class="period-time">{{ period.time or '--' }}</span>
+                            </th>
+                            {% if period.period == 'III' %}
+                            <th class="lunch-col-cell">LUNCH</th>
+                            {% endif %}
                             {% endfor %}
-                            {% set span = ns_span.count %}
-                        {% endif %}
-                        {% set ns.skip_count = span - 1 %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day_idx in range(days|length) %}
+                        {% set day_data = days[day_idx] %}
+                        <tr data-day="{{ day_data.day }}">
+                            <td class="day-header">{{ day_data.day }}</td>
 
-                        <td class="tt-cell {% if slot and slot.class %}slot-occupied{% endif %}"
-                            id="cell-{{ day_idx }}-{{ period.period }}" colspan="{{ span }}" data-day="{{ day_idx }}"
-                            data-period="{{ period.period }}" onclick="handleCellClick(this)">
+                            {% set ns = namespace(skip_count=0) %}
+                            {% for p_idx in range(periods|length) %}
+                            {% set period = periods[p_idx] %}
+                            
+                            {% if ns.skip_count > 0 %}
+                                {% set ns.skip_count = ns.skip_count - 1 %}
+                            {% else %}
+                                {% set slot = day_data.slots.get(period.period) %}
+                                {% set span = (slot.get('span', 1)|int if slot else 1) %}
+                                
+                                {# Logic to determine span if not set but consecutive identical slots exist #}
+                                {% if slot and slot.class and span == 1 %}
+                                    {% set ns_span = namespace(count=1, keep_checking=true) %}
+                                    {% for next_idx in range(p_idx + 1, periods|length) %}
+                                        {% if ns_span.keep_checking %}
+                                            {% set next_period = periods[next_idx] %}
+                                            {% if next_period.period == 'III' %} {# Lunch boundary #}
+                                                {% set ns_span.keep_checking = false %}
+                                            {% else %}
+                                                {% set next_slot = day_data.slots.get(next_period.period) %}
+                                                {% if next_slot and next_slot.class == slot.class and next_slot.subject == slot.subject %}
+                                                    {% set ns_span.count = ns_span.count + 1 %}
+                                                {% else %}
+                                                    {% set ns_span.keep_checking = false %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% set span = ns_span.count %}
+                                {% endif %}
+                                {% set ns.skip_count = span - 1 %}
 
-                            {% if slot and slot.class %}
-                            {% if span > 1 %}
-                            <div class="lab-indicator"></div>
+                                <td class="tt-cell {% if slot and slot.class %}slot-occupied{% endif %}"
+                                    id="cell-{{ day_idx }}-{{ period.period }}"
+                                    colspan="{{ span }}"
+                                    data-day-idx="{{ day_idx }}"
+                                    data-period="{{ period.period }}"
+                                    onclick="handleCellClick(this)">
+                                    
+                                    {% if slot and slot.class %}
+                                        {% if span > 1 %}<div class="lab-indicator"></div>{% endif %}
+                                        <div class="slot-content-wrapper">
+                                            <div class="slot-class">{{ slot.class }}{% if slot.section %} ({{ slot.section }}){% endif %}</div>
+                                            <div class="slot-subject">{{ slot.subject or '' }}</div>
+                                        </div>
+                                    {% endif %}
+                                </td>
+
+                                {% if period.period == 'III' %}
+                                {% if day_idx == 0 %}
+                                <td rowspan="{{ days|length }}" class="lunch-col-cell">
+                                    <div class="lunch-content">LUNCH BREAK</div>
+                                </td>
+                                {% endif %}
+                                {% endif %}
                             {% endif %}
-                            <div class="slot-content-wrapper">
-                                <div class="slot-class">{{ slot.class }}{% if slot.section %} ({{ slot.section }}){% endif %}</div>
-                                <div class="slot-subject">{{ slot.subject }}</div>
-                            </div>
-                            {% endif %}
-                        </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="py-20 text-center">
+                    <div class="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-th text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Grid is Empty</h3>
+                    <p class="text-slate-500 text-sm px-10">Use Edit Mode to manually fill your timetable or check split view for the scanned copy.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
 
-                        {% if period.period == 'III' and day_idx == 0 %}
-                        <td rowspan="{{ days|length }}" class="lunch-col-cell"
-                            style="border-top: none !important; padding: 0;">
-                            <div class="lunch-content" style="margin-top: -50px;">LUNCH BREAK</div>
-                        </td>
-                        {% endif %}
-                    {% endif %}
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div id="saveContainer"
-        class="hidden fixed bottom-6 right-6 z-[100] animate-in fade-in slide-in-from-bottom-4 duration-300">
-        <div
-            class="bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-2xl border border-slate-200 flex items-center gap-3">
-            <button onclick="toggleEditMode()"
-                class="px-5 py-2.5 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all text-[11px]">Discard</button>
-            <button onclick="saveTimetable()"
-                class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all text-[11px]">Save
-                Changes</button>
+        <!-- Scanned Image View -->
+        <div class="tt-image-card">
+            <div class="tt-top-bar">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                        <i class="fas fa-file-image"></i>
+                    </div>
+                    <span class="text-sm font-black text-slate-700 uppercase tracking-widest">Original Reference</span>
+                </div>
+            </div>
+            <div class="image-viewer custom-scrollbar">
+                {% if timetable_image_url %}
+                <img src="{{ timetable_image_url }}" alt="Scanned Timetable" draggable="false">
+                {% else %}
+                <div class="text-center p-12">
+                    <i class="fas fa-image text-4xl text-slate-400 mb-4"></i>
+                    <p class="text-slate-500 font-bold">No scanned image uploaded by management.</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    {% else %}
-    <div class="p-20 text-center">
-        <div class="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-300 mx-auto mb-6">
-            <i class="fas fa-th-large text-3xl"></i>
+    <!-- Floating Actions -->
+    <div id="saveContainer" class="hidden fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-bottom-5">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 flex items-center gap-4 px-6">
+            <div class="flex flex-col">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Status</span>
+                <span class="text-sm font-bold text-indigo-600">Unsaved Changes</span>
+            </div>
+            <div class="h-8 w-[1px] bg-slate-100"></div>
+            <button onclick="location.reload()" class="btn btn-secondary">Discard</button>
+            <button onclick="saveTimetable()" class="btn btn-primary">Save Grid</button>
         </div>
-        <h3 class="text-xl font-black text-slate-800 mb-2">Structure Not Found</h3>
-        <p class="text-slate-400 text-sm">Please process your PDF to see the digital grid.</p>
     </div>
-    {% endif %}
 </div>
 
 <!-- Edit Modal -->
 <div id="editModal" onclick="closeModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between mb-8">
-            <h3 class="text-2xl font-black text-slate-800">Edit Class</h3>
-            <button onclick="closeModal()"
-                class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-slate-100 transition-all">
+        <header class="flex items-center justify-between mb-8">
+            <div>
+                <h3 class="text-xl font-black text-slate-800">Edit Session</h3>
+                <p id="modalInfo" class="text-xs text-slate-400 font-bold uppercase mt-1"></p>
+            </div>
+            <button onclick="closeModal()" class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all">
                 <i class="fas fa-times"></i>
             </button>
-        </div>
+        </header>
 
-        <div class="space-y-6">
-            <div>
-                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Class &
-                    Section</label>
-                <select id="modalClass"
-                    class="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 font-bold transition-all">
-                    <option value="">- Empty -</option>
-                </select>
-            </div>
-            <div>
-                <label
-                    class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Subject</label>
-                <select id="modalSubject"
-                    class="w-full px-5 py-4 rounded-2xl border-2 border-slate-100 focus:border-indigo-500 font-bold transition-all">
-                    <option value="">- Empty -</option>
-                </select>
+        <div class="space-y-4">
+            <div class="form-group">
+                <label class="form-label">Class & Section</label>
+                <div class="flex gap-2">
+                    <select id="modalClassSelect" class="form-input flex-1" onchange="syncCustomInput('modalClassSelect', 'modalClassText')">
+                        <option value="">-- Choose --</option>
+                    </select>
+                    <input type="text" id="modalClassText" placeholder="Or type custom..." class="form-input flex-1">
+                </div>
             </div>
 
-            <div class="pt-4">
-                <button onclick="applyCellEdit()"
-                    class="w-full px-6 py-5 rounded-2xl font-black text-white bg-indigo-600 shadow-xl shadow-indigo-100 transition-all active:scale-95">
+            <div class="form-group">
+                <label class="form-label">Subject Name</label>
+                <div class="flex gap-2">
+                    <select id="modalSubjectSelect" class="form-input flex-1" onchange="syncCustomInput('modalSubjectSelect', 'modalSubjectText')">
+                        <option value="">-- Choose --</option>
+                    </select>
+                    <input type="text" id="modalSubjectText" placeholder="Or type custom..." class="form-input flex-1">
+                </div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 flex gap-3">
+                <button onclick="clearCell()" class="btn btn-danger flex-1">
+                    <i class="fas fa-eraser"></i> Clear
+                </button>
+                <button onclick="applyCellEdit()" class="btn btn-primary flex-1">
                     Update Grid
                 </button>
             </div>
@@ -457,171 +584,220 @@
     let currentData = {{ structured | tojson | safe }};
     let currentEditingCell = null;
 
-    function getUniqueValues() {
-        const slots = [];
-        if (currentData.timetable && currentData.timetable.days) {
-            currentData.timetable.days.forEach(day => {
-                Object.values(day.slots).forEach(slot => {
-                    if (slot) slots.push(slot);
-                });
+    // -- INIT --
+    document.addEventListener('DOMContentLoaded', () => {
+        setupTimer();
+        setInterval(setupTimer, 30000); // Update every 30s
+    });
+
+    function setupTimer() {
+        const now = new Date();
+        const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+        const dayName = days[now.getDay()];
+        const timeStr = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        
+        document.getElementById('live-timer').innerText = `${dayName} | ${timeStr}`;
+        highlightCurrentSession(dayName, now);
+    }
+
+    function highlightCurrentSession(day, date) {
+        // Clear old
+        document.querySelectorAll('.current-period').forEach(el => el.classList.remove('current-period'));
+        
+        const nowMinutes = date.getHours() * 60 + date.getMinutes();
+        
+        // Find matching header
+        const headers = document.querySelectorAll('.period-header');
+        headers.forEach(header => {
+            const timeRange = header.dataset.time;
+            if (!timeRange || !timeRange.includes('-')) return;
+            
+            const [start, end] = timeRange.split('-').map(t => {
+                const parts = t.trim().split('.');
+                const h = parseInt(parts[0]);
+                const m = parseInt(parts[1] || 0);
+                // Simple assumption: school hours 9AM - 5PM
+                let correctedH = h;
+                if (h >= 1 && h <= 6) correctedH += 12; // Afternoon
+                return correctedH * 60 + m;
             });
-        }
-        return {
-            classes: [...new Set(slots.map(s => s.class ? `${s.class} (${s.section})` : null).filter(Boolean))].sort(),
-            subjects: [...new Set(slots.map(s => s.subject).filter(Boolean))].sort()
-        };
+
+            if (nowMinutes >= start && nowMinutes <= end) {
+                const periodNum = header.dataset.period;
+                // Highlight cells in this column that match today's day
+                const todayRow = document.querySelector(`tr[data-day="${day}"]`);
+                if (todayRow) {
+                    const cell = todayRow.querySelector(`td[data-period="${periodNum}"]`);
+                    if (cell) cell.classList.add('current-period');
+                    header.classList.add('current-period');
+                }
+            }
+        });
+    }
+
+    function toggleSplitView() {
+        document.getElementById('ttContainer').classList.toggle('split-view');
     }
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
-        const container = document.getElementById('ttTable');
         const btn = document.getElementById('toggleEditBtn');
-        const saveContainer = document.getElementById('saveContainer');
-
+        const container = document.getElementById('ttTable');
+        
         if (isEditMode) {
-            container.classList.add('edit-mode');
-            btn.innerHTML = '<i class="fas fa-times mr-2"></i> Cancel';
-            btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-100');
-            saveContainer.classList.remove('hidden');
+            btn.innerHTML = '<i class="fas fa-check"></i> Exit Edit';
+            btn.classList.replace('btn-primary', 'btn-secondary');
+            if (container) container.style.cursor = "cell";
         } else {
-            container.classList.remove('edit-mode');
-            btn.innerHTML = '<i class="fas fa-pencil-alt text-xs mr-2"></i> Edit Mode';
-            btn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-100');
-            saveContainer.classList.add('hidden');
+            btn.innerHTML = '<i class="fas fa-edit"></i> Edit Mode';
+            btn.classList.replace('btn-secondary', 'btn-primary');
+            if (container) container.style.cursor = "default";
         }
     }
 
+    // -- MODAL LOGIC --
     function handleCellClick(cell) {
         if (!isEditMode) return;
         currentEditingCell = cell;
-        const dayIdx = cell.dataset.day;
+        const dayIdx = cell.dataset.dayIdx;
         const period = cell.dataset.period;
-        const slot = currentData.timetable.days[dayIdx].slots[period] || {};
+        
+        const dayData = currentData.timetable.days[dayIdx];
+        const slot = (dayData.slots && dayData.slots[period]) ? dayData.slots[period] : {};
+        
+        document.getElementById('modalInfo').innerText = `${dayData.day} • PERIOD ${period}`;
+        
+        // Populate dropdowns from existing unique data
         const unique = getUniqueValues();
-        const currentClassStr = slot.class ? `${slot.class} (${slot.section})` : "";
-        populateSelect('modalClass', unique.classes, currentClassStr);
-        populateSelect('modalSubject', unique.subjects, slot.subject);
+        populateSelect('modalClassSelect', unique.classes, slot.class + (slot.section ? ` (${slot.section})` : ""));
+        populateSelect('modalSubjectSelect', unique.subjects, slot.subject);
+        
+        document.getElementById('modalClassText').value = slot.class || "";
+        document.getElementById('modalSubjectText').value = slot.subject || "";
+        
         document.getElementById('editModal').style.display = 'flex';
     }
 
-    function populateSelect(id, values, selectedValue) {
-        const select = document.getElementById(id);
-        select.innerHTML = '<option value="">- Empty -</option>';
-        values.forEach(val => {
-            const opt = document.createElement('option');
-            opt.value = val;
-            opt.textContent = val;
-            if (val === selectedValue) opt.selected = true;
-            select.appendChild(opt);
-        });
+    function syncCustomInput(selectId, textId) {
+        const val = document.getElementById(selectId).value;
+        if (val) {
+            // Extract core class name if it has (Section)
+            document.getElementById(textId).value = val.split(' (')[0];
+        }
     }
 
     function closeModal() {
         document.getElementById('editModal').style.display = 'none';
     }
 
-    function applyCellEdit() {
-        const dayIdx = currentEditingCell.dataset.day;
-        const periodKey = currentEditingCell.dataset.period;
-        const classStr = document.getElementById('modalClass').value;
-        const newSubject = document.getElementById('modalSubject').value;
-
-        let newClass = null, newSection = null;
-        if (classStr) {
-            const match = classStr.match(/(.*)\s\((.*)\)/);
-            if (match) {
-                newClass = match[1];
-                newSection = match[2];
-            }
-        }
-
-        // 1. Basic Update
-        const dayData = currentData.timetable.days[dayIdx];
-        if (!dayData.slots[periodKey]) {
-            dayData.slots[periodKey] = { span: 1, is_lab: false };
-        }
-        dayData.slots[periodKey].class = newClass;
-        dayData.slots[periodKey].section = newSection;
-        dayData.slots[periodKey].subject = newSubject;
-        
-        const isLab = newSubject && newSubject.toLowerCase().includes("lab");
-        dayData.slots[periodKey].is_lab = isLab;
-
-        // 1.5 Auto-fill Lab blocks (Periods IV-VII) if starting at IV
-        if (isLab && periodKey === "IV") {
-            ["V", "VI", "VII"].forEach(pk => {
-                if (!dayData.slots[pk]) dayData.slots[pk] = { span: 1, is_lab: true };
-                dayData.slots[pk].class = newClass;
-                dayData.slots[pk].section = newSection;
-                dayData.slots[pk].subject = newSubject;
-                dayData.slots[pk].is_lab = true;
+    function getUniqueValues() {
+        const classes = new Set();
+        const subjects = new Set();
+        currentData.timetable.days.forEach(d => {
+            Object.values(d.slots).forEach(s => {
+                if (s.class) classes.add(s.class + (s.section ? ` (${s.section})` : ""));
+                if (s.subject) subjects.add(s.subject);
             });
+        });
+        return { classes: Array.from(classes).sort(), subjects: Array.from(subjects).sort() };
+    }
+
+    function populateSelect(id, values, selected) {
+        const el = document.getElementById(id);
+        el.innerHTML = '<option value="">-- Choose Existing --</option>';
+        values.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.innerText = v;
+            if (v === selected) opt.selected = true;
+            el.appendChild(opt);
+        });
+    }
+
+    function clearCell() {
+        const dayIdx = currentEditingCell.dataset.dayIdx;
+        const period = currentEditingCell.dataset.period;
+        if (currentData.timetable.days[dayIdx].slots[period]) {
+            delete currentData.timetable.days[dayIdx].slots[period];
         }
-
-        // 2. Intelligence: Auto-calculate Span Factor
-        const pKeys = Object.keys(dayData.slots).sort(); 
-        // Note: periods list in template is better but currentData is what we have here
-        const periodList = Array.from(document.querySelectorAll('.period-header .period-num')).map(el => el.textContent.trim());
-        
-        // Reset all spans for this day first to be safe
-        periodList.forEach(pk => { if (dayData.slots[pk]) dayData.slots[pk].span = 1; });
-
-        for (let i = 0; i < periodList.length; i++) {
-            let pk = periodList[i];
-            let s = dayData.slots[pk];
-            if (!s || !s.class) continue;
-
-            let span = 1;
-            for (let j = i + 1; j < periodList.length; j++) {
-                let nextPk = periodList[j];
-                let nextS = dayData.slots[nextPk];
-                
-                // Stop if lunch barrier (III) is crossed
-                if (periodList[j-1] === 'III') break;
-
-                if (nextS && 
-                    nextS.class === s.class && 
-                    nextS.section === s.section && 
-                    nextS.subject === s.subject) {
-                    span++;
-                } else {
-                    break;
-                }
-            }
-            s.span = span;
-            i += (span - 1); // Skip ahead
-        }
-
-        // 3. UI Update (Simplest is to trigger a page refresh via save or reload, but for now we update the cell visually)
-        // Note: To perfectly reflect spans in UI instantly, we'd need a full row re-render.
-        // For now, alerting user that they should save to see the perfect span grid.
-        document.getElementById('saveContainer').classList.remove('hidden');
+        currentEditingCell.innerHTML = "";
+        currentEditingCell.classList.remove('slot-occupied');
+        markDirty();
         closeModal();
+    }
+
+    function applyCellEdit() {
+        const dayIdx = currentEditingCell.dataset.dayIdx;
+        const period = currentEditingCell.dataset.period;
         
-        // Final polish: notify user
-        const msg = newClass ? (dayData.slots[periodKey].span > 1 ? "Span Updated!" : "Cell Updated") : "Cell Cleared";
-        console.log(msg);
+        let className = document.getElementById('modalClassText').value.trim();
+        let subject = document.getElementById('modalSubjectText').value.trim();
         
-        // Force a visual refresh by just location reloading or suggesting save
-        // Actually, just let the user see the text change; the save will fix the spans.
-        if (newClass) {
-            currentEditingCell.innerHTML = `<div class="slot-content-wrapper"><div class="slot-class">${newClass} (${newSection})</div><div class="slot-subject">${newSubject}</div></div>`;
-        } else {
-            currentEditingCell.innerHTML = "";
+        if (!className) {
+            clearCell();
+            return;
         }
+
+        let section = "";
+        // If class was chosen from dropdown, it might have section in parens
+        const selectVal = document.getElementById('modalClassSelect').value;
+        if (selectVal.startsWith(className) && selectVal.includes('(')) {
+            section = selectVal.split('(')[1].replace(')', '');
+        }
+
+        // Update Data
+        if (!currentData.timetable.days[dayIdx].slots) currentData.timetable.days[dayIdx].slots = {};
+        currentData.timetable.days[dayIdx].slots[period] = {
+            class: className,
+            section: section,
+            subject: subject,
+            span: 1
+        };
+
+        // Smart Lab Fill (IV, V, VI, VII)
+        if (subject.toLowerCase().includes('lab') && (period === 'IV')) {
+            if (confirm("Detected 'Lab' at Period IV. Auto-fill until Period VII?")) {
+                ['V', 'VI', 'VII'].forEach(p => {
+                    currentData.timetable.days[dayIdx].slots[p] = {
+                        class: className, section: section, subject: subject, span: 1
+                    };
+                });
+            }
+        }
+
+        // Update UI locally (Simplified - full refresh on save)
+        currentEditingCell.classList.add('slot-occupied');
+        currentEditingCell.innerHTML = `
+            <div class="slot-content-wrapper">
+                <div class="slot-class">${className} ${section ? '('+section+')' : ''}</div>
+                <div class="slot-subject">${subject}</div>
+            </div>
+        `;
+
+        markDirty();
+        closeModal();
+    }
+
+    function markDirty() {
+        document.getElementById('saveContainer').classList.remove('hidden');
     }
 
     async function saveTimetable() {
-        if (!confirm('Save changes?')) return;
         try {
-            const response = await fetch("{{ url_for('edit_lecturer_timetable') }}", {
+            const resp = await fetch("{{ url_for('edit_lecturer_timetable') }}", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ 'structured_json': JSON.stringify(currentData) })
             });
-            if (response.redirected) window.location.href = response.url;
-            else alert('Saved!');
-        } catch (err) { alert('Error: ' + err); }
+            if (resp.ok || resp.redirected) {
+                alert("Timetable synchronization successful!");
+                window.location.reload();
+            } else {
+                alert("Server error during save.");
+            }
+        } catch (e) {
+            alert("Network error: " + e.message);
+        }
     }
 </script>
-{% endblock %}
+{% endblock %}

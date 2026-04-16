@@ -14,8 +14,8 @@ def test_key(key, name):
         print(f"  Available models (first 3): {model_list[:3]}")
         
         # Try a simple generation
-        # 'models/gemini-1.5-flash' is the full name usually
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # 'models/gemini-2.0-flash' is the full name usually
+        model = genai.GenerativeModel('gemini-2.0-flash')
         response = model.generate_content("Hello")
         print(f"  Generation Result: SUCCESS")
         return True
