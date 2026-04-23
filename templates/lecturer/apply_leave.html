@@ -3,7 +3,7 @@
 {% block title %}Apply Leave - HRMS{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-2xl mx-auto py-10">
     <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
         <div class="bg-indigo-700 p-6 text-white text-center">
             <h2 class="text-2xl font-bold">{% if mode == 'time' %}Apply Time-Based Leave (Current Day){% else %}Apply
@@ -11,30 +11,78 @@
             <p class="text-indigo-200 mt-1">Submit your request for administrative review</p>
         </div>
 
-        <form action="{{ url_for('apply_leave', mode=mode) }}" method="POST" class="p-8 space-y-6" id="leaveForm">
-            <input type="hidden" name="mode" value="{{ mode }}">
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Leave Type</label>
-                    <select name="type" required id="leaveType"
-                        class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
-                        <option value="Casual Leave">Casual Leave</option>
-                        <option value="Medical Leave">Medical Leave</option>
-                        <option value="Earned Leave">Earned Leave</option>
-                        {% if mode == 'time' %}
-                        <option value="Short Leave" selected>Short Leave</option>
-                        {% else %}
-                        <option value="Short Leave">Short Leave</option>
-                        {% endif %}
-                    </select>
+        <form action="{{ url_for('apply_leave', mode=mode) }}" method="POST" class="p-8 space-y-6 relative" id="leaveForm">
+            <!-- Blocking Overlay -->
+            <div id="blockingOverlay" class="hidden absolute inset-0 bg-white/60 backdrop-blur-[2px] z-20 flex items-center justify-center rounded-b-2xl">
+                <div class="text-center p-6 bg-white rounded-3xl shadow-2xl border border-rose-100 max-w-xs transform scale-90 md:scale-100">
+                    <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-exclamation-circle text-rose-600 text-2xl"></i>
+                    </div>
+                    <h4 class="text-lg font-black text-slate-800 mb-2">Limit Exceeded</h4>
+                    <p class="text-xs text-slate-500 font-medium mb-4">You do not have enough balanced days for this leave type. Please select another type.</p>
+                    <button type="button" onclick="resetLeaveType()" class="px-6 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black shadow-lg shadow-rose-100 hover:bg-rose-700 transition-all">
+                        Change Leave Type
+                    </button>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Balance Remaining</label>
-                    <div id="balanceDisplay" class="px-4 py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold">12 Days
+            </div>
+            <input type="hidden" name="mode" value="{{ mode }}">
+            
+            <div>
+                <label class="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest text-[10px]">Reason for Leave</label>
+                <textarea name="reason" id="leaveReason" rows="3" required
+                    class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all font-medium placeholder:text-slate-400"
+                    placeholder="Briefly explain why you need this leave..."></textarea>
+            </div>
+
+            <div class="space-y-4 bg-slate-50/50 p-5 rounded-3xl border border-slate-100">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Leave Type</label>
+                        <select name="type" required id="leaveType"
+                            class="block w-full min-w-[200px] px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 bg-white transition-all font-bold text-slate-700">
+                            <option value="" disabled selected>-- Choose Type --</option>
+                            <!-- Dynamic population via script -->
+                        </select>
+                    </div>
+                    <div class="hidden sm:block text-right">
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Summary</div>
+                        <div id="selectedTypeBadge" class="text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block">12/0 Days Left</div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Allocation Overview</label>
+                    <div id="balanceGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+                        <!-- Loading skeleton -->
+                        <div class="animate-pulse bg-white border border-slate-100 h-16 rounded-2xl"></div>
+                        <div class="animate-pulse bg-white border border-slate-100 h-16 rounded-2xl delay-75"></div>
+                        <div class="animate-pulse bg-white border border-slate-100 h-16 rounded-2xl delay-150"></div>
                     </div>
                 </div>
             </div>
+
+            <!-- Legacy container for internal sync logic (hidden) -->
+            <div id="balanceDisplay" class="hidden"></div>
+            {% if mode != 'time' %}
+            <!-- Half Day Selection (New) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                <div class="flex items-center space-x-3">
+                    <div class="relative flex items-center">
+                        <input type="checkbox" name="half_day" id="halfDay" 
+                               class="h-6 w-6 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded-lg transition-all cursor-pointer">
+                    </div>
+                    <label for="halfDay" class="text-sm font-black text-slate-700 cursor-pointer uppercase tracking-tight">Half Day Leave</label>
+                </div>
+                <div id="sessionContainer" class="hidden transition-all duration-300">
+                    <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Select Session</label>
+                    <select name="session" id="leaveSession" 
+                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white transition-all font-bold text-slate-700">
+                        <option value="morning">Morning (Period 0 - III)</option>
+                        <option value="afternoon">Afternoon (Period IV - VII)</option>
+                    </select>
+                </div>
+            </div>
+            {% endif %}
 
             {% if mode == 'time' %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -50,30 +98,44 @@
                 </div>
             </div>
             {% else %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">From Date</label>
-                    <input type="date" name="from_date" id="fromDate" required
-                        class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">From Date</label>
+                        <input type="date" name="from_date" id="fromDate" required
+                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">To Date</label>
+                        <input type="date" name="to_date" id="toDate" required
+                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">To Date</label>
-                    <input type="date" name="to_date" id="toDate" required
-                        class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
-                </div>
+                <button type="button" onclick="window.updateClasses()" id="fetchClassesBtn" 
+                        class="w-full py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center">
+                    <i class="fas fa-search mr-2"></i> Check classes for these dates
+                </button>
             </div>
             {% endif %}
 
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Reason for Leave</label>
-                <textarea name="reason" rows="4" required
-                    class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all"
-                    placeholder="Explain the reason for your leave request..."></textarea>
+            <!-- Assignment Section (Now Permanent) -->
+            <div id="assignmentSection" class="space-y-4 pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Class Rearrangements</h3>
+                    <span id="assignmentBadge" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-bold uppercase border">Waiting for dates</span>
+                </div>
+                <div id="classListContainer" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="py-6 text-center border-2 border-dashed border-slate-100 rounded-xl">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Please select leave dates to fetch classes</p>
+                    </div>
+                </div>
             </div>
 
+            <input type="hidden" name="assignments_json" id="assignmentsJson">
+
             <div class="flex items-center space-x-4 pt-4">
-                <button type="submit" id="submitBtn"
-                    class="flex-1 bg-indigo-700 text-white py-3 px-6 rounded-xl font-bold hover:bg-indigo-800 shadow-lg shadow-indigo-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                <button type="submit" id="submitBtn" disabled
+                    class="flex-1 bg-indigo-700 text-white py-4 px-6 rounded-xl font-bold hover:bg-indigo-800 shadow-xl shadow-indigo-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                     Submit Application
                 </button>
                 <a href="{{ url_for('lecturer_dashboard') }}"
@@ -86,94 +148,495 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const mode = "{{ mode }}";
-        const maxBalance = 12; // Static balance for prototype
+        let currentBalance = 0;
+        let totalAllocated = 0;
+        let isUserInteracted = false;
+        
+        let availableFaculty = [];
+        let pendingClasses = [];
+        let classAssignments = {};
+        let liveStatus = {}; 
+        let allocationToIdx = {};
 
-        if (mode === 'full') {
-            const fromDateInput = document.getElementById('fromDate');
-            const toDateInput = document.getElementById('toDate');
-            const balanceDisplay = document.getElementById('balanceDisplay');
-            const submitBtn = document.getElementById('submitBtn');
+        const fromDateInput = document.getElementById('fromDate');
+        const toDateInput = document.getElementById('toDate');
+        const timeFromInput = document.getElementById('timeFrom');
+        const balanceDisplay = document.getElementById('balanceDisplay');
+        const submitBtn = document.getElementById('submitBtn');
+        const halfDayCheck = document.getElementById('halfDay');
+        const sessionContainer = document.getElementById('sessionContainer');
+        const leaveSession = document.getElementById('leaveSession');
+        const leaveTypeSelect = document.getElementById('leaveType');
 
-            function calculateDays() {
-                const fromVal = fromDateInput.value;
-                const toVal = toDateInput.value;
+        async function fetchBalances() {
+            const selectedType = leaveTypeSelect.value;
+            // No early return here, we want to fetch the global types list always
 
-                if (fromVal && toVal) {
-                    const diffTime = Math.abs(new Date(toVal) - new Date(fromVal));
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-                    if (new Date(fromVal) > new Date(toVal)) {
-                        balanceDisplay.innerHTML = `<span class="text-rose-600">Invalid Date Range</span>`;
-                        submitBtn.disabled = true;
-                        return;
+            try {
+                const resp = await fetch('/lecturer/api/all-balances');
+                const data = await resp.json();
+                if (data.success) {
+                    renderBalanceGrid(data.stats, selectedType);
+                    
+                    // Dynamically populate dropdown from global source of truth
+                    const currentVal = leaveTypeSelect.value;
+                    const placeholder = '<option value="" disabled selected>-- Choose Type --</option>';
+                    const options = data.stats.map(s => `<option value="${s.type}" ${currentVal === s.type ? 'selected' : ''}>${s.type}</option>`).join('');
+                    leaveTypeSelect.innerHTML = placeholder + options;
+                    if (currentVal && !data.stats.find(s => s.type === currentVal)) {
+                        leaveTypeSelect.value = ""; // Reset if current type was deleted
                     }
+                    
+                    const active = data.stats.find(s => s.type === selectedType);
+                    if (active) {
+                        currentBalance = active.left;
+                        totalAllocated = active.total;
+                        
+                        const totalStr = Number.isInteger(active.total) ? active.total : active.total.toFixed(1);
+                        const leftStr = Number.isInteger(active.left) ? active.left : active.left.toFixed(1);
+                        
+                        const badge = document.getElementById('selectedTypeBadge');
+                        if (badge) badge.innerText = `${totalStr}/${leftStr} Days`;
+                        
+                        validateAndRefresh();
+                    }
+                }
+            } catch (e) {
+                console.error('Balance Fetch Error:', e);
+            }
+        }
 
-                    if (diffDays > maxBalance) {
-                        balanceDisplay.innerHTML = `<span class="text-rose-600">Exceeds Balance! (${diffDays} Days Selected)</span>`;
-                        submitBtn.disabled = true;
-                    } else {
-                        const remaining = maxBalance - diffDays;
-                        balanceDisplay.innerHTML = `<span class="text-emerald-600">${remaining} Days</span> (After ${diffDays} day request)`;
-                        submitBtn.disabled = false;
+        function renderBalanceGrid(stats, selectedType) {
+            const grid = document.getElementById('balanceGrid');
+            grid.innerHTML = '';
+            stats.forEach(s => {
+                const isSelected = s.type === selectedType;
+                const totalStr = Number.isInteger(s.total) ? s.total : s.total.toFixed(1);
+                const usedStr = Number.isInteger(s.used) ? s.used : s.used.toFixed(1);
+                const leftStr = Number.isInteger(s.left) ? s.left : s.left.toFixed(1);
+                
+                const box = document.createElement('div');
+                box.className = `p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer ${isSelected ? 'ring-2 ring-indigo-600 border-indigo-200 bg-indigo-50 md:scale-[1.02] shadow-md' : 'bg-white border-slate-100 hover:border-indigo-200'} ${s.total > 0 ? '' : 'opacity-40 grayscale-[0.8]'}`;
+                
+                box.innerHTML = `
+                    <div class="text-[7.5px] font-black ${isSelected ? 'text-indigo-600' : 'text-slate-400'} uppercase tracking-wider mb-1 truncate">${s.type}</div>
+                    <div class="flex items-baseline justify-between">
+                        <div class="text-[11px] font-black text-slate-800">${totalStr}/${leftStr}</div>
+                        <div class="text-[9px] font-bold ${isSelected ? 'text-indigo-700 bg-white px-1 shadow-sm' : 'text-slate-400'} rounded">Days</div>
+                    </div>
+                `;
+                box.onclick = () => {
+                    isUserInteracted = true;
+                    leaveTypeSelect.value = s.type;
+                    fetchBalances();
+                    validateAndRefresh();
+                };
+                grid.appendChild(box);
+            });
+        }
+
+        leaveTypeSelect.addEventListener('change', () => {
+            isUserInteracted = true;
+            fetchBalances();
+            validateAndRefresh();
+        });
+        fetchBalances();
+
+        if (halfDayCheck) {
+            halfDayCheck.addEventListener('change', function() {
+                if (this.checked) {
+                    sessionContainer.classList.remove('hidden');
+                    if (toDateInput && fromDateInput) {
+                        toDateInput.value = fromDateInput.value;
+                        toDateInput.parentElement.classList.add('opacity-50');
+                        toDateInput.readOnly = true;
                     }
                 } else {
-                    balanceDisplay.innerText = `${maxBalance} Days`;
-                    submitBtn.disabled = false;
-                }
-            }
-
-            fromDateInput.addEventListener('change', calculateDays);
-            toDateInput.addEventListener('change', calculateDays);
-
-            // Trigger calculation on form submission attempt to be safe
-            document.getElementById('leaveForm').addEventListener('submit', function (e) {
-                if (fromDateInput.value && toDateInput.value) {
-                    if (new Date(fromDateInput.value) > new Date(toDateInput.value)) {
-                        e.preventDefault();
-                        alert("From Date cannot be after To Date.");
+                    sessionContainer.classList.add('hidden');
+                    if (toDateInput) {
+                        toDateInput.parentElement.classList.remove('opacity-50');
+                        toDateInput.readOnly = false;
                     }
+                }
+                updateClasses();
+            });
+        }
+
+        if (leaveSession) {
+            leaveSession.addEventListener('change', updateClasses);
+        }
+
+        if (fromDateInput) {
+            fromDateInput.addEventListener('input', function() {
+                if (halfDayCheck && halfDayCheck.checked && toDateInput) {
+                    toDateInput.value = this.value;
                 }
             });
-        } else {
-            // Time mode
-            const timeFromInput = document.getElementById('timeFrom');
-            const timeToInput = document.getElementById('timeTo');
-            const balanceDisplay = document.getElementById('balanceDisplay');
-            const submitBtn = document.getElementById('submitBtn');
+        }
 
-            balanceDisplay.innerHTML = `<span class="text-emerald-600">${maxBalance} Days</span> (Time-based uses fractions)`;
+        async function saveDraft() {
+            const draft = {
+                reason: leaveReason?.value || '',
+                assignments: classAssignments,
+                live: liveStatus,
+                map: allocationToIdx
+            };
+            try {
+                await fetch('/lecturer/api/save-draft', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(draft)
+                });
+            } catch (e) { console.error('Draft Save Error:', e); }
+        }
 
-            function validateTime() {
-                const fromVal = timeFromInput.value;
-                const toVal = timeToInput.value;
+        async function loadDraft() {
+            try {
+                const resp = await fetch('/lecturer/api/get-draft');
+                const data = await resp.json();
+                if (data.success && data.draft) {
+                    const d = data.draft;
+                    if (leaveReason) leaveReason.value = d.reason || '';
+                    classAssignments = d.assignments || {};
+                    liveStatus = d.live || {};
+                    allocationToIdx = d.map || {};
+                }
+            } catch (e) { console.error('Draft Load Error:', e); }
+        }
 
-                if (fromVal && toVal) {
-                    if (fromVal >= toVal) {
-                        balanceDisplay.innerHTML = `<span class="text-rose-600">Invalid Time Range</span>`;
-                        submitBtn.disabled = true;
+        // Standardized key generator for classes (Normalization included)
+        function getClassKey(c) {
+            const sub = (c.subject || '').trim().toUpperCase();
+            return `${c.date}_${c.time}_${sub}`.replace(/\s+/g, '_');
+        }
+
+        socket.on('assignment_response', function(data) {
+            const idx = allocationToIdx[data.allocation_id];
+            if (idx !== undefined) {
+                liveStatus[idx] = (data.action === 'accept') ? 'accepted' : 'rejected';
+                renderClasses();
+            }
+        });
+
+        window.tempAssign = (key, id) => {
+            classAssignments[key] = id;
+            saveDraft();
+            validateAndRefresh();
+        };
+
+        window.sendIndividualRequest = async (key, classDetail) => {
+            const facultyId = classAssignments[key];
+            if (!facultyId) { 
+                await window.Confirm("Faculty Required", "Please select a faculty member for the substitution first.", "user-clock", "Got it");
+                return; 
+            }
+            
+            const facultyName = availableFaculty.find(f => f._id === facultyId)?.name || 'Faculty';
+            const confirmed = await window.Confirm("Send Request?", `Send substitution request to ${facultyName}?`, 'paper-plane', 'Send Now');
+            if (!confirmed) return;
+
+            liveStatus[key] = 'pending';
+            renderClasses();
+            
+            try {
+                const resp = await fetch('/lecturer/api/request-substitution', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ faculty_id: facultyId, class_details: classDetail })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    allocationToIdx[data.allocation_id] = key;
+                    saveDraft();
+                } else {
+                    await window.Confirm("Request Failed", data.message, "exclamation-triangle", "OK");
+                    liveStatus[key] = 'None';
+                    renderClasses();
+                }
+            } catch (e) { 
+                console.error(e); 
+                liveStatus[key] = 'None';
+                renderClasses();
+            }
+        };
+
+        window.cancelRequest = async (key) => {
+            const allocationId = Object.keys(allocationToIdx).find(id => allocationToIdx[id] === key);
+            if (!allocationId) return;
+
+            const confirmed = await window.Confirm("Cancel Request?", "Recall this substitution request? It will be removed from your colleague's dashboard.", 'undo', 'Recall');
+            if (!confirmed) return;
+
+            try {
+                const resp = await fetch(`/lecturer/api/cancel-substitution/${allocationId}`, { method: 'POST' });
+                const data = await resp.json();
+                if (data.success) {
+                    delete liveStatus[key];
+                    delete classAssignments[key];
+                    delete allocationToIdx[allocationId];
+                    saveDraft();
+                    renderClasses();
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        async function validateAndRefresh() {
+            let isValid = true;
+            saveDraft();
+            
+            const badge = document.getElementById('selectedTypeBadge');
+            const overlay = document.getElementById('blockingOverlay');
+            
+            // 1. Check if Balance is 0 (Absolute Block)
+            if (currentBalance <= 0) {
+                isValid = false;
+                if (badge) {
+                    badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> No Balance Available`;
+                    badge.className = "text-[10px] font-black text-rose-600 px-3 py-1 bg-rose-50 rounded-lg border border-rose-100 shadow-sm inline-block";
+                }
+                
+                // ONLY show overlay if user has actually interacted with the form
+                if (isUserInteracted && overlay && overlay.classList.contains('hidden')) {
+                    overlay.classList.remove('hidden');
+                }
+            } 
+            // ...
+            else if (mode === 'full') {
+                const fVal = fromDateInput?.value, tVal = toDateInput?.value;
+                if (!fVal || !tVal || new Date(fVal) > new Date(tVal)) {
+                    isValid = false;
+                    if (overlay) overlay.classList.add('hidden');
+                } else {
+                    const diffDays = Math.ceil(Math.abs(new Date(tVal) - new Date(fVal)) / (1000 * 60 * 60 * 24)) + 1;
+                    const deduction = (halfDayCheck && halfDayCheck.checked) ? 0.5 : diffDays;
+                    
+                    if (deduction > currentBalance) {
+                        isValid = false;
+                        if (badge) {
+                            badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Limit Exceeded (${currentBalance} Left)`;
+                            badge.className = "text-[10px] font-black text-rose-600 px-3 py-1 bg-rose-50 rounded-lg border border-rose-100 shadow-sm inline-block";
+                        }
+                        if (isUserInteracted && overlay && overlay.classList.contains('hidden')) {
+                            overlay.classList.remove('hidden');
+                        }
                     } else {
-                        balanceDisplay.innerHTML = `<span class="text-emerald-600">${maxBalance} Days</span> (Time-based uses fractions)`;
-                        submitBtn.disabled = false;
+                        const remaining = (currentBalance - deduction).toFixed(1);
+                        if (badge) {
+                            badge.innerText = `${totalAllocated}/${parseFloat(remaining)} Days`;
+                            badge.className = "text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block";
+                        }
+                        if (overlay) overlay.classList.add('hidden');
+                    }
+                }
+            } else if (mode === 'time') {
+                // For time-based leave, we assume a 1 day deduction if balance exists
+                const deduction = 1.0;
+                if (deduction > currentBalance) {
+                    isValid = false;
+                    if (badge) {
+                        badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Short Leave Limit Met`;
+                        badge.className = "text-[10px] font-black text-rose-600 px-3 py-1 bg-rose-50 rounded-lg border border-rose-100 shadow-sm inline-block";
+                    }
+                    if (isUserInteracted && overlay && overlay.classList.contains('hidden')) {
+                        overlay.classList.remove('hidden');
                     }
                 } else {
-                    balanceDisplay.innerHTML = `<span class="text-emerald-600">${maxBalance} Days</span> (Time-based uses fractions)`;
-                    submitBtn.disabled = false;
-                }
-            }
-
-            if (timeFromInput && timeToInput) {
-                timeFromInput.addEventListener('change', validateTime);
-                timeToInput.addEventListener('change', validateTime);
-            }
-
-            // Form submission validation for time mode
-            document.getElementById('leaveForm').addEventListener('submit', function (e) {
-                if (timeFromInput && timeToInput && timeFromInput.value && timeToInput.value) {
-                    if (timeFromInput.value >= timeToInput.value) {
-                        e.preventDefault();
-                        alert("From Time must be before To Time.");
+                    const remaining = (currentBalance - deduction).toFixed(1);
+                    if (badge) {
+                        badge.innerText = `${totalAllocated}/${parseFloat(remaining)} Days`;
+                        badge.className = "text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block";
                     }
+                    if (overlay) overlay.classList.add('hidden');
                 }
+            }
+            if (!leaveReason.value.trim()) isValid = false;
+
+            const total = pendingClasses.length;
+            if (total > 0) {
+                // Count successful assignments (Colleague Accepted OR Management Approved)
+                let completedCount = 0;
+                const posStatus = ['accepted', 'approved', 'finalized'];
+                pendingClasses.forEach(c => {
+                    const key = getClassKey(c);
+                    if (posStatus.includes(liveStatus[key])) completedCount++;
+                });
+
+                const badge = document.getElementById('assignmentBadge');
+                if (completedCount < total) {
+                    isValid = false;
+                    badge.innerHTML = `<i class="fas fa-lock mr-1"></i> waiting for ${total - completedCount} approvals`;
+                    badge.className = "px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[10px] font-black uppercase border border-rose-100 italic";
+                } else {
+                    badge.innerHTML = `<i class="fas fa-unlock mr-1"></i> all assignments complete`;
+                    badge.className = "px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase border border-emerald-200";
+                }
+            }
+
+            submitBtn.disabled = !isValid;
+            document.getElementById('assignmentsJson').value = JSON.stringify(pendingClasses.map(c => {
+                const key = `${c.date}_${c.time}_${c.subject}`.replace(/\s+/g, '_');
+                return { class_details: c, assigned_to_id: classAssignments[key] };
+            }));
+        }
+
+        // CLEAR DRAFT ON SUCCESSFUL SUBMIT
+        document.getElementById('leaveForm').onsubmit = async (e) => {
+             // We use fetch to clear draft so it's guaranteed even if page redirects
+             await fetch('/lecturer/api/clear-draft', { method: 'POST' });
+             localStorage.removeItem('leave_draft_v3');
+        };
+
+        async function updateClasses() {
+            const fDate = fromDateInput?.value || '', tDate = toDateInput?.value || '';
+            if (mode === 'full' && (!fDate || !tDate)) return;
+            
+            const isHalfDay = halfDayCheck?.checked || false;
+            const session = leaveSession?.value || '';
+            
+            const container = document.getElementById('classListContainer');
+            container.innerHTML = `<div class="py-10 text-center text-slate-400 text-[10px] font-black uppercase"><i class="fas fa-circle-notch fa-spin mr-2"></i> Syncing timetable...</div>`;
+
+            try {
+                const url = `/lecturer/api/preview-classes?mode=${mode}&from_date=${fDate}&to_date=${tDate}&half_day=${isHalfDay}&session=${session}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data.success) {
+                    availableFaculty = data.faculty;
+                    pendingClasses = data.classes;
+                    
+                    // SYNC WITH DATABASE: Clear old memory and pull latest from Server
+                    const serverAllocs = data.live_allocations || {};
+                    
+                    // Loop through all classes we just fetched
+                    pendingClasses.forEach(c => {
+                        const key = getClassKey(c);
+                        if (serverAllocs[key]) {
+                            liveStatus[key] = serverAllocs[key].status;
+                            classAssignments[key] = serverAllocs[key].faculty_id;
+                            allocationToIdx[serverAllocs[key].allocation_id] = key;
+                        } else {
+                            // If not in DB, it MUST be a fresh start - Clear any old local choice
+                            delete liveStatus[key];
+                            delete classAssignments[key];
+                        }
+                    });
+
+                    saveDraft();
+                    renderClasses();
+                }
+            } catch (e) { console.error(e); }
+        }
+        window.updateClasses = updateClasses;
+
+        function renderClasses() {
+            const container = document.getElementById('classListContainer');
+            if (pendingClasses.length > 0) {
+                const grouped = {};
+                pendingClasses.forEach(c => {
+                    if (!grouped[c.date]) grouped[c.date] = { day: c.day, classes: [], id: c.date.replace(/\//g, '-') };
+                    grouped[c.date].classes.push(c);
+                });
+
+                // STRICT Regex Filter: BBHCF followed ONLY by digits (Excludes BBHCFN, etc.)
+                const facultyRegex = /^BBHCF\d+$/;
+                const filteredFaculty = availableFaculty.filter(f => f.staff_id && facultyRegex.test(f.staff_id));
+
+                let html = '';
+                for (const date in grouped) {
+                    const group = grouped[date];
+                    html += `
+                        <div class="mb-4 overflow-hidden border border-slate-100 rounded-2xl bg-white shadow-sm">
+                            <div onclick="document.getElementById('subjects-${group.id}').classList.toggle('hidden')" 
+                                 class="p-4 bg-slate-50 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="px-3 py-1 bg-indigo-700 text-white text-[10px] font-black rounded-lg uppercase shadow-sm">${group.day}</div>
+                                    <div class="text-[12px] font-black text-slate-800 tracking-tight">${date}</div>
+                                </div>
+                                <div class="text-slate-400"><i class="fas fa-chevron-down text-[10px]"></i></div>
+                            </div>
+
+                            <div id="subjects-${group.id}" class="p-3 space-y-3">
+                                ${group.classes.map((c) => {
+                                    const cKey = getClassKey(c);
+                                    const status = liveStatus[cKey] || 'None';
+                                    let rowClass = 'bg-white border-slate-50', statusHtml = '';
+                                    
+                                    if (status === 'accepted') {
+                                        rowClass = 'bg-amber-50/20 border-amber-100';
+                                        statusHtml = '<span class="text-[9px] font-black text-amber-600 uppercase italic"><i class="fas fa-handshake"></i> Accepted by Colleague</span>';
+                                    } else if (status === 'finalized' || status === 'approved') {
+                                        rowClass = 'bg-emerald-50/30 border-emerald-100';
+                                        statusHtml = '<span class="text-[9px] font-black text-emerald-600 uppercase italic"><i class="fas fa-check-circle"></i> Approved & Fixed</span>';
+                                    } else if (status === 'rejected') {
+                                        rowClass = 'bg-rose-50/30 border-rose-100';
+                                        statusHtml = '<span class="text-[9px] font-black text-rose-600 uppercase italic"><i class="fas fa-times-circle"></i> Rejected</span>';
+                                    } else if (status === 'pending') {
+                                        rowClass = 'bg-amber-50/30 border-amber-100';
+                                        statusHtml = '<span class="text-[9px] font-black text-amber-600 animate-pulse uppercase italic"><i class="fas fa-sync fa-spin"></i> Processing...</span>';
+                                    }
+
+                                    return `
+                                    <div class="p-3 border rounded-xl shadow-sm flex items-center gap-3 transition-all ${rowClass}">
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-start mb-1">
+                                                <div class="text-[11px] font-black text-slate-800 uppercase leading-none">${c.subject}</div>
+                                                ${statusHtml}
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <div class="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black text-slate-500 rounded uppercase">${c.time}</div>
+                                                <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic">Room ${c.room || 'TBD'}</div>
+                                            </div>
+                                        </div>
+                                        <div class="w-1/2 flex items-center gap-1.5">
+                                            ${status === 'accepted' ? 
+                                                `<div class="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-100/30 rounded-lg border border-emerald-200/50 uppercase italic tracking-tighter">
+                                                    <i class="fas fa-handshake"></i> Assignment Fixed
+                                                </div>` :
+                                              status === 'pending' ?
+                                                `<button type="button" onclick="window.cancelRequest('${cKey}')" 
+                                                         class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-2 border border-slate-200 shadow-sm transition-all active:scale-95">
+                                                    <i class="fas fa-undo"></i> Recall Request
+                                                </button>` :
+                                                `<select onchange="window.tempAssign('${cKey}', this.value)" 
+                                                         class="flex-1 text-[10px] py-2 px-3 rounded-lg border-slate-200 bg-white font-black text-slate-600 uppercase border shadow-sm outline-none focus:ring-1 focus:ring-indigo-500">
+                                                    <option value="">-- Faculty --</option>
+                                                    ${filteredFaculty.map(f => `<option value="${f._id}" ${classAssignments[cKey] === f._id ? 'selected' : ''}>${f.name}</option>`).join('')}
+                                                </select>
+                                                <button type="button" onclick="window.sendIndividualRequest('${cKey}', ${JSON.stringify(c).replace(/"/g, '&quot;')})" 
+                                                         class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black hover:bg-indigo-700 uppercase shadow-md active:scale-95 transition-transform">
+                                                    ${status === 'rejected' ? 'Retry' : 'Send'}
+                                                </button>`
+                                            }
+                                        </div>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
+                }
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div class="py-12 text-center border-2 border-dashed border-slate-200/60 rounded-3xl bg-slate-50/20"><div class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Select Dates to Start</div></div>`;
+            }
+            validateAndRefresh();
+        }
+
+        window.resetLeaveType = () => {
+            const overlay = document.getElementById('blockingOverlay');
+            if (overlay) overlay.classList.add('hidden');
+            leaveTypeSelect.focus();
+            // Optional: reset to first type with balance? Or just let them choose.
+        };
+
+        [fromDateInput, toDateInput].forEach(el => el && el.addEventListener('input', updateClasses));
+        leaveReason.addEventListener('input', validateAndRefresh);
+        
+        loadDraft();
+        if (fromDateInput?.value && toDateInput?.value) updateClasses();
+        validateAndRefresh();
+        
+        if (typeof socket !== 'undefined') {
+            socket.on('leave_types_updated', function() {
+                fetchBalances();
             });
         }
     });

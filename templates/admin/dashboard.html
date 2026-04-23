@@ -58,7 +58,7 @@
         </div>
         <div>
             <p class="text-sm font-medium text-slate-500 uppercase">Pending Leaves</p>
-            <p class="text-2xl font-bold text-slate-800">{{ stats.pending_leaves }}</p>
+            <p id="pending-leaves-count" class="text-2xl font-bold text-slate-800">{{ stats.pending_leaves }}</p>
         </div>
     </div>
 
@@ -153,7 +153,12 @@
                     <tr>
                         <td class="px-6 py-4 font-medium text-slate-700 underline">{{ leave.lecturer_name }}</td>
                         <td class="px-6 py-4 text-sm text-slate-500">{{ leave.type }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-500">{{ leave.from_date }} - {{ leave.to_date }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500">
+                            {{ leave.from_date }} - {{ leave.to_date }}
+                            {% if leave.half_day %}
+                            <span class="block text-[10px] font-bold text-indigo-600 uppercase">Half Day ({{ leave.session }})</span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4">
                             <span
                                 class="px-2 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
@@ -161,16 +166,18 @@
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-2">
-                                <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Approved')"
+                                <a href="{{ url_for('admin_class_allocation_sheet', leave_id=leave._id|string) }}"
+                                   class="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition-colors inline-flex items-center">
+                                    <i class="fas fa-tasks mr-1"></i> Sheet
+                                </a>
+                                <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Approved', this)"
                                     class="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors">
                                     Approve
                                 </button>
-                                <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Rejected')"
+                                <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Rejected', this)"
                                     class="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700 transition-colors">
                                     Reject
                                 </button>
-                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -227,7 +234,7 @@
             <tr>
                 <td class="px-6 py-4 font-medium text-slate-700 underline">${item.lecturer_name}</td>
                 <td class="px-6 py-4 text-sm text-slate-500">${item.type}</td>
-                <td class="px-6 py-4 text-sm text-slate-500">${item.from_date} - ${item.to_date}</td>
+                <td class="px-6 py-4 text-sm text-slate-500">${item.from_date} - ${item.to_date}${item.half_day ? `<br><span class="text-[10px] font-bold text-indigo-600 uppercase">Half Day (${item.session})</span>` : ''}</td>
                 <td class="px-6 py-4">
                     <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
                         ${item.status}
@@ -235,11 +242,15 @@
                 </td>
                 <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
-                        <button type="button" onclick="reviewLeave('${item.id}', 'Approved')"
+                        <a href="/admin/leave/${item.id}/class-allocation-sheet"
+                           class="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition-colors inline-flex items-center">
+                            <i class="fas fa-tasks mr-1"></i> Sheet
+                        </a>
+                        <button type="button" onclick="reviewLeave('${item.id}', 'Approved', this)"
                             class="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors">
                             Approve
                         </button>
-                        <button type="button" onclick="reviewLeave('${item.id}', 'Rejected')"
+                        <button type="button" onclick="reviewLeave('${item.id}', 'Rejected', this)"
                             class="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700 transition-colors">
                             Reject
                         </button>
@@ -249,15 +260,43 @@
         `).join('');
     }
 
-    async function reviewLeave(id, status) {
+    async function reviewLeave(id, status, btn) {
+        const confirmed = await window.Confirm(
+            `${status} Leave?`,
+            `Are you sure you want to mark this request as ${status.toLowerCase()}?`,
+            status === 'Approved' ? 'check-circle' : 'times-circle',
+            status === 'Approved' ? 'Approve' : 'Reject'
+        );
+        if (!confirmed) return;
+
+        // Visual feedback
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
         try {
             const res = await fetch(`/admin/leave/api/${id}/${status}`, { method: 'POST' });
             if (res.ok) {
+                // Success - locally update cache
                 recentLeavesCache = recentLeavesCache.filter(item => item.id !== id);
                 applyRecentLeavesSearch();
+                
+                // Update stats count locally
+                const countEl = document.getElementById('pending-leaves-count');
+                if (countEl) {
+                    const current = parseInt(countEl.innerText) || 0;
+                    countEl.innerText = Math.max(0, current - 1);
+                }
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                await window.Confirm("Update Failed", "Failed to update leave status. Please try again.", "exclamation-triangle", "OK");
             }
         } catch (error) {
             console.error(error);
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            await window.Confirm("Sync Error", "An error occurred while connecting to the server.", "exclamation-circle", "OK");
         }
     }
 
@@ -279,24 +318,52 @@
     document.addEventListener('DOMContentLoaded', function () {
         recentLeavesCache = JSON.parse('{{ recent_leaves_serialized|default([])|tojson|safe }}');
 
-        const socket = io();
-
-        socket.on('new_leave_request', function (leave) {
-            recentLeavesCache.unshift(leave);
-            if (recentLeavesCache.length > 5) {
-                recentLeavesCache.pop(); // Keep only 5 pending leaves
-            }
-            applyRecentLeavesSearch();
-        });
-
         socket.on('leave_status_update', function (data) {
-            recentLeavesCache = recentLeavesCache.filter(item => item.id !== data.id);
-            applyRecentLeavesSearch();
+            // Only update if it was actually in our pending list
+            const exists = recentLeavesCache.some(item => item.id === data.id);
+            if (exists) {
+                recentLeavesCache = recentLeavesCache.filter(item => item.id !== data.id);
+                applyRecentLeavesSearch();
+                
+                // Update stats count
+                const countEl = document.getElementById('pending-leaves-count');
+                if (countEl) {
+                    const current = parseInt(countEl.innerText) || 0;
+                    countEl.innerText = Math.max(0, current - 1);
+                }
+            }
         });
 
         socket.on('leave_cancelled', function (data) {
-            recentLeavesCache = recentLeavesCache.filter(item => item.id !== data.id);
-            applyRecentLeavesSearch();
+            const exists = recentLeavesCache.some(item => item.id === data.id);
+            if (exists) {
+                recentLeavesCache = recentLeavesCache.filter(item => item.id !== data.id);
+                applyRecentLeavesSearch();
+                
+                const countEl = document.getElementById('pending-leaves-count');
+                if (countEl) {
+                    const current = parseInt(countEl.innerText) || 0;
+                    countEl.innerText = Math.max(0, current - 1);
+                }
+            }
+        });
+
+        socket.on('new_leave_request', function (leave) {
+            // Update stats count
+            const countEl = document.getElementById('pending-leaves-count');
+            if (countEl) {
+                const current = parseInt(countEl.innerText) || 0;
+                countEl.innerText = current + 1;
+            }
+            
+            // Add to cache if it's new
+            if (!recentLeavesCache.some(item => item.id === leave.id)) {
+                recentLeavesCache.unshift(leave);
+                if (recentLeavesCache.length > 5) {
+                    recentLeavesCache.pop();
+                }
+                applyRecentLeavesSearch();
+            }
         });
     });
 </script>

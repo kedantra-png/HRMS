@@ -3,6 +3,17 @@ venv/
 __pycache__/
 *.pyc
 reconstruction_log.txt
+scratch/
+actual_models.txt
+final_models.txt
+models_list.txt
+key_check_results.txt
+first_image_raw_text.txt
+first_image_text.txt
+extraction_log*.json
+facultytimetable*.json
+reconstructed_*.json
+faculty_upload.xlsx
 static/timetables/
 static/timetable_splits/
 static/json_timetables/unknown_*.json

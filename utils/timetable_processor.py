@@ -11,6 +11,12 @@ import fitz  # PyMuPDF
 from PIL import Image
 from google import genai
 from dotenv import load_dotenv
+from utils.gemini_runtime import (
+    DEFAULT_GEMINI_MODEL,
+    call_with_retries,
+    format_gemini_error,
+    normalize_model_name,
+)
 
 # Load environment variables
 load_dotenv()
@@ -23,16 +29,20 @@ _api_keys = []
 _current_key_idx = 0
 
 def load_all_keys():
-    """Load keys from .env and api_keys.txt"""
+    """Load keys from .env and api_keys.txt with .env as priority"""
     global _api_keys
-    keys = set()
+    ordered_keys = []
+    seen = set()
     
-    # 1. From .env
+    # 1. First priority: From .env
     env_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if env_key:
-        keys.add(env_key.strip())
+        k = env_key.strip()
+        if k:
+            ordered_keys.append(k)
+            seen.add(k)
         
-    # 2. From api_keys.txt
+    # 2. Sequential: From api_keys.txt
     project_root = os.path.dirname(os.path.abspath(os.path.join(__file__, os.pardir)))
     keys_file = os.path.join(project_root, "api_keys.txt")
     if os.path.exists(keys_file):
@@ -40,12 +50,13 @@ def load_all_keys():
             with open(keys_file, "r") as f:
                 for line in f:
                     k = line.strip()
-                    if k and not k.startswith("#"):
-                        keys.add(k)
+                    if k and not k.startswith("#") and k not in seen:
+                        ordered_keys.append(k)
+                        seen.add(k)
         except:
             pass
     
-    _api_keys = list(keys)
+    _api_keys = ordered_keys
     return _api_keys
 
 def get_genai_client(force_next=False):
@@ -303,8 +314,39 @@ If a class spans multiple periods (like LAB or arrows):
 
 ---
 
-## 🎯 FINAL GOAL
+## 🕒 PERIOD 0 (8:50 - 9:40) MANDATORY CHECK
+Many timetables have a Period "0" column at the very beginning of the grid (immediately after the Day name). 
+✅ ALWAYS check if there is data or an arrow starting in the "0" column. 
+✅ DO NOT skip the first column of the grid. 
 
+---
+
+## 🌓 SESSION-AWARE SPANNING (CRITICAL)
+The timetable is divided into two distinct sessions. Spans (arrows) MUST NOT exceed their respective sessions.
+
+1️⃣ **MORNING SESSION**: Periods **0, I, II, III** (8:50 AM to 12:25 PM).
+2️⃣ **AFTERNOON SESSION**: Periods **IV, V, VI, VII** (1:05 PM to 4:40 PM).
+
+✅ A Lab arrow starting in the Morning session MUST end by Period III.
+✅ A Lab arrow starting in the Afternoon session MUST NOT include periods from the Morning session.
+✅ The "span" value should reflect the number of periods occupied WITHIN THAT SESSION.
+
+---
+
+## 📏 VERTICAL COLUMN ALIGNMENT
+Ensure each class is mapped to its EXACT period by looking vertically up to the header (0, I, II, III, IV, V, VI, VII). 
+Mistakes in alignment (shifting a class one column left or right) are UNACCEPTABLE.
+
+---
+
+## 🧪 LAB DATA HANDLING
+* For Labs, ensure the `subject` field contains the specific Lab name (e.g., "Java Lab", "DS Lab").
+* Set `is_lab: true`.
+* Repeat the exact same object across all periods covered by the Lab span.
+
+---
+
+## 🎯 FINAL GOAL
 Return a clean, fully expanded, structured timetable JSON where:
 
 * Each period is explicitly defined
@@ -327,20 +369,22 @@ Return a clean, fully expanded, structured timetable JSON where:
             return {"error": "No API key found"}
             
         try:
-            # Gemini 2.0 Flash is the best free-tier model for image extraction in 2026
-            model_name = "gemini-2.0-flash" 
-            
-            response = client.models.generate_content(
-                model=model_name,
-                contents=[
-                    genai.types.Content(
-                        role="user",
-                        parts=[
-                            genai.types.Part.from_text(text=prompt),
-                            genai.types.Part.from_bytes(data=image_bytes, mime_type="image/png")
-                        ]
-                    )
-                ]
+            response = call_with_retries(
+                lambda: client.models.generate_content(
+                    model=normalize_model_name(DEFAULT_GEMINI_MODEL),
+                    contents=[
+                        genai.types.Content(
+                            role="user",
+                            parts=[
+                                genai.types.Part.from_text(text=prompt),
+                                genai.types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+                            ]
+                        )
+                    ]
+                ),
+                on_retry=lambda info, attempt, delay: log_event(
+                    f"Retry {attempt} after {delay}s because of {info.kind}."
+                ),
             )
             
             return clean_json_response(response.text)
@@ -348,21 +392,49 @@ Return a clean, fully expanded, structured timetable JSON where:
         except Exception as e:
             error_str = str(e)
             
-            # Handle Quota / Rate Limit
-            if "429" in error_str or "RESOURCE_EXHAUSTED" in error_str:
+            # Handle Quota / Rate Limit or Blocked/Leaked Keys
+            if any(x in error_str for x in ["429", "RESOURCE_EXHAUSTED", "403", "PERMISSION_DENIED"]):
                 if key_attempt < max_retries - 1:
-                    log_event(f"⚠️ Key quota hit (429). Rotating to next key... (Attempt {key_attempt + 1})")
-                    time.sleep(2) # Short pause before rotation
+                    status_type = "quota hit" if "429" in error_str else "key blocked/leaked"
+                    log_event(f"⚠️ {status_type}. Rotating to next key... (Attempt {key_attempt + 1})")
+                    time.sleep(2) 
                     continue
                 else:
-                    return {"error": "All API keys have exhausted their quota. Please wait or provide more keys."}
+                    return {"error": "All available API keys are either exhausted or blocked. Please provide a fresh key."}
             
             # Handle Service Unavailable
             if "503" in error_str and key_attempt < max_retries - 1:
                 time.sleep(retry_delay * (key_attempt + 1))
                 continue
                 
-            return {"error": error_str}
+            return {"error": format_gemini_error(e)}
+
+
+def extract_timetable_structure(image: Image.Image, faculty_name_hint: str = None, socketio=None) -> Dict:
+    """
+    Compatibility wrapper used by app.py for per-page timetable extraction.
+    Converts a PIL image into bytes and routes it through the shared Gemini
+    extraction flow so all timetable-processing entrypoints behave consistently.
+    """
+    try:
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        data = extract_from_image(buffer.getvalue(), faculty_hint=faculty_name_hint)
+        if "error" in data:
+            log_event(
+                f"Image extraction failed for {faculty_name_hint or 'unknown faculty'}: {data['error']}",
+                socketio=socketio,
+                status="error",
+            )
+            return {}
+        return data
+    except Exception as e:
+        log_event(
+            f"Image extraction wrapper failure for {faculty_name_hint or 'unknown faculty'}: {format_gemini_error(e)}",
+            socketio=socketio,
+            status="error",
+        )
+        return {}
 
 def split_pdf_to_parts(pdf_bytes: bytes) -> List[Image.Image]:
     """
@@ -561,6 +633,7 @@ def match_and_save(data: Dict, db, socketio=None):
     if not user_doc:
         clean_norm_list = re.sub(r'[^a-zA-Z\s]', ' ', norm_name).lower().split()
         clean_norm = set(t for t in clean_norm_list if len(t) > 1) 
+        full_norm_no_space = "".join(clean_norm_list).lower()
         
         # Get all lecturers
         all_lects = list(db.users.find({"role": "lecturer"}))
@@ -570,37 +643,43 @@ def match_and_save(data: Dict, db, socketio=None):
         
         for l in all_lects:
             db_name = l.get("name", "").lower()
-            db_clean = set(re.sub(r'[^a-zA-Z\s]', ' ', db_name).lower().split())
-            db_clean = {t for t in db_clean if len(t) > 1}
+            db_clean_list = re.sub(r'[^a-zA-Z\s]', ' ', db_name).lower().split()
+            db_clean = {t for t in db_clean_list if len(t) > 1}
+            full_db_no_space = "".join(db_clean_list).lower()
             
             overlap = clean_norm & db_clean
+            score = 0
             
-            # If the ONLY overlap is a generic surname, degrade score
-            if len(overlap) == 1 and list(overlap)[0] in GENERIC_TOKENS:
-                score = 0.5 
-            else:
-                score = len(overlap)
+            if overlap:
+                if len(overlap) == 1 and list(overlap)[0] in GENERIC_TOKENS:
+                    score = 0.5 
+                else:
+                    score = len(overlap)
+                
+                if any(t in db_clean for t in clean_norm_list if t not in GENERIC_TOKENS):
+                    score += 0.1
             
-            # Additional boost if the first/main name matches
-            if any(t in db_clean for t in clean_norm_list if t not in GENERIC_TOKENS):
-                score += 0.1
+            # Special check for concatenated names
+            if score < 1.0:
+                if full_norm_no_space and full_db_no_space:
+                    if full_norm_no_space == full_db_no_space:
+                        score = 2.0
+                    elif full_norm_no_space in full_db_no_space or full_db_no_space in full_norm_no_space:
+                        score = 1.5
 
-            # Tie-breaker: If same score, check department
             if score > max_overlap:
                 max_overlap = score
                 best_match = l
             elif score == max_overlap and score > 0:
                 l_dept = l.get("department", "").lower()
-                best_dept = best_match.get("department", "").lower()
-                target_dept = dept_name.lower()
-                if target_dept in l_dept and target_dept not in best_dept:
+                best_dept = (best_match.get("department") or "").lower()
+                target_dept = (dept_name or "").lower()
+                if target_dept and target_dept in l_dept and target_dept not in best_dept:
                     best_match = l
         
-        # We need at least a score of 1.1 (e.g. at least one non-generic token or two tokens)
         if max_overlap >= 1.0:
             user_doc = best_match
-            log_event(f"Python matched via tokens ({max_overlap}): {faculty_name} -> {user_doc['name']}", socketio=socketio)
-
+            log_event(f"Python matched via tokens/concat ({max_overlap}): {faculty_name} -> {user_doc['name']}", socketio=socketio)
     faculty_id = "unknown"
     if user_doc:
         faculty_id = str(user_doc.get("staff_id", user_doc.get("_id")))

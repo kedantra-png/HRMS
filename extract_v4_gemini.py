@@ -4,10 +4,20 @@ import time
 import easyocr
 import google.generativeai as genai
 from dotenv import load_dotenv
+from utils.gemini_runtime import (
+    DEFAULT_GEMINI_MODEL,
+    call_with_retries,
+    format_gemini_error,
+    get_project_root,
+    normalize_model_name,
+    strip_json_fences,
+)
 
 # Load API Key from .env
-load_dotenv(r"f:\HRMS\.env")
+load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+PROJECT_ROOT = get_project_root()
 
 # Initialize EasyOCR (runs on CPU)
 print("Initializing EasyOCR...")
@@ -15,9 +25,9 @@ reader = easyocr.Reader(['en'], gpu=False)
 print("EasyOCR Initialized.")
 
 # Directory settings
-IMAGE_DIR = r"f:\HRMS\timetable_splits"
-OUTPUT_FILE = r"f:\HRMS\facultytimetable_gemini.json"
-LOG_FILE = r"f:\HRMS\extraction_log_gemini.json"
+IMAGE_DIR = os.path.join(PROJECT_ROOT, "static", "timetable_splits")
+OUTPUT_FILE = os.path.join(PROJECT_ROOT, "facultytimetable_gemini.json")
+LOG_FILE = os.path.join(PROJECT_ROOT, "extraction_log_gemini.json")
 
 # SYSTEM PROMPT as defined by user
 SYSTEM_PROMPT = """
@@ -151,21 +161,26 @@ def process_image(img_path, model):
 
     print(f"[{filename}] Sending to Gemini...")
     try:
-        response = model.generate_content(
-            f"DATA:\n{raw_ocr_data}",
-            generation_config=genai.types.GenerationConfig(
-                response_mime_type="application/json",
-            )
+        response = call_with_retries(
+            lambda: model.generate_content(
+                f"DATA:\n{raw_ocr_data}",
+                generation_config=genai.types.GenerationConfig(
+                    response_mime_type="application/json",
+                )
+            ),
+            on_retry=lambda info, attempt, delay: print(
+                f"[{filename}] Generation retry {attempt} after {delay}s because of {info.kind}."
+            ),
         )
         
         # Parse JSON from response
-        res_text = response.text.replace('```json', '').replace('```', '').strip()
+        res_text = strip_json_fences(response.text)
         data = json.loads(res_text)
         data["image_file"] = filename
         return data
         
     except Exception as e:
-        print(f"[{filename}] Gemini Error: {e}")
+        print(f"[{filename}] Gemini Error: {format_gemini_error(e)}")
         import traceback
         traceback.print_exc()
         return None
@@ -200,9 +215,9 @@ def log_status(filename, status, details=None):
         json.dump(logs, f, indent=4)
 
 def run():
-    # Use gemini-2.0-flash (most stable flash model in 2026)
+    # Use one shared model setting across all Gemini scripts.
     model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
+        model_name=normalize_model_name(DEFAULT_GEMINI_MODEL),
         system_instruction=SYSTEM_PROMPT
     )
 

@@ -13,6 +13,13 @@ from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 from datetime import datetime
 import time
+from utils.gemini_runtime import (
+    DEFAULT_GEMINI_MODEL,
+    classify_gemini_error,
+    format_gemini_error,
+    normalize_model_name,
+    strip_json_fences,
+)
 
 # Script directory for relative paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -130,7 +137,7 @@ def process_all_timetables(
         print("Added API key from .env to the rotation.")
         
     genai.configure(api_key=key_manager.get_current_key())
-    MODEL_NAME = "models/gemini-3.1-flash-lite-preview"
+    MODEL_NAME = normalize_model_name(DEFAULT_GEMINI_MODEL)
 
     # Load existing data (to support skip-already-processed and incremental runs)
     all_records = load_json_data(output_json_path)
@@ -201,7 +208,7 @@ def process_all_timetables(
                         generation_config={"response_mime_type": "application/json"}
                     )
 
-                    raw_text = response.text.replace('```json', '').replace('```', '').strip()
+                    raw_text = strip_json_fences(response.text)
                     data = json.loads(raw_text)
                     success = True
 
@@ -220,9 +227,22 @@ def process_all_timetables(
                     if not key_manager.switch_to_next_key():
                         log_event("STOPPING: No more valid API keys.", log_path)
                         return
+                    time.sleep(2)
+                except json.JSONDecodeError as e:
+                    log_event(f"AI/Parser Error on {img_name}: {format_gemini_error(e)}", log_path)
+                    break
                 except Exception as e:
-                    log_event(f"AI/Parser Error on {img_name}: {e}", log_path)
-                    time.sleep(5)  # Back off on general error
+                    error_info = classify_gemini_error(e)
+                    log_event(f"AI/Parser Error on {img_name}: {format_gemini_error(e)}", log_path)
+                    if error_info.kind == "rate_limit":
+                        if not key_manager.switch_to_next_key():
+                            log_event("STOPPING: No more valid API keys.", log_path)
+                            return
+                        time.sleep(2)
+                        continue
+                    if error_info.kind == "service_unavailable":
+                        time.sleep(5)
+                        continue
                     break
 
             if success:

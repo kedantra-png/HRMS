@@ -7,7 +7,14 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 DATABASE_NAME = "hrms_db"
 
-client = pymongo.MongoClient(MONGO_URI)
+try:
+    client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=2000)
+    client.server_info()  # Check if connection is successful
+except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.ConnectionFailure):
+    print("Warning: Local MongoDB not found. Falling back to mongomock for demonstration.")
+    import mongomock
+    client = mongomock.MongoClient()
+
 db = client[DATABASE_NAME]
 
 # Collections
@@ -16,6 +23,13 @@ leaves = db["leaves"]
 salaries = db["salaries"]
 timetable = db["timetable"]
 messages = db["messages"]
+
+# New collections for class assignment feature
+leave_class_allocations = db["leave_class_allocations"]  # Tracks class assignments for leaves
+faculty_notifications = db["faculty_notifications"]  # Notifications for faculty about class assignments
+timetable_history = db["timetable_history"]  # Stores original timetables before changes
+leave_drafts = db["leave_drafts"]  # Stores unfinished leave applications
+leave_types = db["leave_types"]  # Dynamic leave types management
 
 def init_db():
     # Create unique index for username
@@ -46,3 +60,9 @@ def init_db():
         }
         users.insert_one(lecturer_data)
         print("Default lecturer created: lecturer / lect123")
+    
+    # Initialize default leave types if collection is empty
+    if leave_types.count_documents({}) == 0:
+        defaults = ["Casual Leave", "Medical Leave", "Earned Leave", "Normal Leave", "Short Leave", "Duty Leave", "Special Leave"]
+        leave_types.insert_many([{"name": t} for t in defaults])
+        print("Default leave types initialized.")

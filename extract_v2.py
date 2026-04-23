@@ -4,6 +4,14 @@ import time
 import glob
 from dotenv import load_dotenv
 import google.generativeai as genai
+from utils.gemini_runtime import (
+    DEFAULT_GEMINI_MODEL,
+    call_with_retries,
+    format_gemini_error,
+    get_project_root,
+    normalize_model_name,
+    strip_json_fences,
+)
 
 # Load environment variables
 load_dotenv()
@@ -16,13 +24,16 @@ if not GOOGLE_API_KEY:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
+# Project paths
+PROJECT_ROOT = get_project_root()
+
 # Directory paths
-IMAGE_DIR = r"f:\HRMS\timetable_splits"
-OUTPUT_FILE = r"f:\HRMS\facultytimetable_v2.json"
-LOG_FILE = r"f:\HRMS\extraction_log_v2.json"
+IMAGE_DIR = os.path.join(PROJECT_ROOT, "static", "timetable_splits")
+OUTPUT_FILE = os.path.join(PROJECT_ROOT, "facultytimetable_v2.json")
+LOG_FILE = os.path.join(PROJECT_ROOT, "extraction_log_v2.json")
 
 # Gemini Model Selection
-MODEL_NAME = "gemini-flash-latest"
+MODEL_NAME = normalize_model_name(DEFAULT_GEMINI_MODEL)
 
 SESSIONS = [
     {"id": "O", "time": "8:50-9:40"},
@@ -120,7 +131,7 @@ def process_images():
             except:
                 pass
 
-    model = genai.GenerativeModel(model_name=MODEL_NAME)
+    model = genai.GenerativeModel(model_name=MODEL_NAME, system_instruction=SYSTEM_PROMPT)
 
     for img_path in images:
         filename = os.path.basename(img_path)
@@ -132,7 +143,12 @@ def process_images():
         
         try:
             print(f"[{filename}] Uploading file...")
-            uploaded_file = genai.upload_file(img_path)
+            uploaded_file = call_with_retries(
+                lambda: genai.upload_file(img_path),
+                on_retry=lambda info, attempt, delay: print(
+                    f"[{filename}] Upload retry {attempt} after {delay}s because of {info.kind}."
+                ),
+            )
             print(f"[{filename}] Uploaded as {uploaded_file.name}")
             
             # Wait for file processing
@@ -146,14 +162,15 @@ def process_images():
                     break
             
             print(f"[{filename}] Generating content...")
-            response = model.generate_content([uploaded_file, SYSTEM_PROMPT])
+            response = call_with_retries(
+                lambda: model.generate_content([uploaded_file, "Extract the timetable as strict JSON."]),
+                on_retry=lambda info, attempt, delay: print(
+                    f"[{filename}] Generation retry {attempt} after {delay}s because of {info.kind}."
+                ),
+            )
             print(f"[{filename}] Response received.")
             
-            json_str = response.text.strip()
-            if "```json" in json_str:
-                json_str = json_str.split("```json")[1].split("```")[0].strip()
-            elif "```" in json_str:
-                 json_str = json_str.split("```")[1].strip()
+            json_str = strip_json_fences(response.text)
 
             try:
                 timetable_data = json.loads(json_str)
@@ -169,18 +186,22 @@ def process_images():
                 print(f"[{filename}] SUCCESS!")
                 
             except json.JSONDecodeError as e:
-                log_status(filename, "ERROR", f"JSON Decode Error: {str(e)}\nResponse: {response.text}")
+                log_status(
+                    filename,
+                    "ERROR",
+                    f"{format_gemini_error(e)} Response: {response.text}",
+                )
                 print(f"[{filename}] FAILED: JSON Decode Error.")
             
             print(f"[{filename}] Waiting 10s cooldown...")
             time.sleep(10)
 
         except Exception as e:
-            error_msg = str(e)
+            error_msg = format_gemini_error(e)
             print(f"[{filename}] FATAL Error: {error_msg}")
             log_status(filename, "FATAL_ERROR", error_msg)
             
-            if "quota" in error_msg.lower() or "limit" in error_msg.lower():
+            if "rate_limit" in error_msg.lower() or "auth" in error_msg.lower() or "invalid_model" in error_msg.lower():
                 print("Quota exceeded. Terminating.")
                 break
             

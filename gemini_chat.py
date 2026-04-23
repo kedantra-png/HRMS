@@ -1,9 +1,10 @@
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
+from utils.gemini_runtime import DEFAULT_GEMINI_MODEL, format_gemini_error, normalize_model_name
 
 # Load API Key from .env
-load_dotenv(r"f:\HRMS\.env")
+load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")
 
 if not api_key:
@@ -13,8 +14,7 @@ if not api_key:
 genai.configure(api_key=api_key)
 
 def run_chat():
-    # Use gemini-2.5-flash as the latest free tier model available in 2026
-    model_name = "gemini-2.5-flash"
+    model_name = normalize_model_name(DEFAULT_GEMINI_MODEL)
     model = genai.GenerativeModel(model_name)
     
     print("\n" + "="*50)
@@ -49,7 +49,7 @@ def run_chat():
             print("\nGoodbye!")
             break
         except Exception as e:
-            print(f"\nError: {e}")
+            print(f"\nError: {format_gemini_error(e)}")
 
 if __name__ == "__main__":
     run_chat()

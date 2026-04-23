@@ -10,6 +10,10 @@
             <p class="text-slate-500 mt-1">Review and action leave applications.</p>
         </div>
         <div class="flex flex-wrap gap-2">
+                <a href="{{ url_for('admin_all_assignments') }}"
+                   class="px-4 py-2 rounded-xl bg-indigo-100 text-indigo-700 hover:bg-indigo-200 text-sm font-bold transition-all shadow-sm flex items-center">
+                    <i class="fas fa-chalkboard-teacher mr-2"></i> View All Assignments
+                </a>
             <a href="{{ url_for('admin_dashboard') }}"
                 class="inline-flex items-center px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold shadow-sm">
                 <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
@@ -76,18 +80,11 @@
                     </div>
                 </div>
             </div>
-            <div class="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Set all to (days / month)</label>
-                    <input type="number" step="0.5" id="setAllValue" value="20"
-                        class="w-full sm:w-32 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                </div>
-                <div class="flex items-end">
-                    <button type="button" onclick="setAllAllocations()"
-                        class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm h-[38px] mt-1 sm:mt-0">
-                        Set All
-                    </button>
-                </div>
+            <div class="w-full sm:w-auto flex items-end gap-2">
+                <button type="button" onclick="openGlobalTypesModal()"
+                    class="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black shadow-lg shadow-indigo-100 transition-all flex items-center gap-2">
+                    <i class="fas fa-plus-circle"></i> Manage Categories
+                </button>
             </div>
         </div>
     </div>
@@ -101,6 +98,7 @@
                     <tr>
                         <th class="px-6 py-4 font-bold">Lecturer ID</th>
                         <th class="px-6 py-4 font-bold">Name</th>
+                        <th class="px-6 py-4 font-bold">Leave Type</th>
                         <th class="px-6 py-4 font-bold">Leaves per Month</th>
                         <th class="px-6 py-4 font-bold">Actions</th>
                     </tr>
@@ -111,30 +109,186 @@
                     <tr class="alloc-row hover:bg-slate-50 transition-colors">
                         <td class="px-6 py-4 font-bold text-slate-700 alloc-id">{{ lecturer.staff_id }}</td>
                         <td class="px-6 py-4 text-sm alloc-name font-medium">{{ lecturer.name }}</td>
-                        <td class="px-6 py-4 text-sm">
-                            <input type="number" step="0.5" id="alloc-{{ lecturer._id }}"
-                                value="{% if lecturer.leaves_per_month %}{{ lecturer.leaves_per_month }}{% else %}20{% endif %}"
-                                class="w-24 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                        <td class="px-6 py-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1.5 min-w-[280px]" id="tags-{{ lecturer._id }}">
+                                {% for s in lecturer.leave_stats %}
+                                    <div class="px-2 py-2 rounded-xl border flex flex-col justify-center min-w-[90px]
+                                        {% if s.total > 0 %}
+                                            bg-white border-indigo-100 shadow-sm
+                                        {% else %}
+                                            bg-slate-50/50 border-slate-100 opacity-50
+                                        {% endif %}">
+                                        <div class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5 truncate">{{ s.type }}</div>
+                                        <div class="flex items-baseline justify-between transition-all">
+                                            <div class="text-[11px] font-black text-slate-700">
+                                                {{ s.total|int if s.total.is_integer() else s.total }}/{{ s.left|int if s.left.is_integer() else s.left }}
+                                            </div>
+                                            <div class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1 rounded uppercase">
+                                                Days
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </td>
                         <td class="px-6 py-4">
-                            <button onclick="saveAllocation('{{ lecturer._id }}')"
-                                class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors">
-                                Save
+                            {% set total_summary = namespace(total=0, left=0) %}
+                            {% if lecturer.leave_stats %}
+                                {% for s in lecturer.leave_stats %}
+                                    {% set total_summary.total = total_summary.total + s.total %}
+                                    {% set total_summary.left = total_summary.left + s.left %}
+                                {% endfor %}
+                            {% endif %}
+                            <div class="text-xl font-black text-slate-800">
+                                {{ total_summary.total|int if total_summary.total.is_integer() else total_summary.total }}/{{ total_summary.left|int if total_summary.left.is_integer() else total_summary.left }}
+                            </div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase leading-none">Days Balance</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <button onclick="openManageBalances('{{ lecturer._id }}', '{{ lecturer.name }}')"
+                                class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-white hover:text-indigo-600 border border-transparent hover:border-indigo-600 text-white text-sm font-semibold shadow-sm transition-all active:scale-95">
+                                Manage
                             </button>
-                            <span id="alloc-status-{{ lecturer._id }}"
-                                class="ml-3 text-sm text-emerald-600 font-bold hidden opacity-0 transition-opacity duration-300">Saved!</span>
                         </td>
                     </tr>
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td class="px-6 py-6 text-sm text-slate-500" colspan="4">
+                        <td class="px-6 py-6 text-sm text-slate-500" colspan="5">
                             No lecturers found.
                         </td>
                     </tr>
                     {% endif %}
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Balances Modal -->
+<div id="balanceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4" style="z-index: 9999;">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg border border-slate-100 overflow-hidden">
+        <div class="bg-indigo-700 p-6 text-white flex justify-between items-center">
+            <div>
+                <h3 class="text-xl font-bold" id="modalLecturerName">Manage Balances</h3>
+                <p class="text-indigo-200 text-xs uppercase font-bold tracking-widest mt-1">Set individual leave types</p>
+            </div>
+            <button onclick="closeBalanceModal()" class="text-white/60 hover:text-white transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="p-6">
+            <div id="modalLoading" class="py-10 text-center text-slate-400 font-bold uppercase text-[10px]">
+                <i class="fas fa-spinner fa-spin mr-2"></i> Loading balances...
+            </div>
+            
+            <div id="modalContent" class="hidden space-y-6">
+                <!-- Current Balances Table -->
+                <div class="overflow-hidden border border-slate-100 rounded-2xl">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 text-[10px] font-black uppercase">
+                            <tr>
+                                <th class="px-4 py-3">Leave Type</th>
+                                <th class="px-4 py-3 text-center">Total / Remaining</th>
+                                <th class="px-4 py-3 text-center">Status</th>
+                                <th class="px-4 py-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalBalancesTable" class="divide-y divide-slate-50 text-slate-700 font-medium">
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Add New Type Form -->
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Add / Update Allocation</h4>
+                        <div class="flex items-center gap-2">
+                             <input type="checkbox" id="isCustomType" onchange="toggleTypeInput()" class="h-3 w-3 text-indigo-600">
+                             <label for="isCustomType" class="text-[8px] font-black text-slate-500 uppercase">Custom Type</label>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div id="selectTypeContainer">
+                            <select id="newTypeSelect" class="type-dropdown w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <!-- Dynamic -->
+                            </select>
+                        </div>
+                        <div id="customTypeContainer" class="hidden">
+                            <input type="text" id="customTypeName" placeholder="Enter Leave Type Name" 
+                                   class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                        <div>
+                            <input type="number" id="newTypeVal" placeholder="Days" step="0.5" 
+                                   class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+                    <button onclick="saveModalAllocation()" id="modalSaveBtn"
+                            class="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]">
+                        Submit Allocation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unified Global Types Modal -->
+<div id="globalTypesModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg border border-slate-100 overflow-hidden">
+        <div class="bg-indigo-700 p-6 text-white flex justify-between items-center">
+            <div>
+                <h3 class="text-xl font-bold">Manage Leave Categories</h3>
+                <p class="text-indigo-200 text-xs uppercase font-bold tracking-widest mt-1">Global Leave Policies</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="cleanupUnusedTypes()" title="Cleanup Unused Categories"
+                    class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white/80 transition-all flex items-center justify-center">
+                    <i class="fas fa-broom"></i>
+                </button>
+                <button onclick="clearAllLeaveConfig()" title="Clear All Categories & Allocations"
+                    class="w-10 h-10 rounded-full bg-rose-500/20 hover:bg-rose-500/40 text-rose-200 transition-all flex items-center justify-center">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <button onclick="closeGlobalTypesModal()" class="text-white/60 hover:text-white transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <div class="p-6 space-y-6">
+            <!-- Add New Type -->
+            <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-3">
+                <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Create New Leave Category</h4>
+                <div class="flex gap-2">
+                    <input type="text" id="newGlobalTypeName" placeholder="e.g. Duty Leave..." 
+                        class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button onclick="addGlobalType()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase hover:bg-indigo-700 transition-all">Add Type</button>
+                </div>
+            </div>
+
+            <!-- Existing Types List -->
+            <div class="space-y-2">
+                <h4 class="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Active Categories</h4>
+                <div id="globalTypesList" class="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                    <!-- Dynamic List -->
+                </div>
+            </div>
+
+            <!-- Bulk Set All Balances -->
+            <div class="p-4 bg-indigo-50 border border-indigo-100 rounded-2xl space-y-3">
+                 <h4 class="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Bulk Set All Faculty Balances</h4>
+                 <div class="grid grid-cols-2 gap-3">
+                    <select id="setAllType" class="type-dropdown w-full px-3 py-2.5 rounded-xl border border-indigo-200 text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <!-- Dynamic -->
+                    </select>
+                    <input type="number" step="0.5" id="setAllValue" value="20" placeholder="Days"
+                        class="w-full px-3 py-2.5 rounded-xl border border-indigo-200 text-sm font-bold bg-white focus:ring-2 focus:ring-indigo-500 outline-none" />
+                 </div>
+                 <button onclick="setAllAllocations()" class="w-full py-3 bg-white text-indigo-700 border border-indigo-200 rounded-xl text-xs font-black uppercase hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                     Apply to All Faculty
+                 </button>
+            </div>
         </div>
     </div>
 </div>
@@ -157,10 +311,15 @@
                 <tbody class="divide-y divide-slate-50">
                     {% if leaves %}
                     {% for leave in leaves %}
-                    <tr>
+                    <tr id="leave-row-{{ leave._id|string }}">
                         <td class="px-6 py-4 font-bold text-slate-700">{{ leave.lecturer_name }}</td>
                         <td class="px-6 py-4 text-sm">{{ leave.type }}</td>
-                        <td class="px-6 py-4 text-xs text-slate-500">{{ leave.from_date }} to {{ leave.to_date }}</td>
+                        <td class="px-6 py-4 text-xs text-slate-500">
+                            {{ leave.from_date }}{% if leave.to_date and leave.to_date != leave.from_date %} to {{ leave.to_date }}{% endif %}
+                            {% if leave.half_day %}
+                            <span class="block text-[10px] font-bold text-indigo-600 mt-1 uppercase tracking-tighter">Half Day ({{ leave.session }})</span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 text-sm text-slate-500 truncate max-w-[200px]">{{ leave.reason }}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase 
@@ -172,26 +331,26 @@
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            {% if leave.status == 'Pending' %}
-                            <div class="flex items-center gap-2">
-                                <form method="post"
-                                    action="{{ url_for('review_leave', id=leave._id|string, status='Approved') }}">
-                                    <button type="submit"
+                                <div id="leave-actions-{{ leave._id|string }}" class="flex items-center gap-2 flex-wrap">
+                                    <a href="{{ url_for('admin_class_allocation_sheet', leave_id=leave._id|string) }}"
+                                       class="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 transition-colors inline-flex items-center font-bold">
+                                        <i class="fas fa-file-alt mr-1"></i> Sheet
+                                    </a>
+                                    {% if leave.status == 'Pending' %}
+                                    <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Approved')"
                                         class="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors">
                                         Approve
                                     </button>
-                                </form>
-                                <form method="post"
-                                    action="{{ url_for('review_leave', id=leave._id|string, status='Rejected') }}">
-                                    <button type="submit"
+                                    <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Rejected')"
                                         class="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700 transition-colors">
                                         Reject
                                     </button>
-                                </form>
-                            </div>
-                            {% else %}
-                            <span class="text-slate-400 text-xs italic">No actions available</span>
-                            {% endif %}
+                                    {% endif %}
+                                    <button type="button" onclick="deleteLeave('{{ leave._id|string }}')"
+                                        class="text-xs bg-slate-200 text-slate-600 px-3 py-1 rounded hover:bg-rose-600 hover:text-white transition-all">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -315,100 +474,336 @@
         }
     }
 
-    function saveAllocation(id) {
-        const input = document.getElementById('alloc-' + id);
-        const status = document.getElementById('alloc-status-' + id);
-        const val = input.value;
-        const btn = input.parentElement.nextElementSibling.querySelector('button');
+    let currentLecturerId = null;
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-        fetch('/admin/leaves/api/set_allocation/' + id, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ leaves_per_month: val })
-        })
+    function openManageBalances(id, name) {
+        currentLecturerId = id;
+        document.getElementById('modalLecturerName').innerText = name;
+        document.getElementById('balanceModal').classList.remove('hidden');
+        document.getElementById('modalLoading').classList.remove('hidden');
+        document.getElementById('modalContent').classList.add('hidden');
+        
+        fetch('/admin/leaves/api/get_balances/' + id)
             .then(r => r.json())
             .then(data => {
-                btn.disabled = false;
-                btn.innerHTML = 'Save';
-                if (data.success) {
-                    status.classList.remove('hidden');
-                    // Trigger reflow to restart animation
-                    void status.offsetWidth;
-                    status.classList.add('opacity-100');
-
-                    setTimeout(() => {
-                        status.classList.remove('opacity-100');
-                        setTimeout(() => status.classList.add('hidden'), 300);
-                    }, 2000);
-                }
-            })
-            .catch(err => {
-                btn.disabled = false;
-                btn.innerHTML = 'Save';
-                alert('Failed to save. Please try again.');
+                document.getElementById('modalLoading').classList.add('hidden');
+                document.getElementById('modalContent').classList.remove('hidden');
+                renderModalBalances(data.stats);
             });
     }
 
-    function setAllAllocations() {
-        const valInput = document.getElementById('setAllValue');
-        if (!valInput) return;
-        const value = valInput.value;
-        const rows = document.querySelectorAll('.alloc-row');
-        if (!rows.length) return;
+    function closeBalanceModal() {
+        document.getElementById('balanceModal').classList.add('hidden');
+        currentLecturerId = null;
+    }
 
-        // Update all inputs visually
-        rows.forEach(row => {
-            const input = row.querySelector('input[id^="alloc-"]');
-            if (input) input.value = value;
-        });
+    function toggleTypeInput() {
+        const isCustom = document.getElementById('isCustomType').checked;
+        document.getElementById('selectTypeContainer').classList.toggle('hidden', isCustom);
+        document.getElementById('customTypeContainer').classList.toggle('hidden', !isCustom);
+    }
 
-        if (!confirm('Apply this value to all lecturers and save?')) {
+    function renderModalBalances(stats) {
+        const tbody = document.getElementById('modalBalancesTable');
+        const tags = document.getElementById('tags-' + currentLecturerId);
+        tbody.innerHTML = '';
+        tags.innerHTML = '';
+        
+        if (!stats || stats.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-4 text-center text-slate-400 italic">No allocations set</td></tr>';
+            tags.innerHTML = '<span class="text-slate-400 text-[10px]">No allocations</span>';
             return;
         }
 
-        // Save for each lecturer using existing API
-        rows.forEach(row => {
-            const input = row.querySelector('input[id^="alloc-"]');
-            if (!input) return;
-            const id = input.id.replace('alloc-', '');
-            const status = document.getElementById('alloc-status-' + id);
-            const btn = input.parentElement.nextElementSibling.querySelector('button');
+        stats.forEach(s => {
+            const totalStr = Number.isInteger(s.total) ? s.total : s.total.toFixed(1);
+            const leftStr = Number.isInteger(s.left) ? s.left : s.left.toFixed(1);
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-            fetch('/admin/leaves/api/set_allocation/' + id, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ leaves_per_month: value })
-            })
-                .then(r => r.json())
-                .then(data => {
-                    btn.disabled = false;
-                    btn.innerHTML = 'Save';
-                    if (data.success && status) {
-                        status.classList.remove('hidden');
-                        void status.offsetWidth;
-                        status.classList.add('opacity-100');
-                        setTimeout(() => {
-                            status.classList.remove('opacity-100');
-                            setTimeout(() => status.classList.add('hidden'), 300);
-                        }, 1500);
-                    }
-                })
-                .catch(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = 'Save';
-                });
+            // Modal Table Row
+            const tr = document.createElement('tr');
+            tr.className = s.total > 0 ? '' : 'opacity-40 bg-slate-50/50';
+            tr.innerHTML = `
+                <td class="px-4 py-3 font-bold text-slate-800">${s.type}</td>
+                <td class="px-4 py-3 text-center font-black text-slate-600">${totalStr}/${leftStr}</td>
+                <td class="px-4 py-3 text-center">
+                    <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg font-black text-[9px] uppercase">${s.total > 0 ? 'Active' : 'Unset'}</span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    ${s.total > 0 ? `
+                    <button onclick="deleteAllocation('${s.type}')" class="p-2 text-rose-400 hover:text-rose-600 transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>` : `<span class="text-[10px] text-slate-300 font-bold uppercase italic">Not Set</span>`}
+                </td>
+            `;
+            tbody.appendChild(tr);
+            
+            // Background Tags Update (Box Style)
+            const box = document.createElement('div');
+            box.className = `px-2 py-2 rounded-xl border flex flex-col justify-center min-w-[90px] ${s.total > 0 ? 'bg-white border-indigo-100 shadow-sm' : 'bg-slate-50/50 border-slate-100 opacity-50'}`;
+            box.innerHTML = `
+                <div class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5 truncate">${s.type}</div>
+                <div class="flex items-baseline justify-between transition-all">
+                    <div class="text-[11px] font-black text-slate-700">${totalStr}/${leftStr}</div>
+                    <div class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1 rounded uppercase">Days</div>
+                </div>
+            `;
+            tags.appendChild(box);
         });
     }
+
+    async function saveModalAllocation() {
+        if (!currentLecturerId) return;
+        const isCustom = document.getElementById('isCustomType').checked;
+        const type = isCustom ? document.getElementById('customTypeName').value.trim() : document.getElementById('newTypeSelect').value;
+        const val = document.getElementById('newTypeVal').value;
+        
+        if (!type) {
+            await window.Confirm("Input Required", "Please specify a leave type name.", "info-circle", "OK");
+            return;
+        }
+        if (!val) { 
+            await window.Confirm("Input Required", "Please enter the number of days for the allocation.", "exclamation-circle", "OK");
+            return; 
+        }
+        
+        const btn = document.getElementById('modalSaveBtn');
+        btn.disabled = true;
+        btn.innerText = 'Saving...';
+        
+        fetch('/admin/leaves/api/set_allocation/' + currentLecturerId, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leaves_per_month: val, leave_type: type })
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerText = 'Save Allocation';
+            // Clear custom input
+            document.getElementById('customTypeName').value = '';
+            openManageBalances(currentLecturerId, document.getElementById('modalLecturerName').innerText);
+        });
+    }
+
+    async function deleteAllocation(type) {
+        const confirmed = await window.Confirm(
+            "Remove Allocation", 
+            `Are you sure you want to delete the ${type} allocation?`, 
+            'trash', 
+            'Delete'
+        );
+        if (!confirmed) return;
+        
+        fetch(`/admin/leaves/api/delete_allocation/${currentLecturerId}/${type}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            openManageBalances(currentLecturerId, document.getElementById('modalLecturerName').innerText);
+        });
+    }
+
+    async function setAllAllocations() {
+        const valInput = document.getElementById('setAllValue');
+        const typeSelect = document.getElementById('setAllType');
+        if (!valInput || !typeSelect) return;
+        const value = valInput.value;
+        const leaveType = typeSelect.value;
+        
+        const confirmed = await window.Confirm(
+            "Bulk Allocation", 
+            `Set ${leaveType} to ${value} days for ALL lecturers?`, 
+            'users-cog', 
+            'Set All'
+        );
+        if (!confirmed) return;
+
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Setting...';
+
+        const rows = document.querySelectorAll('.alloc-row');
+        const promises = [];
+
+        rows.forEach(row => {
+            const manageBtn = row.querySelector('button[onclick^="openManageBalances"]');
+            if (manageBtn) {
+                const match = manageBtn.getAttribute('onclick').match(/'([^']+)'/);
+                if (match) {
+                    const id = match[1];
+                    promises.push(
+                        fetch('/admin/leaves/api/set_allocation/' + id, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ leaves_per_month: value, leave_type: leaveType })
+                        })
+                    );
+                }
+            }
+        });
+
+        await Promise.all(promises);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        location.reload();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshAllTypeDropdowns();
+    });
+
+    async function refreshAllTypeDropdowns() {
+        try {
+            const resp = await fetch('/admin/api/leave-types');
+            const types = await resp.json();
+            const selects = document.querySelectorAll('.type-dropdown');
+            
+            selects.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = types.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+                if (currentVal) select.value = currentVal;
+            });
+        } catch (e) {
+            console.error('Failed to load types:', e);
+        }
+    }
+
+    async function openGlobalTypesModal() {
+        document.getElementById('globalTypesModal').classList.remove('hidden');
+        renderGlobalTypesList();
+    }
+
+    function closeGlobalTypesModal() {
+        document.getElementById('globalTypesModal').classList.add('hidden');
+    }
+
+    async function renderGlobalTypesList() {
+        const listDiv = document.getElementById('globalTypesList');
+        listDiv.innerHTML = '<div class="text-center py-4 text-slate-400 font-bold uppercase text-[10px]">Loading stats...</div>';
+        
+        try {
+            const resp = await fetch('/admin/api/leave-types');
+            const types = await resp.json();
+            
+            listDiv.innerHTML = types.map(t => `
+                <div class="p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-indigo-200 transition-all flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-black text-slate-700">${t.name}</span>
+                        <button onclick="deleteGlobalType('${t.name}')" class="text-rose-400 hover:text-rose-600 p-1 transition-colors">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t.total_allocated} Days Total</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${t.in_use_count} Faculty Active</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } catch (e) {
+            listDiv.innerHTML = '<div class="text-center py-4 text-rose-500 font-bold">Error loading stats</div>';
+        }
+    }
+
+    async function addGlobalType() {
+        const nameInput = document.getElementById('newGlobalTypeName');
+        const name = nameInput.value.trim();
+        if (!name) return;
+        
+        try {
+            const resp = await fetch('/admin/api/leave-types', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                nameInput.value = '';
+                renderGlobalTypesList();
+                refreshAllTypeDropdowns();
+            } else {
+                alert(data.message || 'Failed to add type');
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function deleteGlobalType(name) {
+        const confirmed = await window.Confirm("Remove Leave Type?", `Delete "${name}" globally? This won't delete existing records but it will remove it from all future selections.`, "trash", "Delete Type");
+        if (!confirmed) return;
+
+        try {
+            const resp = await fetch(`/admin/api/leave-types/${name}`, { method: 'DELETE' });
+            const data = await resp.json();
+            if (data.success) {
+                renderGlobalTypesList();
+                refreshAllTypeDropdowns();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function cleanupUnusedTypes() {
+        const confirmed = await window.Confirm("Cleanup Unused?", "This will remove all leave categories that have 0 total days across all staff. Continue?", "broom", "Cleanup");
+        if (!confirmed) return;
+
+        try {
+            const resp = await fetch('/admin/api/leave-types/cleanup', { method: 'POST' });
+            const data = await resp.json();
+            if (data.success) {
+                renderGlobalTypesList();
+                refreshAllTypeDropdowns();
+                await window.Confirm("Cleanup Complete", `${data.deleted_count} unused categories removed.`, "check-circle", "OK");
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function clearAllLeaveConfig() {
+        const confirmed = await window.Confirm("Clear All Config?", "WARNING: This will permanently delete ALL leave categories and ALL faculty allocations. This cannot be undone. Proceed?", "exclamation-triangle", "Clear All");
+        if (!confirmed) return;
+
+        try {
+            const resp = await fetch('/admin/api/leave-types/clear-all', { method: 'POST' });
+            const data = await resp.json();
+            if (data.success) {
+                await window.Confirm("System Reset", "All categories and allocations have been cleared.", "check-circle", "OK");
+                location.reload();
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    async function deleteLeave(id) {
+        const confirmed = await window.Confirm(
+            "Delete Request", 
+            "Are you sure you want to permanently delete this leave application?", 
+            'trash-alt', 
+            'Delete'
+        );
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`/admin/leave/delete/${id}`, { method: 'POST' });
+            if (res.ok) {
+                const row = document.getElementById('leave-row-' + id);
+                if (row) {
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        // Check if table is empty
+                        const tbody = document.querySelector('#review-view tbody');
+                        if (tbody.children.length === 0) {
+                            tbody.innerHTML = '<tr><td class="px-6 py-6 text-sm text-slate-500" colspan="6">No leave records found.</td></tr>';
+                        }
+                    }, 300);
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting leave:', error);
+        }
+    }
+
 
     function filterAllocations() {
         const term = document.getElementById('allocSearch').value.toLowerCase();
@@ -422,6 +817,73 @@
                 row.style.display = 'none';
             }
         });
+    }
+
+    // Real-time status updates via SocketIO
+    socket.on('leave_status_update', function (data) {
+        const row = document.getElementById('leave-row-' + data.id);
+        if (!row) return;
+
+        // Update Status Badge
+        const statusTd = row.cells[4];
+        let badgeClass = 'bg-amber-100 text-amber-700';
+        if (data.status === 'Approved') badgeClass = 'bg-green-100 text-green-700';
+        else if (data.status === 'Rejected') badgeClass = 'bg-red-100 text-red-700';
+        else if (data.status === 'Cancelled') badgeClass = 'bg-slate-100 text-slate-600';
+
+        statusTd.innerHTML = `<span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${badgeClass}">${data.status}</span>`;
+
+        // Remove actions if no longer pending
+        const actionsDiv = document.getElementById('leave-actions-' + data.id);
+        if (actionsDiv && data.status !== 'Pending') {
+            // Keep the allocation sheet link but remove buttons
+            const sheetLink = actionsDiv.querySelector('a');
+            actionsDiv.innerHTML = sheetLink ? sheetLink.outerHTML : '';
+        }
+    });
+
+    socket.on('leave_cancelled', function (data) {
+        const row = document.getElementById('leave-row-' + data.id);
+        if (row) {
+            const statusTd = row.cells[4];
+            statusTd.innerHTML = `<span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-600">Cancelled</span>`;
+            const actionsDiv = document.getElementById('leave-actions-' + data.id);
+            if (actionsDiv) {
+                const sheetLink = actionsDiv.querySelector('a');
+                actionsDiv.innerHTML = sheetLink ? sheetLink.outerHTML : '';
+            }
+        }
+    });
+
+    async function reviewLeave(id, status) {
+        const confirmed = await window.Confirm(
+            `${status} Leave?`,
+            `Are you sure you want to mark this request as ${status.toLowerCase()}?`,
+            status === 'Approved' ? 'check-circle' : 'times-circle',
+            status === 'Approved' ? 'Approve' : 'Reject'
+        );
+        if (!confirmed) return;
+
+        // Visual feedback
+        const btn = event.currentTarget;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const res = await fetch(`/admin/leave/api/${id}/${status}`, { method: 'POST' });
+            if (!res.ok) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                await window.Confirm("Error", "Failed to update leave status. Please try again.", "exclamation-triangle", "OK");
+            }
+            // Real-time update will be handled by socket listener
+        } catch (error) {
+            console.error('Error reviewing leave:', error);
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            await window.Confirm("Error", "An unexpected error occurred while reviewing the leave.", "exclamation-triangle", "OK");
+        }
     }
 
     // Auto-switch to review tab if query params are present

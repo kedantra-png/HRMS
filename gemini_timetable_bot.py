@@ -4,10 +4,20 @@ import time
 import easyocr
 import google.generativeai as genai
 from dotenv import load_dotenv
+from utils.gemini_runtime import (
+    DEFAULT_GEMINI_MODEL,
+    call_with_retries,
+    format_gemini_error,
+    get_project_root,
+    normalize_model_name,
+    strip_json_fences,
+)
 
 # Load API Key from .env
-load_dotenv(r"f:\HRMS\.env")
+load_dotenv()
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+PROJECT_ROOT = get_project_root()
 
 # Initialize EasyOCR (runs on CPU)
 print("Initializing OCR Engine (EasyOCR)...")
@@ -152,7 +162,7 @@ def run_interactive():
     print("="*50)
     
     # Take image path from user or use default first image
-    image_dir = r"f:\HRMS\timetable_splits"
+    image_dir = os.path.join(PROJECT_ROOT, "static", "timetable_splits")
     images = sorted([f for f in os.listdir(image_dir) if f.lower().endswith(".png")])
     if not images:
         print("No images found in split directory.")
@@ -169,9 +179,9 @@ def run_interactive():
     ocr_data = get_ocr_data(img_path)
     
     # 3. Setup Gemini
-    # Use gemini-2.0-flash as it's the best free option
+    # Use the shared Gemini model setting so all scripts stay aligned.
     model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
+        model_name=normalize_model_name(DEFAULT_GEMINI_MODEL),
         system_instruction=DEFAULT_SYSTEM_PROMPT
     )
     
@@ -180,15 +190,20 @@ def run_interactive():
     
     print("\nSending to Gemini (2.0 Flash)...")
     try:
-        response = model.generate_content(
-            full_prompt,
-            generation_config=genai.types.GenerationConfig(
-                response_mime_type="application/json",
-            )
+        response = call_with_retries(
+            lambda: model.generate_content(
+                full_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    response_mime_type="application/json",
+                )
+            ),
+            on_retry=lambda info, attempt, delay: print(
+                f"Retry {attempt} after {delay}s because of {info.kind}."
+            ),
         )
         
         # Parse and display result
-        res_text = response.text.replace('```json', '').replace('```', '').strip()
+        res_text = strip_json_fences(response.text)
         data = json.loads(res_text)
         
         print("\n" + "-"*50)
@@ -198,13 +213,13 @@ def run_interactive():
         print("-"*50)
         
         # Save to file
-        save_path = f"f:\\HRMS\\reconstructed_{target_image.split('.')[0]}.json"
+        save_path = os.path.join(PROJECT_ROOT, f"reconstructed_{target_image.split('.')[0]}.json")
         with open(save_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
         print(f"\nSUCCESS: Result saved to {save_path}")
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error: {format_gemini_error(e)}")
 
 if __name__ == "__main__":
     run_interactive()

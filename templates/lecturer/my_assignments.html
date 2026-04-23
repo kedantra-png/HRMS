@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}My Class Assignments - HRMS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-800">My Class Assignments</h1>
+        <p class="text-slate-500 mt-2">Review and respond to class assignment requests from other faculty members</p>
+    </div>
+
+    {% if notifications %}
+    <!-- Pending Assignments -->
+    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-slate-100 overflow-hidden">
+        <div class="p-6 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-purple-50">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center">
+                <i class="fas fa-bell mr-3 text-indigo-600"></i>
+                Pending Assignment Requests
+                <span class="ml-3 px-3 py-1 rounded-full bg-indigo-600 text-white text-sm font-bold">
+                    {{ notifications|length }}
+                </span>
+            </h2>
+        </div>
+
+        <div class="divide-y divide-slate-100">
+            {% set grouped_notifications = {} %}
+            {% for n in notifications %}
+                {% set sender = n.sender_id %}
+                {% if sender not in grouped_notifications %}
+                    {% do grouped_notifications.update({sender: []}) %}
+                {% endif %}
+                {% do grouped_notifications[sender].append(n) %}
+            {% endfor %}
+
+            {% for sender_id, group in grouped_notifications.items() %}
+            <div class="p-6 hover:bg-slate-50/50 transition-colors">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                        {{ group[0].sender_name[0] }}
+                    </div>
+                    <div>
+                        <h3 class="font-black text-slate-800 uppercase tracking-tight">{{ group[0].sender_name }}</h3>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Requested {{ group|length }} Substitution(s)</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3 ml-12">
+                    {% for n in group %}
+                    <div class="assignment-item p-4 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center justify-between group" id="notification-{{ n.id }}">
+                        <div class="flex-1">
+                            <div class="text-[11px] font-black text-indigo-700 uppercase mb-1">{{ n.class_details.subject }}</div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-[10px] font-bold text-slate-500"><i class="fas fa-calendar-day mr-1"></i> {{ n.class_details.date }}</span>
+                                <span class="text-[10px] font-bold text-slate-500"><i class="fas fa-clock mr-1"></i> {{ n.class_details.time }}</span>
+                                <span class="text-[10px] font-black text-slate-400 italic">Room {{ n.class_details.room or 'TBD' }}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="respondToAssignment('{{ n.allocation_id }}', 'accept', '{{ n.id }}')"
+                                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase transition-all shadow-md active:scale-95">
+                                Accept
+                            </button>
+                            <button onclick="respondToAssignment('{{ n.allocation_id }}', 'reject', '{{ n.id }}')"
+                                    class="px-4 py-2 bg-white border border-rose-100 text-rose-600 hover:bg-rose-50 rounded-lg text-[10px] font-black uppercase transition-all active:scale-95">
+                                Reject
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Confirmed Assignments History -->
+    {% if accepted_assignments %}
+    <div class="mt-12">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-slate-800 flex items-center">
+                <i class="fas fa-check-double mr-3 text-emerald-600"></i>
+                My Confirmed Assignments
+            </h2>
+            <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-lg border border-emerald-200">
+                {{ accepted_assignments|length }} Ready
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for a in accepted_assignments %}
+            <div class="assignment-item p-4 bg-white border border-emerald-100 rounded-2xl shadow-sm hover:shadow-md transition-all relative overflow-hidden group" 
+                 id="allocation-{{ a.id }}" data-alloc-id="{{ a.id }}">
+                <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <i class="fas fa-handshake text-3xl text-emerald-600"></i>
+                </div>
+                
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-black text-slate-800 uppercase tracking-tight">{{ a.class_details.subject }}</div>
+                        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{{ a.class_details.date }} | {{ a.class_details.time }}</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mt-auto">
+                    <div class="flex items-center gap-2">
+                         <div class="px-2 py-0.5 bg-slate-50 text-slate-400 text-[8px] font-black rounded uppercase border border-slate-100">Room {{ a.class_details.room or 'TBD' }}</div>
+                    </div>
+                    <div class="text-[9px] font-black uppercase italic">
+                        {% if a.status == 'approved' %}
+                            <span class="text-indigo-600"><i class="fas fa-certificate mr-1"></i> Official</span>
+                        {% else %}
+                            <span class="text-emerald-600"><i class="fas fa-check mr-1"></i> Committed</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not notifications and not accepted_assignments %}
+    <!-- No Activity at all -->
+    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-slate-100 p-12 text-center">
+        <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
+            <i class="fas fa-bell-slash text-3xl"></i>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800 mb-2">No Recent Activity</h2>
+        <p class="text-slate-500 mb-6">You don't have any pending requests or recent assignments.</p>
+        <a href="{{ url_for('lecturer_dashboard') }}" 
+           class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Info Card -->
+    <div class="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-100">
+        <div class="flex items-start space-x-4">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+                <i class="fas fa-info-circle"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-blue-800 mb-1">About Class Assignments</h3>
+                <p class="text-sm text-blue-700">
+                    When you accept a class assignment, the admin will review and finalize the allocation. 
+                    The timetable will be automatically updated to reflect the changes. If you reject, 
+                    the requesting faculty will be notified to find another replacement.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time Assignment Recall Handler
+socket.on('assignment_recalled', function(data) {
+    const el = document.getElementById(`notification-${data.allocation_id}`) || 
+               document.querySelector(`[data-alloc-id="${data.allocation_id}"]`);
+    if (el) {
+        el.style.opacity = '0';
+        el.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            el.remove();
+            // If the sections are now empty, refresh to show zero-state
+            const remaining = document.querySelectorAll('.assignment-item');
+            if (remaining.length === 0) location.reload();
+        }, 300);
+    }
+});
+
+async function respondToAssignment(allocationId, action, notificationId) {
+    const title = action === 'accept' ? 'Accept Class?' : 'Reject Request?';
+    const msg = action === 'accept' 
+        ? 'Are you sure you want to accept this class assignment?'
+        : 'Are you sure you want to reject this request? The requesting faculty will need to find another replacement.';
+    const icon = action === 'accept' ? 'check-circle' : 'exclamation-triangle';
+    const btnText = action === 'accept' ? 'Yes, Accept' : 'Yes, Reject';
+
+    const confirmed = await window.Confirm(title, msg, icon, btnText);
+    if (!confirmed) return;
+    
+    try {
+        const response = await fetch(`/lecturer/assignment/${allocationId}/${action}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            const notificationEl = document.getElementById(`notification-${notificationId}`);
+            if (notificationEl) {
+                notificationEl.style.transition = 'all 0.3s ease';
+                notificationEl.style.opacity = '0';
+                notificationEl.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    notificationEl.remove();
+                    const remaining = document.querySelectorAll('[id^="notification-"]');
+                    if (remaining.length === 0) location.reload();
+                    else location.reload(); // Refresh to update Confirmed section
+                }, 300);
+            } else {
+                location.reload();
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+</script>
+{% endblock %}

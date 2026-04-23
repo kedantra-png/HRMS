@@ -11,6 +11,7 @@ PyMuPDF
 Pillow
 pytesseract
 google-genai
+google-generativeai
 flask-socketio
 
 scikit-learn

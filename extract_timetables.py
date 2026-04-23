@@ -5,6 +5,14 @@ import glob
 import traceback
 from dotenv import load_dotenv
 import google.generativeai as genai
+from utils.gemini_runtime import (
+    DEFAULT_GEMINI_MODEL,
+    call_with_retries,
+    format_gemini_error,
+    get_project_root,
+    normalize_model_name,
+    strip_json_fences,
+)
 
 # Load environment variables
 load_dotenv()
@@ -17,13 +25,16 @@ if not GOOGLE_API_KEY:
 
 genai.configure(api_key=GOOGLE_API_KEY)
 
+# Project paths
+PROJECT_ROOT = get_project_root()
+
 # Directory paths
-IMAGE_DIR = r"f:\HRMS\timetable_splits"
-OUTPUT_FILE = r"f:\HRMS\facultytimetable.json"
-LOG_FILE = r"f:\HRMS\extraction_log.json"
+IMAGE_DIR = os.path.join(PROJECT_ROOT, "static", "timetable_splits")
+OUTPUT_FILE = os.path.join(PROJECT_ROOT, "facultytimetable.json")
+LOG_FILE = os.path.join(PROJECT_ROOT, "extraction_log.json")
 
 # Gemini Model Selection
-MODEL_NAME = "gemini-flash-latest"
+MODEL_NAME = normalize_model_name(DEFAULT_GEMINI_MODEL)
 
 SYSTEM_PROMPT = """
 You are an expert OCR and data extraction system. 
@@ -103,7 +114,7 @@ def process_images():
             except:
                 pass
 
-    model = genai.GenerativeModel(model_name=MODEL_NAME)
+    model = genai.GenerativeModel(model_name=MODEL_NAME, system_instruction=SYSTEM_PROMPT)
 
     for img_path in images:
         filename = os.path.basename(img_path)
@@ -116,7 +127,12 @@ def process_images():
         
         try:
             # Upload image
-            uploaded_file = genai.upload_file(img_path)
+            uploaded_file = call_with_retries(
+                lambda: genai.upload_file(img_path),
+                on_retry=lambda info, attempt, delay: print(
+                    f"[{filename}] Retry {attempt} after {delay}s because of {info.kind}."
+                ),
+            )
             
             # Wait for file to be processed (crucial for some versions)
             while uploaded_file.state.name == "PROCESSING":
@@ -124,15 +140,16 @@ def process_images():
                 uploaded_file = genai.get_file(uploaded_file.name)
             
             # Generate content
-            response = model.generate_content([uploaded_file, SYSTEM_PROMPT])
+            response = call_with_retries(
+                lambda: model.generate_content([uploaded_file, "Extract the timetable as JSON."]),
+                on_retry=lambda info, attempt, delay: print(
+                    f"[{filename}] Generation retry {attempt} after {delay}s because of {info.kind}."
+                ),
+            )
             
             # Extract JSON from response (handling potential markdown formatting)
             text_response = response.text
-            json_str = text_response.strip()
-            if "```json" in json_str:
-                json_str = json_str.split("```json")[1].split("```")[0].strip()
-            elif "```" in json_str:
-                 json_str = json_str.split("```")[1].strip()
+            json_str = strip_json_fences(text_response)
 
             try:
                 timetable_data = json.loads(json_str)
@@ -143,19 +160,23 @@ def process_images():
                 print(f"Successfully processed {filename}")
                 
             except json.JSONDecodeError as e:
-                log_status(filename, "ERROR", f"JSON Decode Error: {str(e)}\nResponse: {text_response}")
+                log_status(
+                    filename,
+                    "ERROR",
+                    f"{format_gemini_error(e)} Response: {text_response}",
+                )
                 print(f"Failed to parse JSON for {filename}")
             
             # Calmly wait between requests to avoid rate limits
             time.sleep(10)
 
         except Exception as e:
-            error_msg = str(e)
+            error_msg = format_gemini_error(e)
             print(f"Major error processing {filename}: {error_msg}")
             log_status(filename, "FATAL_ERROR", error_msg)
             
             # Check for major upload/API errors to terminate as requested
-            if "quota" in error_msg.lower() or "limit" in error_msg.lower() or "blocked" in error_msg.lower():
+            if "rate_limit" in error_msg.lower() or "auth" in error_msg.lower() or "invalid_model" in error_msg.lower():
                 print("Major API error detected. Terminating process.")
                 break
             

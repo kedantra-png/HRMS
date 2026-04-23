@@ -1,6 +1,7 @@
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
+from utils.gemini_runtime import DEFAULT_GEMINI_MODEL, format_gemini_error, normalize_model_name
 
 load_dotenv()
 
@@ -13,14 +14,13 @@ def test_key(key, name):
         model_list = [m.name for m in models]
         print(f"  Available models (first 3): {model_list[:3]}")
         
-        # Try a simple generation
-        # 'models/gemini-2.0-flash' is the full name usually
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        # Try a simple generation with the shared default model.
+        model = genai.GenerativeModel(normalize_model_name(DEFAULT_GEMINI_MODEL))
         response = model.generate_content("Hello")
         print(f"  Generation Result: SUCCESS")
         return True
     except Exception as e:
-        print(f"  Result: FAILED - {e}")
+        print(f"  Result: FAILED - {format_gemini_error(e)}")
         return False
 
 # Test keys from api_keys.txt
