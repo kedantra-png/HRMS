@@ -23,6 +23,9 @@ leaves = db["leaves"]
 salaries = db["salaries"]
 timetable = db["timetable"]
 messages = db["messages"]
+staff_conversations = db["staff_conversations"]
+staff_messages = db["staff_messages"]
+staff_socket_sessions = db["staff_socket_sessions"]
 
 # New collections for class assignment feature
 leave_class_allocations = db["leave_class_allocations"]  # Tracks class assignments for leaves
@@ -30,6 +33,12 @@ faculty_notifications = db["faculty_notifications"]  # Notifications for faculty
 timetable_history = db["timetable_history"]  # Stores original timetables before changes
 leave_drafts = db["leave_drafts"]  # Stores unfinished leave applications
 leave_types = db["leave_types"]  # Dynamic leave types management
+hod_requests = db["hod_requests"]  # HOD permission requests for leaves
+department_hods = db["department_hods"]  # Department-wise HOD assignments
+permissions = db["permissions"]  # Dedicated collection for Permission Leave requests
+broadcast_notifications = db["broadcast_notifications"]  # Global notifications with images
+system_settings = db["system_settings"]  # Payroll SMTP and other admin settings
+
 
 def init_db():
     # Create unique index for username

@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Slip - {{ payload.employee_name }}{% endblock %}
+
+{% block content %}
+<style>
+    main { max-width: none !important; padding: 0 !important; margin: 0 !important; background: #f8fafc; }
+    .glass-header {
+        background: rgba(255,255,255,.8);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(226,232,240,.8);
+    }
+    .premium-card {
+        background: white;
+        border-radius: 32px;
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
+    }
+    .label { font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: .2em; }
+    .input { width: 100%; padding: 10px 14px; border-radius: 14px; border: 1px solid #e2e8f0; background: #fff; font-weight: 800; color: #0f172a; }
+    .grid-table { table-layout: fixed; width: 100%; }
+    .grid-table th { font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: .18em; }
+    .grid-table td { border-top: 1px solid #f1f5f9; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; vertical-align: middle; }
+    .grid-table td:nth-child(1),
+    .grid-table td:nth-child(3) { text-align: left; }
+    .grid-table td:nth-child(2),
+    .grid-table td:nth-child(4) { text-align: center; }
+    .grid-table td:nth-child(2) .input,
+    .grid-table td:nth-child(4) .input,
+    .grid-table .js-total-earn,
+    .grid-table .js-total-ded,
+    .grid-table .js-netpay,
+    .grid-table .js-netpay-words { text-align: center; }
+    .grid-table tr:last-child td[colspan] .input { text-align: center; }
+</style>
+
+<div class="glass-header sticky top-0 z-40 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+        <div class="p-2 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-200">
+            <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="Logo" class="h-10 w-10 object-contain brightness-0 invert">
+        </div>
+        <div>
+            <h1 class="text-xl font-black text-slate-900 tracking-tight">Salary Slip Generator</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{{ month_year }}</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('admin_salary_list', month_year=month_year) }}" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
+            <i class="fas fa-arrow-left text-slate-400"></i> Back
+        </a>
+        <a href="{{ url_for('logout') }}" class="px-5 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+</div>
+
+<div class="p-8 space-y-6">
+    <form method="post" id="salary-slip-form" class="space-y-6">
+        <input type="hidden" name="month_year" value="{{ month_year }}">
+
+        <div class="premium-card p-8">
+            <div class="text-center space-y-1" style="font-size:15px;">
+                <div class="text-xl font-black text-slate-900 tracking-wide">Dr. B. B. HEGDE FIRST GRADE COLLEGE</div>
+                <div class="text-sm font-black text-slate-700 tracking-wide">KUNDAPURA-576 201</div>
+                <div class="text-sm font-bold text-slate-600">Salary Slip for the month of {{ month_year }}</div>
+            </div>
+
+            <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <div class="label">Employee Name</div>
+                    <input class="input" name="employee_name" value="{{ payload.employee_name }}">
+                </div>
+                <div class="space-y-2">
+                    <div class="label">Employee ID</div>
+                    <input class="input" name="employee_id" value="{{ payload.employee_id }}">
+                </div>
+                <div class="space-y-2">
+                    <div class="label">Department</div>
+                    <input class="input" name="department" value="{{ payload.department }}">
+                </div>
+                <div class="space-y-2">
+                    <div class="label">Paid Days</div>
+                    <input class="input" name="paid_days" value="{{ payload.paid_days }}" placeholder="e.g., 30">
+                </div>
+                <div class="space-y-2 lg:col-span-2">
+                    <div class="label">Bank A/c No</div>
+                    <input class="input" name="bank_ac_no" value="{{ payload.bank_ac_no }}" placeholder="Saved for next month automatically">
+                    {% if bank_auto_from %}
+                    <p class="text-[11px] font-bold text-indigo-600 mt-1"><i class="fas fa-magic"></i> Auto-filled — {{ bank_auto_from }}</p>
+                    {% else %}
+                    <p class="text-[11px] font-medium text-slate-400 mt-1">Enter once; next month this field fills automatically for this faculty.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="mt-8 premium-card border border-indigo-100 rounded-2xl p-6 bg-indigo-50/40">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <i class="fas fa-user-lock"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-black text-slate-900">Faculty HRMS login</div>
+                        <div class="text-[11px] font-bold text-slate-500">Set email & password so faculty can view salary in the portal</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="space-y-2">
+                        <div class="label">Login email</div>
+                        <input class="input" type="email" name="faculty_email" value="{{ faculty_login.email }}" placeholder="faculty@gmail.com">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="label">Username</div>
+                        <input class="input" name="faculty_username" value="{{ faculty_login.username }}" placeholder="bbhcf001">
+                    </div>
+                    <div class="space-y-2">
+                        <div class="label">Password</div>
+                        <input class="input" type="text" name="faculty_password" placeholder="{% if faculty_login.display_password %}Leave blank to keep: {{ faculty_login.display_password }}{% else %}Set new password{% endif %}" autocomplete="new-password">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-10 premium-card border border-slate-200 rounded-2xl overflow-hidden">
+                <table class="w-full grid-table">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left">Earnings</th>
+                            <th class="px-6 py-4 text-left">Amount</th>
+                            <th class="px-6 py-4 text-left">Deductions</th>
+                            <th class="px-6 py-4 text-left">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set e = payload.earnings or {} %}
+                        {% set d = payload.deductions or {} %}
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-700">Basic Pay</td>
+                            <td class="px-6 py-3"><input class="input js-earn" inputmode="decimal" name="earn_basic_pay" value="{{ e.get('basic_pay','')|salary_display }}" placeholder=""></td>
+                            <td class="px-6 py-4 font-bold text-slate-700">PF</td>
+                            <td class="px-6 py-3"><input class="input js-ded" inputmode="decimal" name="ded_pf" value="{{ d.get('pf','')|salary_display }}" placeholder=""></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-700">DA</td>
+                            <td class="px-6 py-3"><input class="input js-earn" inputmode="decimal" name="earn_da" value="{{ e.get('da','')|salary_display }}" placeholder=""></td>
+                            <td class="px-6 py-4 font-bold text-slate-700">PT</td>
+                            <td class="px-6 py-3"><input class="input js-ded" inputmode="decimal" name="ded_pt" value="{{ d.get('pt','')|salary_display }}" placeholder=""></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-700">HRA</td>
+                            <td class="px-6 py-3"><input class="input js-earn" inputmode="decimal" name="earn_hra" value="{{ e.get('hra','')|salary_display }}" placeholder=""></td>
+                            <td class="px-6 py-4 font-bold text-slate-700">ESI</td>
+                            <td class="px-6 py-3"><input class="input js-ded" inputmode="decimal" name="ded_esi" value="{{ d.get('esi','')|salary_display }}" placeholder=""></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-700">Spl. Allowance</td>
+                            <td class="px-6 py-3"><input class="input js-earn" inputmode="decimal" name="earn_spl_allowance" value="{{ e.get('spl_allowance','')|salary_display }}" placeholder=""></td>
+                            <td class="px-6 py-4 font-bold text-slate-700">LIC Premium</td>
+                            <td class="px-6 py-3"><input class="input js-ded" inputmode="decimal" name="ded_lic" value="{{ d.get('lic_premium','')|salary_display }}" placeholder=""></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-700">Allowance for Ph.D/M.Phil/NET/SLET/KSET</td>
+                            <td class="px-6 py-3"><input class="input js-earn" inputmode="decimal" name="earn_allow_phd" value="{{ e.get('allow_phd','')|salary_display }}" placeholder=""></td>
+                            <td class="px-6 py-4 font-bold text-slate-700">Others</td>
+                            <td class="px-6 py-3"><input class="input js-ded" inputmode="decimal" name="ded_others" value="{{ d.get('others','')|salary_display }}" placeholder=""></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-700">HOD/other Allowance</td>
+                            <td class="px-6 py-3"><input class="input js-earn" inputmode="decimal" name="earn_hod_allowance" value="{{ e.get('hod_allowance','')|salary_display }}" placeholder=""></td>
+                            <td class="px-6 py-4 font-bold text-slate-700"></td>
+                            <td class="px-6 py-3"></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-slate-700">Addl. Remuneration</td>
+                            <td class="px-6 py-3"><input class="input js-earn" inputmode="decimal" name="earn_addl_remuneration" value="{{ e.get('addl_remuneration','')|salary_display }}" placeholder=""></td>
+                            <td class="px-6 py-4 font-bold text-slate-700"></td>
+                            <td class="px-6 py-3"></td>
+                        </tr>
+                        <tr class="bg-slate-50">
+                            <td class="px-6 py-4 font-black text-slate-900">Total</td>
+                            <td class="px-6 py-3"><input class="input js-total-earn" value="0" readonly></td>
+                            <td class="px-6 py-4 font-black text-slate-900">Total</td>
+                            <td class="px-6 py-3"><input class="input js-total-ded" value="0" readonly></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-black text-slate-900">Net Pay Rs.</td>
+                            <td class="px-6 py-3"><input class="input js-netpay" value="0" readonly></td>
+                            <td class="px-6 py-4 font-black text-slate-900"></td>
+                            <td class="px-6 py-3"></td>
+                        </tr>
+                        <tr>
+                            <td class="px-6 py-4 font-black text-slate-900">Rupees</td>
+                            <td class="px-6 py-3" colspan="3">
+                                <input class="input js-netpay-words" name="netpay_words" value="{{ payload.get('netpay_words','') }}" placeholder="Net pay in words (auto)">
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <div class="label">Notes</div>
+                    <textarea class="input" name="notes" rows="3" placeholder="Optional">{{ payload.notes }}</textarea>
+                </div>
+                <div class="flex items-end justify-end gap-3">
+                    <button type="submit" class="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black action-btn flex items-center gap-2">
+                        <i class="fas fa-save"></i> Save Slip
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-8 text-xs text-slate-500 font-bold text-center">
+                Note: This is a computer generated salary slip. Hence, no signature is required.
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+  function toNum(v) {
+    const s = (v ?? '').toString().replace(/,/g, '').trim();
+    if (!s) return 0;
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function twoDigit(n) {
+    const names = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+      "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+    n = Math.floor(n);
+    if (n < 20) return names[n];
+    const t = Math.floor(n / 10);
+    const r = n % 10;
+    return tens[t] + (r ? " " + names[r] : "");
+  }
+
+  function threeDigit(n) {
+    n = Math.floor(n);
+    const h = Math.floor(n / 100);
+    const r = n % 100;
+    let out = "";
+    if (h) out += twoDigit(h) + " Hundred";
+    if (r) out += (out ? " " : "") + twoDigit(r);
+    return out;
+  }
+
+  // Indian numbering system: Crore, Lakh, Thousand, Hundred
+  function numberToIndianWords(amount) {
+    const n = Math.round(amount); // rupees only (no paise)
+    if (!Number.isFinite(n) || n <= 0) return "";
+
+    const crore = Math.floor(n / 10000000);
+    const lakh = Math.floor((n % 10000000) / 100000);
+    const thousand = Math.floor((n % 100000) / 1000);
+    const rest = n % 1000;
+
+    const parts = [];
+    if (crore) parts.push(threeDigit(crore) + " Crore");
+    if (lakh) parts.push(threeDigit(lakh) + " Lakh");
+    if (thousand) parts.push(threeDigit(thousand) + " Thousand");
+    if (rest) parts.push(threeDigit(rest));
+
+    return parts.join(" ").replace(/\s+/g, " ").trim();
+  }
+
+  function recalcTotals() {
+    const earnInputs = Array.from(document.querySelectorAll('.js-earn'));
+    const dedInputs = Array.from(document.querySelectorAll('.js-ded'));
+    const totalEarn = earnInputs.reduce((sum, el) => sum + toNum(el.value), 0);
+    const totalDed = dedInputs.reduce((sum, el) => sum + toNum(el.value), 0);
+    const net = totalEarn - totalDed;
+    const te = document.querySelector('.js-total-earn');
+    const td = document.querySelector('.js-total-ded');
+    const np = document.querySelector('.js-netpay');
+    const npw = document.querySelector('.js-netpay-words');
+    if (te) te.value = totalEarn.toFixed(2);
+    if (td) td.value = totalDed.toFixed(2);
+    if (np) np.value = net.toFixed(2);
+    if (npw && npw.dataset.userEdited !== "1") {
+      const words = numberToIndianWords(Math.max(0, Math.round(net)));
+      npw.value = words ? `${words} Only` : "";
+    }
+  }
+
+  function normalizeAmountInputs() {
+    const amountInputs = Array.from(document.querySelectorAll('.js-earn, .js-ded'));
+    amountInputs.forEach((el) => {
+      const raw = (el.value || '').toString().trim();
+      if (!raw) {
+        el.value = '0';
+        return;
+      }
+      const parsed = Number(raw.replace(/,/g, ''));
+      if (!Number.isFinite(parsed)) {
+        el.value = '0';
+        return;
+      }
+      el.value = parsed % 1 === 0 ? String(parsed) : parsed.toFixed(2);
+    });
+  }
+
+  document.addEventListener('input', (e) => {
+    if (!e.target) return;
+    if (e.target.classList.contains('js-netpay-words')) {
+      e.target.dataset.userEdited = "1";
+      return;
+    }
+    if (e.target.classList.contains('js-earn') || e.target.classList.contains('js-ded')) {
+      const npw = document.querySelector('.js-netpay-words');
+      if (npw) delete npw.dataset.userEdited;
+      recalcTotals();
+    }
+  });
+  const salarySlipForm = document.getElementById('salary-slip-form');
+  if (salarySlipForm) {
+    salarySlipForm.addEventListener('submit', () => {
+      normalizeAmountInputs();
+      recalcTotals();
+    });
+  }
+
+  window.addEventListener('load', () => {
+    recalcTotals();
+  });
+</script>
+{% endblock %}
+

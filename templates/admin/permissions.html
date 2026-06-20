@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Permission Leave Manager - HRMS{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-10 px-4">
+    <div class="mb-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
+        <div class="flex items-start gap-5">
+            <a href="{{ url_for('admin_dashboard') }}" class="mt-1 w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-indigo-600 hover:border-indigo-100 hover:bg-indigo-50 transition-all shadow-sm group" title="Back to Dashboard">
+                <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+            </a>
+            <div>
+                <h1 class="text-4xl font-black text-slate-900 tracking-tight">Permission Leave <span class="text-indigo-600">Manager</span></h1>
+                <p class="text-slate-500 mt-2 font-medium">Review and manage short-term permission requests separately from formal leaves.</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="showDeleteAllPermissionsModal()"
+                class="px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-2xl border border-rose-100 flex items-center gap-2 shadow-sm transition-all font-bold text-xs">
+                <i class="fas fa-trash-alt"></i>
+                Clear All Records
+            </button>
+            <div class="px-4 py-2 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-center gap-3 shadow-sm">
+                <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                <span class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Live Permission Tracking</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50/50 border-b border-slate-100">
+                        <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Faculty</th>
+                        <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date & Time</th>
+                        <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Duration</th>
+                        <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reason</th>
+                        <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                        <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for p in permissions %}
+                    <tr class="hover:bg-slate-50/30 transition-colors group">
+                        <td class="px-6 py-5">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold shadow-sm">
+                                    {{ p.faculty_name[0] }}
+                                </div>
+                                <div>
+                                    <div class="font-bold text-slate-800">{{ p.faculty_name }}</div>
+                                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">Current Day Permission</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-700">{{ p.from_date.split(' ')[0] }}</span>
+                                <span class="text-[10px] font-black text-indigo-600 uppercase tracking-wider mt-0.5">
+                                    {{ p.from_date.split(' ')[1] }} - {{ p.to_date.split(' ')[1] }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5">
+                            <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-black border border-amber-100 shadow-sm uppercase">
+                                {{ p.duration_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-5">
+                            <p class="text-xs text-slate-600 font-medium max-w-[200px] truncate group-hover:whitespace-normal transition-all" title="{{ p.reason }}">
+                                {{ p.reason }}
+                            </p>
+                        </td>
+                        <td class="px-6 py-5">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border
+                                {% if p.status == 'Approved' %}bg-emerald-50 text-emerald-700 border-emerald-100
+                                {% elif p.status == 'Rejected' %}bg-rose-50 text-rose-700 border-rose-100
+                                {% else %}bg-amber-50 text-amber-700 border-amber-100{% endif %} shadow-sm">
+                                {{ p.status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-5">
+                            <div class="flex items-center gap-2">
+                                <a href="{{ url_for('admin_class_allocation_sheet', leave_id=p._id) }}" target="_blank"
+                                   class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all shadow-sm border border-transparent hover:border-indigo-100" title="View Sheet">
+                                    <i class="fas fa-file-invoice text-sm"></i>
+                                </a>
+                                {% if p.status == 'Pending' %}
+                                <form action="{{ url_for('admin_update_permission_status', pid=p._id) }}" method="POST" class="flex items-center gap-1">
+                                    <button name="status" value="Approved" class="p-2 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all shadow-sm border border-transparent hover:border-emerald-100">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button name="status" value="Rejected" class="p-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all shadow-sm border border-transparent hover:border-rose-100">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-20 text-center">
+                            <div class="mb-4 text-slate-200 text-6xl">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-400">No permission requests found.</h3>
+                            <p class="text-xs text-slate-400 mt-1">Short-term permissions will appear here once submitted.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delete All Permissions Confirmation Modal -->
+<div id="deleteAllPermissionsModal"
+    class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full mx-4 transform transition-all border border-slate-100">
+        <div class="p-8">
+            <div class="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-rose-50 rounded-2xl text-rose-600">
+                <i class="fas fa-exclamation-triangle text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-black text-slate-900 text-center mb-2">Wipe All Permissions?</h3>
+            <p class="text-slate-500 text-center mb-8 text-sm font-medium">
+                This will permanently remove <strong>every permission record</strong> currently in the system. This action is irreversible.
+            </p>
+            
+            <div class="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                    Security Verification Code
+                </p>
+                <div class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-slate-900 text-white font-mono text-xl tracking-[0.4em] font-bold"
+                    id="verificationCodeDisplay">
+                    -----
+                </div>
+            </div>
+
+            <form id="deleteAllPermissionsForm" method="POST" action="{{ url_for('admin_permissions_delete_all') }}"
+                class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Type code to confirm</label>
+                    <input type="text" id="verificationCodeInput" autocomplete="off" placeholder="ENTER CODE"
+                        class="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 font-mono text-lg uppercase text-center font-bold transition-all">
+                    <p id="verificationCodeError" class="mt-2 text-xs text-rose-600 font-bold text-center hidden">
+                        <i class="fas fa-times-circle mr-1"></i> Invalid verification code
+                    </p>
+                </div>
+                <div class="flex flex-col gap-3 pt-2">
+                    <button type="submit"
+                        class="w-full px-6 py-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-rose-200 transition-all active:scale-[0.98]">
+                        Confirm Absolute Wipe
+                    </button>
+                    <button type="button" onclick="hideDeleteAllPermissionsModal()"
+                        class="w-full px-6 py-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold uppercase tracking-widest text-xs transition-all">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentVerificationCode = null;
+
+    function generateVerificationCode() {
+        return Math.random().toString(36).substring(2, 7).toUpperCase();
+    }
+
+    function showDeleteAllPermissionsModal() {
+        const modal = document.getElementById('deleteAllPermissionsModal');
+        const codeDisplay = document.getElementById('verificationCodeDisplay');
+        const codeInput = document.getElementById('verificationCodeInput');
+        const error = document.getElementById('verificationCodeError');
+
+        currentVerificationCode = generateVerificationCode();
+        codeDisplay.textContent = currentVerificationCode;
+        codeInput.value = '';
+        error.classList.add('hidden');
+
+        modal.classList.remove('hidden');
+        codeInput.focus();
+    }
+
+    function hideDeleteAllPermissionsModal() {
+        document.getElementById('deleteAllPermissionsModal').classList.add('hidden');
+    }
+
+    // Close on backdrop click
+    document.getElementById('deleteAllPermissionsModal').addEventListener('click', function (e) {
+        if (e.target === this) {
+            hideDeleteAllPermissionsModal();
+        }
+    });
+
+    document.getElementById('deleteAllPermissionsForm').addEventListener('submit', function (e) {
+        const input = document.getElementById('verificationCodeInput');
+        const error = document.getElementById('verificationCodeError');
+        const entered = (input.value || '').trim().toUpperCase();
+
+        if (!currentVerificationCode || entered !== currentVerificationCode) {
+            e.preventDefault();
+            error.classList.remove('hidden');
+            input.classList.add('border-rose-500', 'bg-rose-50');
+            input.focus();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+{
+  "_comment": "Campus Wi-Fi ONLY — copy to capacitor.config.json only if faculty never use mobile data from home",
+  "appId": "com.bbhegdecollege.hrms",
+  "appName": "BB Hegde HRMS",
+  "webDir": "www",
+  "server": {
+    "url": "http://192.168.1.50:8000",
+    "cleartext": true,
+    "androidScheme": "http"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

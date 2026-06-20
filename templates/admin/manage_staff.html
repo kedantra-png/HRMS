@@ -1,556 +1,538 @@
 {% extends "base.html" %}
 
-{% block title %}Lecture Management - Admin{% endblock %}
+{% block title %}Staff Management - Admin Portal{% endblock %}
 
 {% block content %}
-<!-- Header Section (full viewport width) -->
-<div
-    class="mb-8 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen px-4 sm:px-6 lg:px-8">
-    <div
-        class="w-full bg-white border-b border-slate-200 px-4 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
-        <div class="flex flex-col items-center sm:flex-row sm:items-center sm:gap-5">
-            <div class="flex-shrink-0 mb-2 sm:mb-0">
-                <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="College Logo"
-                    class="h-16 w-16 sm:h-20 sm:w-20 object-contain mx-auto">
-            </div>
-            <div class="text-center sm:text-left">
-                <h1
-                    class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug underline decoration-slate-800 decoration-2 underline-offset-4">
-                    Dr. B. B. Hegde First Grade College, Kundapura
-                </h1>
-                <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                    A Unit of Coondapur Education Society (R)
-                </p>
-            </div>
-        </div>
-        <div class="w-full sm:w-auto flex justify-center sm:justify-end">
-            <a href="{{ url_for('logout') }}"
-                class="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm transition-colors duration-150">
-                <i class="fas fa-sign-out-alt mr-2"></i>
-                Logout
-            </a>
-        </div>
-    </div>
-</div>
-{% if request.args.get('password_error') %}
-<div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm">
-    <i class="fas fa-exclamation-circle mr-2"></i>
-    {{ request.args.get('password_error') }}
-</div>
-{% endif %}
+<style>
+    /* Full screen override */
+    main {
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #f8fafc;
+    }
 
-<!-- Delete All Success Popup -->
-<div id="deleteAllSuccessModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full">
-                <i class="fas fa-check-circle text-emerald-600 text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 text-center mb-2">Delete Complete</h3>
-            <p class="text-slate-600 text-center mb-6" id="deleteAllSuccessMessage">
-                All lecturers have been deleted.
-            </p>
-            <button onclick="hideDeleteAllSuccessModal()"
-                class="w-full px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg shadow-emerald-200 transition-colors">
-                OK
-            </button>
-        </div>
-    </div>
-</div>
+    .glass-header {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
 
-<!-- Bulk Upload Success Popup -->
-<div id="bulkSuccessModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full">
-                <i class="fas fa-file-excel text-emerald-600 text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 text-center mb-2">Bulk Upload Successful!</h3>
-            <p class="text-slate-600 text-center mb-6" id="bulkSuccessMessage">
-                Records have been imported successfully.
-            </p>
-            <button onclick="hideBulkSuccessModal()"
-                class="w-full px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg shadow-emerald-200 transition-colors">
-                OK
-            </button>
-        </div>
-    </div>
-</div>
+    .premium-card {
+        background: white;
+        border-radius: 32px;
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+        border: 1px solid #f1f5f9;
+    }
 
-<!-- Custom Success Popup -->
-<div id="passwordSuccessModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full">
-                <i class="fas fa-check-circle text-emerald-600 text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 text-center mb-2">Password Updated!</h3>
-            <p class="text-slate-600 text-center mb-6" id="passwordSuccessMessage">
-                Password has been successfully updated.
-            </p>
-            <button onclick="hidePasswordSuccessModal()"
-                class="w-full px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-lg shadow-emerald-200 transition-colors">
-                OK
-            </button>
-        </div>
-    </div>
-</div>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
 
-<div class="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-    <div>
-        <h1 class="text-3xl font-extrabold text-slate-800">Lecture Management</h1>
-        <p class="text-slate-500 mt-1">View and manage lecture list</p>
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+
+    .action-btn {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+    }
+</style>
+
+<!-- Full Width Header -->
+<div class="glass-header sticky top-0 z-40 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+        <div class="p-2 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
+            <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="Logo" class="h-10 w-10 object-contain brightness-0 invert">
+        </div>
+        <div>
+            <h1 class="text-xl font-black text-slate-900 tracking-tight">Dr. B. B. Hegde First Grade College</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Staff Management System</p>
+        </div>
     </div>
     
-    <!-- All Buttons - Right Aligned on Desktop, Full Width on Mobile -->
-    <div class="flex flex-col gap-3 w-full sm:w-auto sm:items-end">
-        <!-- Back to Dashboard Button - Top -->
-        <div class="w-full sm:w-auto">
-            <a href="{{ url_for('admin_dashboard') }}"
-                class="w-full sm:w-auto inline-flex items-center justify-center bg-slate-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-700 shadow-lg shadow-slate-100 transition-all">
-                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
-            </a>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
+            <i class="fas fa-th-large text-slate-400"></i> Dashboard
+        </a>
+        <a href="{{ url_for('logout') }}" class="px-5 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+</div>
+
+<div class="p-8 space-y-8">
+    <!-- Top Action Bar -->
+    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div>
+            <h2 class="text-4xl font-black text-slate-900 tracking-tight">Faculty Directory</h2>
+            <p class="text-slate-500 mt-2 font-medium flex items-center gap-2">
+                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                Managing {{ staff|length }} Active Faculty Members
+            </p>
         </div>
         
-        <!-- Other Three Buttons - Below -->
-        <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <a href="{{ url_for('admin_staff_export_excel') }}"
-                class="w-full sm:w-auto inline-flex items-center justify-center bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-100 transition-all">
-                <i class="fas fa-file-excel mr-2"></i> Export to Excel
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('admin_staff_export_excel') }}" class="action-btn px-6 py-3 bg-white text-emerald-600 border border-emerald-100 rounded-2xl font-bold text-sm shadow-sm flex items-center gap-2">
+                <i class="fas fa-file-excel"></i> Export Excel
             </a>
-            <a href="{{ url_for('admin_staff_bulk_upload') }}"
-                class="w-full sm:w-auto inline-flex items-center justify-center bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">
-                <i class="fas fa-file-excel mr-2"></i> Bulk Upload
+            <a href="{{ url_for('admin_staff_bulk_upload') }}" class="action-btn px-6 py-3 bg-white text-indigo-600 border border-indigo-100 rounded-2xl font-bold text-sm shadow-sm flex items-center gap-2">
+                <i class="fas fa-cloud-upload-alt"></i> Bulk Import
             </a>
-            <a href="{{ url_for('admin_staff_new') }}"
-                class="w-full sm:w-auto inline-flex items-center justify-center bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-800 shadow-lg shadow-indigo-100 transition-all">
-                <i class="fas fa-plus mr-2"></i> Add New Lecturer
+            <a href="{{ url_for('admin_staff_new') }}" class="action-btn px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl shadow-indigo-100 flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i> Add Staff Faculties
             </a>
-            <button type="button" onclick="showDeleteAllModal()"
-                class="w-full sm:w-auto inline-flex items-center justify-center bg-rose-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-rose-700 shadow-lg shadow-rose-100 transition-all">
-                <i class="fas fa-trash-alt mr-2"></i> Delete All Lecturers
+            <button onclick="showDeleteAllModal()" class="action-btn px-6 py-3 bg-rose-600 text-white rounded-2xl font-bold text-sm shadow-xl shadow-rose-100 flex items-center gap-2">
+                <i class="fas fa-trash-alt"></i> Wipe Records
             </button>
         </div>
     </div>
-</div>
 
-<div class="-mx-4 sm:-mx-6 lg:-mx-8">
-    <div class="bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-200 overflow-hidden">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-2 border-b border-slate-100">
-            <h2 class="text-sm font-semibold text-slate-700">Lecturer List</h2>
-            <div class="w-full sm:w-64">
-                <div class="relative">
-                    <input id="staff-search" type="text" placeholder="Search by name, staff ID, email"
-                        class="w-full pr-9 pl-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                    <button type="button" onclick="applyStaffSearch()"
-                        class="absolute inset-y-0 right-0 px-3 flex items-center text-slate-400 hover:text-indigo-600">
-                        <i class="fas fa-search text-sm"></i>
-                    </button>
+    <!-- HOD Assignment Grid -->
+    <div class="premium-card overflow-hidden">
+        <div class="px-8 py-6 bg-slate-900 text-white flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-user-shield text-xl text-indigo-400"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black tracking-tight">Department HOD Assignments</h3>
+                    <p class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">Designated approval authority by department</p>
                 </div>
             </div>
         </div>
-        <div class="overflow-x-auto">
-        <table class="w-full text-left" id="staff-table">
-            <thead class="bg-gradient-to-r from-slate-700 to-slate-800 text-white text-xs uppercase tracking-wider">
-                <tr>
-                    <th class="px-6 py-4 font-bold">Staff ID</th>
-                    <th class="px-6 py-4 font-bold">Name</th>
-                    <th class="px-6 py-4 font-bold">Designation</th>
-                    <th class="px-6 py-4 font-bold">Department</th>
-                    <th class="px-6 py-4 font-bold">Category</th>
-                    <th class="px-6 py-4 font-bold">Email</th>
-                    <th class="px-6 py-4 font-bold">Login Credentials</th>
-                    <th class="px-6 py-4 font-bold">Actions</th>
-                </tr>
-            </thead>
-            <tbody id="staff-table-body">
-                {% for s in staff %}
-                <tr class="{% if loop.index % 2 == 0 %}bg-slate-50{% else %}bg-white{% endif %} hover:bg-blue-50 transition-colors duration-150 border-b border-slate-100">
-                    <td class="px-6 py-4 text-sm font-semibold text-slate-900">
-                        {{ s.get('staff_id', '—') }}
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center space-x-3">
-                            <img src="https://ui-avatars.com/api/?name={{ s.name }}&background=4f46e5&color=fff"
-                                class="w-9 h-9 rounded-full ring-2 ring-indigo-100">
-                            <span class="font-semibold text-slate-900">{{ s.name }}</span>
+        <div class="p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                {% for dept in departments %}
+                <div class="group p-5 rounded-3xl border-2 border-slate-50 bg-slate-50/30 hover:border-indigo-100 hover:bg-white hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ dept }}</span>
+                        {% set hod_id = hod_assignments.get(dept) %}
+                        <div id="badge-{{ dept|replace(' ', '-') }}" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter {% if hod_id %}bg-emerald-50 text-emerald-600{% else %}bg-slate-200 text-slate-500{% endif %}">
+                            {% if hod_id %}Active{% else %}None{% endif %}
                         </div>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-slate-700">{{ s.get('designation', 'N/A') }}</td>
-                    <td class="px-6 py-4 text-sm text-slate-700">{{ s.get('department', 'N/A') }}</td>
-                    <td class="px-6 py-4 text-sm">
-                        <span class="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md font-medium text-xs">
-                            {{ s.get('category', 'N/A') }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-slate-600">{{ s.get('email', '') }}</td>
-                    <td class="px-6 py-4">
-                        <div class="text-xs">
-                            <div class="font-semibold text-slate-800 mb-2 flex items-center">
-                                <i class="fas fa-user-circle mr-1.5 text-indigo-600"></i>
-                                <span class="text-slate-900">{{ s.get('username', s.get('staff_id', 'N/A')) }}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-slate-600 cursor-pointer hover:text-indigo-600 hover:underline font-medium transition-colors"
-                                    onclick="showPasswordChangeModal('{{ s['_id'] }}', '{{ s.get('name', 'Lecturer') }}', '{{ s.get('username', s.get('staff_id', '')) }}', '{{ s.get('display_password', '123456') }}')"
-                                    title="Click to view and change password">
-                                    Password
-                                </span>
-                            </div>
+                    </div>
+                    <div class="flex items-center gap-2 overflow-hidden">
+                    <div class="flex-1 min-w-0 relative">
+                        <select id="select-{{ dept|replace(' ', '-') }}" onchange="assignHOD('{{ dept }}', this.value)" 
+                            class="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-white shadow-sm text-sm font-bold text-slate-700 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/10 outline-none transition-all cursor-pointer appearance-none">
+                            <option value="">-- Select HOD --</option>
+                            {% for s in staff %}
+                                {% if s.get('department') == dept %}
+                                <option value="{{ s['_id'] }}" {% if hod_id == s['_id']|string %}selected{% endif %} data-sig="{% if s.get('signature_path') %}1{% endif %}">
+                                    {{ s.name }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                            <i class="fas fa-chevron-down text-[10px]"></i>
                         </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center space-x-4">
-                            <a href="{{ url_for('admin_staff_edit', id=s['_id']) }}"
-                                class="p-2 text-indigo-600 hover:text-white hover:bg-indigo-600 rounded-lg transition-all duration-200" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <button type="button" onclick="showDeleteModal('{{ s['_id'] }}', '{{ s.get('name', 'this lecturer') }}')"
-                                class="p-2 text-rose-600 hover:text-white hover:bg-rose-600 rounded-lg transition-all duration-200" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
+                    </div>
+                    <button type="button" id="sig-hod-{{ dept|replace(' ', '-') }}" 
+                        onclick="triggerHODSignatureUpload('{{ dept|replace(' ', '-') }}')"
+                        class="shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center transition-all {% if hod_id %}visible{% else %}invisible{% endif %} {% if hod_assignments_sig.get(dept) %}bg-emerald-50 text-emerald-600 border border-emerald-100{% else %}bg-slate-100 text-slate-400 border border-slate-200{% endif %}"
+                        title="HOD Signature">
+                        <i class="fas fa-file-signature"></i>
+                    </button>
+                </div>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table -->
+    <div class="premium-card overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-8 py-6 border-b border-slate-50">
+            <div class="relative w-full md:w-96">
+                <input id="staff-search" type="text" placeholder="Search by name, ID, or email..."
+                    class="w-full pr-12 pl-6 py-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 transition-all" />
+                <div class="absolute inset-y-0 right-0 px-5 flex items-center text-slate-400">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                    <tr>
+                        <th class="px-8 py-5">Staff ID</th>
+                        <th class="px-8 py-5">Faculty</th>
+                        <th class="px-8 py-5">Department / Role</th>
+                        <th class="px-8 py-5">Contact</th>
+                        <th class="px-8 py-5">Password</th>
+                        <th class="px-8 py-5">Access</th>
+                        <th class="px-8 py-5 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for s in staff %}
+                    <tr class="hover:bg-slate-50/80 transition-colors group">
+                        <td class="px-8 py-6">
+                            <span class="text-sm font-black text-slate-900 bg-slate-100 px-3 py-1 rounded-lg">{{ s.get('staff_id', '—') }}</span>
+                        </td>
+                        <td class="px-8 py-6">
+                            <p class="font-bold text-slate-900">{{ s.name }}</p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{{ s.get('designation', 'Faculty') }}</p>
+                        </td>
+                        <td class="px-8 py-6">
+                            <p class="text-sm font-bold text-slate-700">{{ s.get('department', 'N/A') }}</p>
+                            <p class="text-[10px] font-black text-indigo-500 uppercase tracking-widest mt-0.5">{{ s.get('category', 'Teaching') }}</p>
+                        </td>
+                        <td class="px-8 py-6">
+                            <p class="text-sm font-medium text-slate-600 italic">{{ s.get('email', 'no-email') }}</p>
+                            <p class="text-[10px] font-bold text-emerald-600 mt-0.5">{{ s.get('phone', 'No Phone') }}</p>
+                        </td>
+                        <td class="px-8 py-6">
+                            <span class="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">{{ s.get('display_password', '—') }}</span>
+                        </td>
+                        <td class="px-8 py-6">
+                            <button onclick="showPasswordChangeModal('{{ s['_id'] }}', '{{ s.name|e }}', '{{ s.username|e }}', '{{ s.display_password|e }}')"
+                                class="text-[10px] font-black uppercase bg-white border border-slate-200 px-3 py-1.5 rounded-xl hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-sm flex items-center gap-2">
+                                <i class="fas fa-key text-[8px]"></i> Account
+                            </button>
+                        </td>
+                        <td class="px-8 py-6">
+                            <div class="flex items-center justify-center gap-2 transition-all">
+                                <button onclick="toggleProfileLock('{{ s['_id'] }}')" 
+                                    id="lock-btn-{{ s['_id'] }}"
+                                    class="w-10 h-10 rounded-xl flex items-center justify-center transition-all {% if not s.get('profile_locked', False) %}bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white{% else %}bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white{% endif %}"
+                                    title="{% if not s.get('profile_locked', False) %}Disable Profile Edits{% else %}Enable Profile Edits{% endif %}">
+                                    <i class="fas {% if not s.get('profile_locked', False) %}fa-unlock{% else %}fa-lock{% endif %}"></i>
+                                </button>
+
+                                <button onclick="triggerSignatureUpload('{{ s['_id'] }}')" 
+                                    id="sig-btn-{{ s['_id'] }}"
+                                    class="w-10 h-10 rounded-xl flex items-center justify-center transition-all {% if s.get('signature_path') %}bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white{% else %}bg-slate-100 text-slate-400 border border-slate-200 hover:bg-indigo-600 hover:text-white hover:border-indigo-600{% endif %}"
+                                    title="{% if s.get('signature_path') %}Change Signature{% else %}Upload Signature{% endif %}">
+                                    <i class="fas fa-file-signature text-lg"></i>
+                                </button>
+                                
+                                <a href="{{ url_for('admin_staff_edit', id=s['_id']) }}" 
+                                    class="w-10 h-10 bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-600 rounded-xl flex items-center justify-center transition-all">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                
+                                <button onclick="showDeleteModal('{{ s['_id'] }}', '{{ s.name|e }}')"
+                                    class="w-10 h-10 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-600 rounded-xl flex items-center justify-center transition-all">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- Password Change Modal -->
-<div id="passwordChangeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-indigo-100 rounded-full">
-                <i class="fas fa-key text-indigo-600 text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 text-center mb-2">Change Password</h3>
-            <p class="text-slate-600 text-center mb-4">
-                Update password for <span id="passwordChangeLecturerName" class="font-semibold text-slate-900"></span>
-            </p>
-            <form id="passwordChangeForm" method="POST" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Username</label>
-                    <input type="text" id="passwordChangeUsername" readonly
-                        class="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-100 text-slate-600">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Current Password</label>
-                    <input type="text" id="passwordChangeCurrent" readonly
-                        class="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-mono">
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">New Password <span class="text-rose-600">*</span></label>
-                    <input type="text" name="new_password" id="passwordChangeNew" required placeholder="Enter new password"
-                        class="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono">
-                </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="hidePasswordChangeModal()"
-                        class="flex-1 px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                        class="flex-1 px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg shadow-indigo-200 transition-colors">
-                        <i class="fas fa-save mr-2"></i> Update Password
-                    </button>
-                </div>
-                <p class="text-xs text-slate-500 text-center mt-2">
-                    <i class="fas fa-info-circle mr-1"></i>Password will be updated immediately after saving
-                </div>
-            </form>
+<!-- Hidden Elements -->
+<input type="file" id="sigInput" class="hidden" accept="image/*" onchange="handleSignatureFile(this)">
+
+<!-- Password Modal -->
+<div id="passwordChangeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-[32px] shadow-2xl max-w-md w-full overflow-hidden">
+        <div class="p-8 text-center border-b border-slate-50">
+            <h3 class="text-xl font-black text-slate-900 tracking-tight">Security Credentials</h3>
+            <p class="text-slate-500 text-sm font-medium mt-1">Managing access for <span id="passwordChangeFacultyName" class="text-indigo-600 font-bold"></span></p>
         </div>
+        <form id="passwordChangeForm" method="POST" class="p-8 space-y-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Username</label>
+                    <input type="text" id="passwordChangeUsername" readonly class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 text-slate-500 text-sm font-bold">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Existing Password</label>
+                    <input type="text" id="passwordChangeCurrent" readonly class="w-full px-5 py-3 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 text-slate-500 text-sm font-mono tracking-widest">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black text-slate-800 uppercase tracking-widest mb-1.5">New Password</label>
+                    <input type="text" name="new_password" id="passwordChangeNew" required class="w-full px-5 py-3 rounded-2xl bg-white border-none ring-2 ring-indigo-600 text-sm font-bold focus:ring-4 transition-all">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="hidePasswordChangeModal()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold">Cancel</button>
+                <button type="submit" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200">Update</button>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- Delete All Lecturers Confirmation Modal (with verification code) -->
-<div id="deleteAllModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-rose-100 rounded-full">
-                <i class="fas fa-exclamation-triangle text-rose-600 text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 text-center mb-2">Delete All Lecturers?</h3>
-            <p class="text-slate-600 text-center mb-4">
-                Are you sure you want to delete <strong>all lecturers</strong>? This will permanently remove all lecturer
-                records and cannot be undone.
-            </p>
-            <div class="mb-4 text-center">
-                <p class="text-xs font-semibold text-slate-500 mb-2">
-                    Type the following code to confirm:
-                </p>
-                <div
-                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white font-mono text-sm tracking-[0.35em]"
-                    id="deleteAllCodeDisplay">
-                    -----
-                </div>
-            </div>
-            <form id="deleteAllForm" method="POST" action="{{ url_for('admin_staff_delete_all') }}" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Enter code exactly</label>
-                    <input type="text" id="deleteAllCodeInput" autocomplete="off"
-                        class="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 font-mono text-sm uppercase">
-                    <p id="deleteAllCodeError" class="mt-1 text-xs text-rose-600 hidden">
-                        Code does not match. Please try again.
-                    </p>
-                </div>
-                <div class="flex gap-3 pt-1">
-                    <button type="button" onclick="hideDeleteAllModal()"
-                        class="flex-1 px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                        class="flex-1 px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-lg shadow-rose-200 transition-colors">
-                        <i class="fas fa-trash-alt mr-2"></i> Delete All
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Custom Delete Confirmation Modal -->
-<div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
-        <div class="p-6">
-            <div class="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-rose-100 rounded-full">
-                <i class="fas fa-exclamation-triangle text-rose-600 text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-slate-900 text-center mb-2">Delete Lecturer Record?</h3>
-            <p class="text-slate-600 text-center mb-6">
-                Are you sure you want to delete <span id="deleteLecturerName" class="font-semibold text-slate-900"></span>? 
-                This action cannot be undone.
-            </p>
-            <form id="deleteForm" method="POST" class="flex gap-3">
-                <button type="button" onclick="hideDeleteModal()"
-                    class="flex-1 px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold transition-colors">
-                    Cancel
-                </button>
-                <button type="submit"
-                    class="flex-1 px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-lg shadow-rose-200 transition-colors">
-                    <i class="fas fa-trash mr-2"></i> Delete
-                </button>
-            </form>
-        </div>
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-[32px] shadow-2xl max-w-sm w-full p-8 text-center">
+        <h3 class="text-xl font-black text-slate-900 tracking-tight mb-2">Delete Record?</h3>
+        <p class="text-slate-500 text-sm font-medium mb-8">Permanently remove <span id="deleteFacultyName" class="font-bold text-slate-900"></span>?</p>
+        <form id="deleteForm" method="POST" class="flex gap-3">
+            <button type="button" onclick="hideDeleteModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold">Cancel</button>
+            <button type="submit" class="flex-1 py-3 bg-rose-600 text-white rounded-2xl font-bold">Delete</button>
+        </form>
     </div>
 </div>
 
 <script>
-// Simple client-side search for lecturer table
-function applyStaffSearch() {
-    const input = document.getElementById('staff-search');
-    const filter = (input.value || '').toLowerCase().trim();
-    const tbody = document.getElementById('staff-table-body');
-    if (!tbody) return;
-    const rows = tbody.getElementsByTagName('tr');
-
-    for (let i = 0; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName('td');
-        if (!cells.length) continue;
-        const staffId = (cells[0].innerText || '').toLowerCase();
-        const name = (cells[1].innerText || '').toLowerCase();
-        const email = (cells[5]?.innerText || '').toLowerCase();
-
-        const text = staffId + ' ' + name + ' ' + email;
-        rows[i].style.display = !filter || text.includes(filter) ? '' : 'none';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    const input = document.getElementById('staff-search');
-    if (input) {
-        input.addEventListener('keyup', function (e) {
-            if (e.key === 'Enter') {
-                applyStaffSearch();
-            }
+async function assignHOD(dept, hodId) {
+    try {
+        const response = await fetch('/admin/api/assign-hod', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ department: dept, hod_id: hodId })
         });
-    }
-});
-
-function showPasswordChangeModal(staffId, staffName, username, currentPassword) {
-    const modal = document.getElementById('passwordChangeModal');
-    const form = document.getElementById('passwordChangeForm');
-    const nameSpan = document.getElementById('passwordChangeLecturerName');
-    const usernameInput = document.getElementById('passwordChangeUsername');
-    const currentPasswordInput = document.getElementById('passwordChangeCurrent');
-    const newPasswordInput = document.getElementById('passwordChangeNew');
-    
-    nameSpan.textContent = staffName;
-    usernameInput.value = username;
-    currentPasswordInput.value = currentPassword || '123456';
-    newPasswordInput.value = '';
-    form.action = '/admin/staff/' + staffId + '/change-password';
-    modal.classList.remove('hidden');
-    newPasswordInput.focus();
+        const data = await response.json();
+        if (data.success) {
+            const safeDept = dept.replace(/\s+/g, '-');
+            const badgeId = `badge-${safeDept}`;
+            const sigBtnId = `sig-hod-${safeDept}`;
+            const badge = document.getElementById(badgeId);
+            const sigBtn = document.getElementById(sigBtnId);
+            
+            if (badge) {
+                if (hodId) {
+                    badge.innerText = 'Active';
+                    badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter bg-emerald-50 text-emerald-600';
+                    if (sigBtn) {
+                        sigBtn.classList.remove('invisible');
+                        sigBtn.classList.add('visible');
+                        const select = document.getElementById(`select-${safeDept}`);
+                        const selectedOption = select.options[select.selectedIndex];
+                        if (selectedOption.dataset.sig === '1') {
+                            sigBtn.className = 'w-11 h-11 rounded-2xl flex items-center justify-center transition-all visible bg-emerald-50 text-emerald-600 border border-emerald-100';
+                        } else {
+                            sigBtn.className = 'w-11 h-11 rounded-2xl flex items-center justify-center transition-all visible bg-slate-100 text-slate-400 border border-slate-200';
+                        }
+                    }
+                } else {
+                    badge.innerText = 'None';
+                    badge.className = 'px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter bg-slate-200 text-slate-500';
+                    if (sigBtn) {
+                        sigBtn.classList.remove('visible');
+                        sigBtn.classList.add('invisible');
+                    }
+                }
+            }
+        }
+    } catch (e) { console.error(e); }
 }
 
-// Update password display after successful change
-function updatePasswordDisplay(staffId, newPassword) {
-    // This function can be called after successful password update if needed
-    const displayElement = document.getElementById('password-display-' + staffId);
-    if (displayElement) {
-        displayElement.textContent = newPassword;
+function triggerHODSignatureUpload(deptId) {
+    const select = document.getElementById(`select-${deptId}`);
+    if (select && select.value) {
+        currentSigUserId = select.value;
+        document.getElementById('sigInput').click();
     }
+}
+
+let currentSigUserId = null;
+function triggerSignatureUpload(userId) {
+    currentSigUserId = userId;
+    document.getElementById('sigInput').click();
+}
+
+async function handleSignatureFile(input) {
+    if (!input.files || !input.files[0] || !currentSigUserId) return;
+    const formData = new FormData();
+    formData.append('signature', input.files[0]);
+    
+    // Check if triggered from table or HOD card
+    const tableBtn = document.getElementById(`sig-btn-${currentSigUserId}`);
+    let hodBtns = [];
+    document.querySelectorAll('[id^="select-"]').forEach(select => {
+        if (select.value === currentSigUserId) {
+            const deptId = select.id.replace('select-', '');
+            const hb = document.getElementById(`sig-hod-${deptId}`);
+            if (hb) hodBtns.push(hb);
+        }
+    });
+
+    const updateBtnLoading = (btn) => {
+        if (btn) btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+    };
+
+    updateBtnLoading(tableBtn);
+    hodBtns.forEach(updateBtnLoading);
+    
+    try {
+        const resp = await fetch(`/admin/staff/${currentSigUserId}/upload-signature`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await resp.json();
+        if (data.success) {
+            // Update table button
+            if (tableBtn) {
+                tableBtn.className = 'w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white';
+                tableBtn.innerHTML = '<i class="fas fa-file-signature text-lg"></i>';
+            }
+            
+            // Update HOD card buttons and select options
+            document.querySelectorAll('[id^="select-"]').forEach(select => {
+                if (select.value === currentSigUserId) {
+                    const deptId = select.id.replace('select-', '');
+                    const hb = document.getElementById(`sig-hod-${deptId}`);
+                    if (hb) {
+                        hb.className = 'w-11 h-11 rounded-2xl flex items-center justify-center transition-all visible bg-emerald-50 text-emerald-600 border border-emerald-100';
+                        hb.innerHTML = '<i class="fas fa-file-signature"></i>';
+                    }
+                    Array.from(select.options).forEach(opt => {
+                        if (opt.value === currentSigUserId) opt.dataset.sig = '1';
+                    });
+                }
+            });
+
+            alert('Digital signature saved.');
+        } else {
+            alert(data.message);
+        }
+    } catch (e) { 
+        console.error(e); 
+    } finally {
+        // Refresh icons if failed or done
+        if (tableBtn && tableBtn.innerHTML.includes('fa-spin')) tableBtn.innerHTML = '<i class="fas fa-file-signature text-lg"></i>';
+        hodBtns.forEach(hb => { if (hb.innerHTML.includes('fa-spin')) hb.innerHTML = '<i class="fas fa-file-signature"></i>'; });
+        input.value = '';
+    }
+}
+
+function showPasswordChangeModal(id, name, user, cur) {
+    document.getElementById('passwordChangeFacultyName').innerText = name;
+    document.getElementById('passwordChangeUsername').value = user;
+    document.getElementById('passwordChangeCurrent').value = cur;
+    document.getElementById('passwordChangeForm').action = `/admin/staff/${id}/change-password`;
+    document.getElementById('passwordChangeModal').classList.remove('hidden');
 }
 
 function hidePasswordChangeModal() {
-    const modal = document.getElementById('passwordChangeModal');
-    modal.classList.add('hidden');
-    document.getElementById('passwordChangeForm').reset();
+    document.getElementById('passwordChangeModal').classList.add('hidden');
 }
 
-function showDeleteModal(staffId, staffName) {
-    const modal = document.getElementById('deleteModal');
-    const form = document.getElementById('deleteForm');
-    const nameSpan = document.getElementById('deleteLecturerName');
-    
-    nameSpan.textContent = staffName;
-    form.action = '/admin/staff/' + staffId + '/delete';
-    modal.classList.remove('hidden');
+function showDeleteModal(id, name) {
+    document.getElementById('deleteFacultyName').innerText = name;
+    document.getElementById('deleteForm').action = `/admin/staff/${id}/delete`;
+    document.getElementById('deleteModal').classList.remove('hidden');
 }
 
 function hideDeleteModal() {
-    const modal = document.getElementById('deleteModal');
-    modal.classList.add('hidden');
+    document.getElementById('deleteModal').classList.add('hidden');
 }
 
-let deleteAllVerificationCode = null;
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('staff-search');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            const term = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+    }
 
+    const deleteAllForm = document.getElementById('deleteAllForm');
+    if (deleteAllForm) {
+        deleteAllForm.onsubmit = function(e) {
+            const entered = document.getElementById('deleteAllCodeInput').value.trim().toUpperCase();
+            if (entered !== deleteAllVerificationCode) {
+                e.preventDefault();
+                document.getElementById('deleteAllCodeError').classList.remove('hidden');
+            }
+        };
+    }
+});
+
+let deleteAllVerificationCode = null;
 function generateDeleteAllCode() {
-    // 5-character alphanumeric code, uppercase
     return Math.random().toString(36).substring(2, 7).toUpperCase();
 }
 
 function showDeleteAllModal() {
     const modal = document.getElementById('deleteAllModal');
     const codeDisplay = document.getElementById('deleteAllCodeDisplay');
-    const codeInput = document.getElementById('deleteAllCodeInput');
-    const error = document.getElementById('deleteAllCodeError');
-
     deleteAllVerificationCode = generateDeleteAllCode();
     codeDisplay.textContent = deleteAllVerificationCode;
-    codeInput.value = '';
-    error.classList.add('hidden');
-
+    document.getElementById('deleteAllCodeInput').value = '';
+    document.getElementById('deleteAllCodeError').classList.add('hidden');
     modal.classList.remove('hidden');
-    codeInput.focus();
 }
 
 function hideDeleteAllModal() {
     document.getElementById('deleteAllModal').classList.add('hidden');
 }
 
-// Close modal when clicking outside
-document.getElementById('deleteModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hideDeleteModal();
+async function toggleProfileLock(userId) {
+    const btn = document.getElementById(`lock-btn-${userId}`);
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+    
+    try {
+        const url = window.location.origin + '/admin/api/toggle-profile-lock/' + userId;
+        const resp = await fetch(url, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            if (data.locked) {
+                btn.className = 'w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white';
+                btn.innerHTML = '<i class="fas fa-lock"></i>';
+                btn.title = 'Enable Profile Edits';
+            } else {
+                btn.className = 'w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white';
+                btn.innerHTML = '<i class="fas fa-unlock"></i>';
+                btn.title = 'Disable Profile Edits';
+            }
+        }
+    } catch (e) {
+        console.error(e);
+        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
     }
-});
-document.getElementById('deleteAllModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hideDeleteAllModal();
-    }
-});
-document.getElementById('deleteAllSuccessModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hideDeleteAllSuccessModal();
-    }
-});
-
-// Verify code before submitting delete-all form
-document.getElementById('deleteAllForm').addEventListener('submit', function (e) {
-    const input = document.getElementById('deleteAllCodeInput');
-    const error = document.getElementById('deleteAllCodeError');
-    const entered = (input.value || '').trim().toUpperCase();
-
-    if (!deleteAllVerificationCode || entered !== deleteAllVerificationCode) {
-        e.preventDefault();
-        error.classList.remove('hidden');
-        input.focus();
-    }
-});
-
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        hideDeleteModal();
-        hideDeleteAllModal();
-        hideDeleteAllSuccessModal();
-        hidePasswordChangeModal();
-        hideBulkSuccessModal();
-        hidePasswordSuccessModal();
-    }
-});
-
-// Close password modal when clicking outside
-document.getElementById('passwordChangeModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hidePasswordChangeModal();
-    }
-});
-
-// Show delete all success popup
-{% if request.args.get('delete_all_success') %}
-document.addEventListener('DOMContentLoaded', function() {
-    const count = {{ request.args.get("delete_all_success", 0)|int }};
-    document.getElementById('deleteAllSuccessMessage').textContent = 
-        count === 1 ? '1 lecturer has been deleted.' : `${count} lecturers have been deleted.`;
-    document.getElementById('deleteAllSuccessModal').classList.remove('hidden');
-});
-{% endif %}
-
-// Show bulk upload success popup
-{% if request.args.get('bulk_success') %}
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('bulkSuccessMessage').textContent = {{ request.args.get("bulk_success")|tojson }};
-    document.getElementById('bulkSuccessModal').classList.remove('hidden');
-});
-{% endif %}
-
-// Show success popup if password was updated
-{% if request.args.get('password_updated') == '1' %}
-document.addEventListener('DOMContentLoaded', function() {
-    const updatedName = '{{ request.args.get("updated_name", "lecturer") }}';
-    document.getElementById('passwordSuccessMessage').textContent = 
-        `Password has been successfully updated for ${updatedName}.`;
-    document.getElementById('passwordSuccessModal').classList.remove('hidden');
-});
-{% endif %}
-
-function hideDeleteAllSuccessModal() {
-    document.getElementById('deleteAllSuccessModal').classList.add('hidden');
-    const url = new URL(window.location);
-    url.searchParams.delete('delete_all_success');
-    window.history.replaceState({}, '', url);
 }
 
-function hideBulkSuccessModal() {
-    document.getElementById('bulkSuccessModal').classList.add('hidden');
-    const url = new URL(window.location);
-    url.searchParams.delete('bulk_success');
-    window.history.replaceState({}, '', url);
-}
-
-function hidePasswordSuccessModal() {
-    document.getElementById('passwordSuccessModal').classList.add('hidden');
-    // Remove query parameter from URL
-    const url = new URL(window.location);
-    url.searchParams.delete('password_updated');
-    url.searchParams.delete('updated_name');
-    window.history.replaceState({}, '', url);
-}
-
-// Close success modals when clicking outside
-document.getElementById('bulkSuccessModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hideBulkSuccessModal();
-    }
-});
-document.getElementById('passwordSuccessModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        hidePasswordSuccessModal();
+socket.on('profile_lock_updated', function(data) {
+    const btn = document.getElementById(`lock-btn-${data.userId}`);
+    if (btn) {
+        if (data.locked) {
+            btn.className = 'w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-600 hover:text-white';
+            btn.innerHTML = '<i class="fas fa-lock"></i>';
+            btn.title = 'Enable Profile Edits';
+        } else {
+            btn.className = 'w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white';
+            btn.innerHTML = '<i class="fas fa-unlock"></i>';
+            btn.title = 'Disable Profile Edits';
+        }
     }
 });
 </script>
+
+<!-- Delete All Modal -->
+<div id="deleteAllModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-[32px] shadow-2xl max-w-md w-full p-8 text-center animate-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mx-auto mb-6 text-2xl">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="text-xl font-black text-slate-900 tracking-tight mb-2">Wipe All Records?</h3>
+        <p class="text-slate-500 text-sm font-medium mb-6">This will permanently delete all faculty profiles. This action is irreversible.</p>
+        
+        <div class="mb-6">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Verification Code</p>
+            <div id="deleteAllCodeDisplay" class="text-2xl font-black tracking-[0.5em] text-slate-900 bg-slate-100 py-3 rounded-2xl mb-4">-----</div>
+            <input type="text" id="deleteAllCodeInput" placeholder="Enter code here" class="w-full px-5 py-3 rounded-2xl border-none ring-2 ring-slate-200 focus:ring-rose-600 text-center font-black uppercase tracking-widest transition-all">
+            <p id="deleteAllCodeError" class="hidden text-rose-500 text-[10px] font-bold mt-2 uppercase tracking-tight">Code mismatch. Please try again.</p>
+        </div>
+
+        <form id="deleteAllForm" method="POST" action="{{ url_for('admin_staff_delete_all') }}" class="flex gap-3">
+            <button type="button" onclick="hideDeleteAllModal()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold">Cancel</button>
+            <button type="submit" class="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-200">Confirm Wipe</button>
+        </form>
+    </div>
+</div>
 {% endblock %}

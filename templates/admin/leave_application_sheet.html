@@ -4,27 +4,47 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto py-8 no-print">
-    <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-md">
-        <a href="{{ url_for('admin_leaves') }}" class="text-indigo-600 hover:text-indigo-800 transition-colors flex items-center font-bold">
-            <i class="fas fa-chevron-left mr-2"></i> Return to Leave Manager
+    <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-xl shadow-md gap-4">
+        <a href="{{ url_for('admin_dashboard' if current_user.role == 'admin' else 'lecturer_dashboard') }}" class="text-indigo-600 hover:text-indigo-800 transition-colors flex items-center font-bold">
+            <i class="fas fa-chevron-left mr-2"></i> Return to Dashboard
         </a>
-        <button onclick="window.print()" class="bg-indigo-600 hover:bg-slate-800 text-white px-8 py-3 rounded-lg font-black shadow-lg flex items-center transition-all active:scale-95 group">
-            <i class="fas fa-file-pdf mr-3 group-hover:scale-125 transition-transform"></i> EXPORT TO PDF
-        </button>
+        <div class="flex flex-wrap gap-3 items-center justify-end">
+            {% if current_user.role == 'admin' and leave.status|lower == 'pending' %}
+            <button type="button" id="sheet-btn-approve" onclick="reviewLeaveFromSheet('Approved')"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm flex items-center transition-all active:scale-95">
+                <i class="fas fa-check mr-2"></i> Approve
+            </button>
+            <button type="button" id="sheet-btn-reject" onclick="reviewLeaveFromSheet('Rejected')"
+                class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm flex items-center transition-all active:scale-95">
+                <i class="fas fa-times mr-2"></i> Reject
+            </button>
+            {% elif current_user.role == 'admin' %}
+            <span class="text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg
+                {% if leave.status|lower == 'approved' %}bg-emerald-100 text-emerald-800{% elif leave.status|lower == 'rejected' %}bg-rose-100 text-rose-800{% else %}bg-slate-100 text-slate-600{% endif %}">
+                {{ leave.status }}
+            </span>
+            {% endif %}
+            <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-6 py-3 rounded-lg font-bold shadow-sm flex items-center transition-all active:scale-95 border border-slate-200">
+                <i class="fas fa-print mr-2"></i> PRINT SHEET
+            </button>
+            <button onclick="exportToPDF()" class="bg-indigo-600 hover:bg-slate-800 text-white px-8 py-3 rounded-lg font-black shadow-lg flex items-center transition-all active:scale-95 group">
+                <i class="fas fa-file-pdf mr-3 group-hover:scale-125 transition-transform"></i> EXPORT TO PDF
+            </button>
+        </div>
     </div>
 </div>
 
 <!-- FORM SHEET START -->
-<div class="leave-sheet-container bg-slate-100 py-6 min-h-screen">
-    <div class="leave-application-sheet mx-auto bg-white shadow-2xl p-10 md:p-12 print:shadow-none print:p-0 print:m-0" style="width: 210mm; min-height: fit-content; max-width: 95vw;">
+<div class="leave-sheet-container bg-slate-100 py-6 md:py-10 min-h-screen overflow-x-auto">
+    <div class="leave-application-sheet mx-auto bg-white shadow-2xl p-10 md:p-12 print:shadow-none print:p-0 print:m-0" style="width: 210mm; min-width: 210mm; min-height: fit-content;">
         <!-- Header -->
-        <div class="text-center border-b-2 border-slate-900 pb-3 mb-6">
-            <h1 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Dr. B. B. Hegde First Grade College, Kundapura</h1>
-            <h2 class="text-xl font-bold text-slate-800 mt-1 uppercase tracking-widest">LEAVE APPLICATION</h2>
+        <div class="text-center border-b-2 border-slate-900 pb-2 mb-4">
+            <h1 class="text-xl font-black text-slate-900 uppercase tracking-tight">Dr. B. B. Hegde First Grade College, Kundapura</h1>
+            <h2 class="text-lg font-bold text-slate-800 mt-0.5 uppercase tracking-widest">LEAVE APPLICATION</h2>
         </div>
 
         <!-- Faculty Info -->
-        <div class="space-y-4 mb-8">
+        <div class="space-y-2 mb-4">
             <div class="flex items-end">
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">Name of the Faculty</span>
                 <span class="mr-2">:</span>
@@ -44,123 +64,147 @@
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">Nature of Leave</span>
                 <span class="mr-2">:</span>
                 <div class="pb-0.5 font-bold text-slate-900 flex items-center gap-4">
+                    {% if leave.mode != 'time' %}
                     <span class="text-xs text-slate-400 font-normal">(CL / EL / RH / OOD / SCL / LOP) :</span>
+                    {% endif %}
                     <span class="px-2 py-0.5 bg-slate-100 rounded border border-slate-200 uppercase">{{ leave.type }}</span>
                 </div>
             </div>
-            <div class="flex items-end">
-                <span class="text-sm font-bold text-slate-700 w-48 shrink-0">No. of days of Leave at credit :</span>
-                <div class="flex-1 pb-0.5 flex gap-8">
-                    <span>( CL: <span class="font-bold border-b border-dotted border-slate-400 px-2">{{ leave_stats.CL or '_' }}</span> )</span>
-                    <span>( EL: <span class="font-bold border-b border-dotted border-slate-400 px-2">{{ leave_stats.EL or '_' }}</span> )</span>
-                    <span>( RH: <span class="font-bold border-b border-dotted border-slate-400 px-2">{{ leave_stats.RH or '_' }}</span> )</span>
-                </div>
-            </div>
-            <div class="flex items-end pt-2">
+            <div class="flex items-end pt-1">
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">No. of days of Leave</span>
                 <span class="mr-2">:</span>
-                <div class="flex-1 flex gap-6 pb-0.5">
-                    <span>From: <span class="font-bold border-b border-dotted border-slate-400 px-2">{{ leave.from_date }}</span></span>
-                    <span>To: <span class="font-bold border-b border-dotted border-slate-400 px-2">{{ leave.to_date }}</span></span>
-                    <span class="ml-auto">Total: <span class="font-bold border-b border-dotted border-slate-400 px-4">{{ total_days }}</span></span>
+                <div class="flex-1 flex gap-4 pb-0.5 items-center">
+                    {% if leave.mode == 'time' %}
+                    <span class="text-[11px] font-medium italic">Date: <span class="font-bold border-b border-dotted border-slate-400 px-1">{{ leave.from_date.split(' ')[0] if ' ' in leave.from_date|string else leave.from_date }}</span></span>
+                    {% endif %}
+                    <span class="text-[11px] font-medium">From: <span class="font-bold border-b border-dotted border-slate-400 px-1">
+                        {% if ' ' in leave.from_date|string %}{{ leave.from_date.split(' ')[1] }}{% else %}{{ leave.from_date }}{% endif %}
+                    </span></span>
+                    <span class="text-[11px] font-medium ml-2">To: <span class="font-bold border-b border-dotted border-slate-400 px-1">
+                        {% if ' ' in leave.to_date|string %}{{ leave.to_date.split(' ')[1] }}{% else %}{{ leave.to_date }}{% endif %}
+                    </span></span>
+                    <span class="text-[11px] font-medium ml-4 flex items-center">
+                        {% if leave.half_day %}<span class="text-[10px] font-black text-indigo-600 uppercase mr-1">({{ leave.session }})</span>{% endif %}
+                        Total: <span class="font-bold border-b border-dotted border-slate-400 px-2 ml-1">
+                            {% if duration_str %}
+                                {{ duration_str }}
+                            {% else %}
+                                {{ total_days }}
+                            {% endif %}
+                        </span>
+                    </span>
                 </div>
             </div>
             <div class="flex items-start">
-                <span class="text-sm font-bold text-slate-700 w-48 shrink-0 mt-1">Reason for the Leave</span>
-                <span class="mr-2 mt-1">:</span>
-                <div class="border-b border-dotted border-slate-400 flex-1 pb-2 font-medium text-slate-800 leading-relaxed italic min-h-[40px]">
+                <span class="text-sm font-bold text-slate-700 w-48 shrink-0 mt-0.5">Reason for the Leave</span>
+                <span class="mr-2 mt-0.5">:</span>
+                <div class="border-b border-dotted border-slate-400 flex-1 pb-1 font-medium text-slate-800 leading-relaxed italic min-h-[30px]">
                     {{ leave.reason }}
                 </div>
             </div>
         </div>
 
-        <!-- Applicant Signature -->
-        <div class="flex justify-end mb-8 pt-4">
-            <div class="text-center w-64">
-                <div class="h-10"></div>
-                <div class="border-t border-slate-900 pt-1 text-sm font-bold uppercase">Signature of the Applicant</div>
-            </div>
-        </div>
 
-        <div class="text-[10px] font-bold text-slate-600 mb-6 italic">
+        <div class="text-[9px] font-bold text-slate-600 mb-2 italic">
             Note: Submit the Leave Period Classes Plan* to the Principal along with the application.
         </div>
 
-        <div class="mb-10 text-sm font-bold text-slate-800">
+        <div class="mb-4 text-xs font-bold text-slate-800">
             Remarks of the Sanctioning Authority:
-            <div class="mt-4 border-b border-dotted border-slate-300 w-full h-6"></div>
-            <div class="mt-2 border-b border-dotted border-slate-300 w-full h-6"></div>
+            <div class="mt-1 border-b border-dotted border-slate-300 w-full h-4"></div>
+            <div class="mt-1 border-b border-dotted border-slate-300 w-full h-4"></div>
         </div>
 
         <!-- Authority Signatures -->
-        <div class="flex justify-between items-end mb-8">
+        <div class="flex {% if leave.type|lower == 'permission' %}justify-center{% else %}justify-between{% endif %} items-end mb-4">
             <div class="text-center w-56">
-                <div class="h-28 flex items-end justify-center" style="margin-bottom: -15px;">
+                <div class="h-16 flex items-end justify-center" style="margin-bottom: -5px;">
+                    {% if leave.status|lower == 'approved' %}
                     <img src="{{ url_for('static', filename='img/cf7ce9a63a394451b42b5559f4b83040-Principal.png') }}" 
                          alt="Principal Signature" 
-                         class="h-32 w-auto object-contain" 
+                         class="h-20 w-auto object-contain" 
                          onerror="this.style.display='none'">
+                    {% endif %}
                 </div>
-                <div class="border-t-2 border-slate-900 pt-1 text-sm font-bold uppercase">Signature of the Principal</div>
+                <div class="border-t-2 border-slate-900 pt-1 text-[10px] font-bold uppercase">Signature of the Principal</div>
             </div>
+            
+            {% if leave.type|lower != 'permission' %}
             <div class="text-center w-56">
-                <div class="h-28 flex items-end justify-center">
-                    <!-- Space for physical signature -->
+                <div class="h-16 flex items-end justify-center" style="margin-bottom: -5px;">
+                    {% if hod_approved %}
+                    <img src="{{ url_for('static', filename=hod_signature if hod_signature else 'img/hod.png') }}" 
+                         alt="HOD Signature" 
+                         class="h-20 w-auto object-contain" 
+                         onerror="this.style.display='none'">
+                    {% endif %}
                 </div>
-                <div class="border-t-2 border-slate-900 pt-1 text-sm font-bold uppercase">Signature of the H.O.D</div>
+                <div class="border-t-2 border-slate-900 pt-1 text-[10px] font-bold uppercase">Signature of the H.O.D</div>
             </div>
+            {% endif %}
         </div>
 
+        {% if total_classes > 0 %}
         <!-- CLASSES PLAN TABLE -->
-        <div class="text-center mb-4">
+        <div class="text-center mb-2">
             <h3 class="text-sm font-black uppercase tracking-widest">LEAVE PERIOD CLASSES PLAN*</h3>
         </div>
 
-        <div class="border-2 border-slate-900 overflow-hidden mb-8">
+        <div class="border-2 border-slate-900 overflow-hidden mb-2">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="border-b-2 border-slate-900 text-[10px] font-black uppercase text-center">
                         <th class="border-r border-slate-900 p-2 w-24">Date/Day</th>
                         <th class="border-r border-slate-900 p-2 w-16">Class</th>
                         <th class="border-r border-slate-900 p-2 w-16">Section</th>
-                        <th class="border-r border-slate-900 p-2">Subject</th>
                         <th class="border-r border-slate-900 p-2 w-16">Period</th>
                         <th class="border-r border-slate-900 p-2">Arrangement</th>
                         <th class="p-2 w-32">Faculty Permission</th>
                     </tr>
                 </thead>
                 <tbody class="text-[10px]">
-                    {% set display_items = allocations if allocations else original_classes %}
-                    
-                    {% for item in display_items %}
-                        {% set details = item.class_details if item.class_details else item %}
-                        <tr class="border-b border-slate-300 h-10">
-                            <td class="border-r border-slate-900 p-2 font-bold">
-                                {{ details.date }}<br>
-                                <span class="text-[8px] opacity-60 uppercase">{{ details.day }}</span>
-                            </td>
-                            <td class="border-r border-slate-900 p-2 text-center">{{ details.class or 'N/A' }}</td>
-                            <td class="border-r border-slate-900 p-2 text-center">{{ details.section or '-' }}</td>
-                            <td class="border-r border-slate-900 p-2 font-medium">{{ details.subject }}</td>
-                            <td class="border-r border-slate-900 p-2 text-center">{{ details.period }}</td>
-                            <td class="border-r border-slate-900 p-2 font-bold text-slate-800">
-                                {{ item.assigned_to_name if item.assigned_to_name else '________________' }}
-                            </td>
-                            <td class="p-2 text-center text-[8px] font-bold italic">
-                                {% if item.status in ['accepted', 'approved', 'finalized'] %}
-                                    <span class="text-emerald-700">Digital Consent Received</span>
-                                {% else %}
-                                    <span class="text-slate-300">________________</span>
+                    {% set approved_count = namespace(total=0) %}
+                    {% for group in grouped_items %}
+                        {% set group_approved = [] %}
+                        {% for item in group.group_classes %}
+                            {% if item.status|lower in ['accepted', 'approved', 'finalized'] %}
+                                {% set _ = group_approved.append(item) %}
+                                {% set approved_count.total = approved_count.total + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for item in group_approved %}
+                            {% set details = item.class_details %}
+                            <tr class="border-b border-slate-900 h-8">
+                                {% if loop.first %}
+                                <td class="border-r border-slate-900 p-1 font-bold text-center" rowspan="{{ group_approved|length }}">
+                                    <div class="text-[10px]">{{ details.date }}</div>
+                                    <div class="text-[8px] opacity-70 uppercase tracking-tighter">{{ group.day }}</div>
+                                </td>
                                 {% endif %}
-                            </td>
-                        </tr>
+                                <td class="border-r border-slate-900 p-1 text-center font-bold">{{ details.class or 'N/A' }}</td>
+                                <td class="border-r border-slate-900 p-1 text-center">{{ details.section or '-' }}</td>
+                                <td class="border-r border-slate-900 p-1 text-center font-bold">{{ details.period }}</td>
+                                <td class="border-r border-slate-900 p-2 font-bold text-slate-800 text-[9px]">
+                                    {{ item.assigned_to_name if item.assigned_to_name else '________________' }}
+                                </td>
+                                <td class="p-1 text-center text-[8px] font-black uppercase italic leading-none">
+                                    {% if item.status|lower in ['accepted', 'approved', 'finalized'] %}
+                                        <span class="text-emerald-700">APPROVED</span>
+                                    {% elif item.status|lower == 'rejected' %}
+                                        <span class="text-rose-700">REJECTED</span>
+                                    {% else %}
+                                        <span class="text-slate-400">PENDING</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
                     {% endfor %}
 
-                    {# Fill remaining rows up to at least 5 #}
-                    {% if display_items|length < 5 %}
-                        {% for i in range(5 - display_items|length) %}
-                        <tr class="border-b border-slate-200 h-10">
-                            <td class="border-r border-slate-900 p-2"></td>
+                    {# Fill remaining rows up to at least 5 total rows if needed #}
+                    {% if approved_count.total < 5 %}
+                        {% for i in range(5 - approved_count.total) %}
+                        <tr class="border-b border-slate-900 h-8">
                             <td class="border-r border-slate-900 p-2"></td>
                             <td class="border-r border-slate-900 p-2"></td>
                             <td class="border-r border-slate-900 p-2"></td>
@@ -173,8 +217,11 @@
                 </tbody>
             </table>
         </div>
+        {% endif %}
     </div>
 </div>
+
+
 
 <!-- PRINT STYLE -->
 <style>
@@ -213,7 +260,7 @@
         width: 210mm !important;
         height: 297mm !important; /* Force full A4 height in PDF */
         margin: 0 !important;
-        padding: 20mm !important; /* Professional margins */
+        padding: 15mm !important; /* Optimized margins for A4 */
         box-shadow: none !important;
         border: none !important;
         background: white !important;
@@ -233,4 +280,87 @@
 .leave-sheet-container::-webkit-scrollbar { width: 8px; }
 .leave-sheet-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 </style>
+
+<!-- PDF Export Script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+async function exportToPDF() {
+    const element = document.querySelector('.leave-application-sheet');
+    const lecturerName = "{{ leave.lecturer_name|e }}";
+    const leaveType = "{{ leave.type|e }}";
+    const date = new Date().toISOString().split('T')[0];
+    
+    const opt = {
+        margin: 0,
+        filename: `Leave_Application_${lecturerName}_${leaveType}_${date}.pdf`,
+        image: { type: 'jpeg', quality: 1.0 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: false,
+            letterRendering: true
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Show loading state
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> GENERATING...';
+    btn.disabled = true;
+
+    try {
+        await html2pdf().set(opt).from(element).save();
+    } catch (error) {
+        console.error('PDF Export failed:', error);
+        alert('Failed to generate PDF. Please try printing instead.');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+{% if current_user.role == 'admin' and leave.status|lower == 'pending' %}
+async function reviewLeaveFromSheet(status) {
+    const confirmed = await window.Confirm(
+        `${status} Request?`,
+        `Are you sure you want to mark this request as ${status.toLowerCase()}?`,
+        status === 'Approved' ? 'check-circle' : 'times-circle',
+        status === 'Approved' ? 'Approve' : 'Reject'
+    );
+    if (!confirmed) return;
+
+    const approveBtn = document.getElementById('sheet-btn-approve');
+    const rejectBtn = document.getElementById('sheet-btn-reject');
+    const btn = status === 'Approved' ? approveBtn : rejectBtn;
+    const other = status === 'Approved' ? rejectBtn : approveBtn;
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+    if (other) other.disabled = true;
+
+    try {
+        const id = '{{ leave_id }}';
+        const url = {% if request_is_time %}`/admin/permission/api/${id}/${status}`{% else %}`/admin/leave/api/${id}/${status}`{% endif %};
+        const res = await fetch(url, { method: 'POST' });
+        if (res.ok) {
+            await window.Alert(
+                status === 'Approved' ? 'Approved' : 'Rejected',
+                `This request has been marked as ${status.toLowerCase()}.`,
+                status === 'Approved' ? 'check-circle' : 'info-circle'
+            );
+            window.location.href = '{{ url_for("admin_dashboard") }}';
+        } else {
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+            if (other) other.disabled = false;
+            await window.Alert('Update failed', 'Could not update request status. Try again from the dashboard.', 'exclamation-triangle');
+        }
+    } catch (e) {
+        console.error(e);
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+        if (other) other.disabled = false;
+        await window.Alert('Sync error', 'Could not connect to the server.', 'exclamation-circle');
+    }
+}
+{% endif %}
+</script>
 {% endblock %}

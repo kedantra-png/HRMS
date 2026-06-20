@@ -302,7 +302,7 @@ function selectFaculty(facultyId, facultyName, staffId, designation) {
 
 function confirmAssignment() {
     if (!selectedFacultyId) {
-        alert('Please select a faculty member');
+        showCustomModal('Faculty Required', 'Please select a faculty member before assigning.', 'info');
         return;
     }
     
@@ -344,12 +344,12 @@ function confirmAssignment() {
             
             closeAssignModal();
         } else {
-            alert('Error: ' + data.message);
+            showCustomModal('Error', data.message, 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while assigning the class');
+        showCustomModal('System Error', 'An error occurred while assigning the class. Please try again.', 'error');
     });
 }
 

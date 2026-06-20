@@ -1,7 +1,7 @@
 {
     "faculty": "Mr. THIMMAPPA D.S.",
     "faculty_id": "BBHCF054",
-    "department": "DEPARTMENT OF TRAINING & PLACEMENTS",
+    "department": "TRAINING & PLACEMENTS",
     "mentor": "TRAINING & PLACEMENT OFFICER",
     "total_hours": "14 Hrs",
     "timetable": {
@@ -12,7 +12,7 @@
             },
             {
                 "period": "I",
-                "time": "9.45–10.35"
+                "time": "9.45-10.35"
             },
             {
                 "period": "II",
@@ -24,15 +24,15 @@
             },
             {
                 "period": "IV",
-                "time": "1.05–1.55"
+                "time": "1.05-1.55"
             },
             {
                 "period": "V",
-                "time": "2.00–2.50"
+                "time": "2.00-2.50"
             },
             {
                 "period": "VI",
-                "time": "2.55–3.45"
+                "time": "2.55-3.45"
             },
             {
                 "period": "VII",
@@ -80,7 +80,7 @@
                     },
                     "V": {
                         "class": "III BBA",
-                        "section": "A",
+                        "section": null,
                         "subject": null,
                         "is_lab": false,
                         "span": 1

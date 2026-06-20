@@ -4,13 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}HRMS - College Office Management{% endblock %}</title>
+    <script src="{{ url_for('static', filename='js/hrms_csrf.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         // Global SocketIO initialization
-        const socket = io();
+        // Use websocket-only to keep chat realtime truly instant (no long-polling)
+        const socket = io({ transports: ['websocket'], upgrade: false });
+        const HRMS_CURRENT_USER_ID = {% if current_user.is_authenticated %}"{{ current_user.id }}"{% else %}null{% endif %};
+        socket.on('connect', function () {
+            try {
+                localStorage.setItem('hrms_socket_id', socket.id);
+            } catch (e) { /* ignore */ }
+            if (HRMS_CURRENT_USER_ID) {
+                socket.emit('register_socket', { user_id: HRMS_CURRENT_USER_ID });
+            }
+        });
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{{ url_for('static', filename='js/tailwindcss.js') }}"></script>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo-removebg-preview.png') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -24,84 +37,90 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
+    {% block head %}{% endblock %}
 </head>
 
-<body class="bg-slate-50 min-h-screen flex flex-col">
+<body class="bg-slate-50 min-h-screen flex flex-col {% block body_class %}{% endblock %}">
+    <!-- Page Preloader -->
+    <div id="page-preloader" class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#f7d75c] transition-opacity duration-500">
+        <div class="relative w-24 h-48 flex flex-col items-center justify-center">
+            <!-- Bouncing Ball -->
+            <div class="w-16 h-16 bg-[#2d2d2d] rounded-full shadow-inner animate-bounce-custom relative overflow-hidden">
+                <div class="absolute top-2 left-3 w-4 h-4 bg-white/30 rounded-full blur-[1px]"></div>
+            </div>
+            <!-- Hole/Shadow -->
+            <div class="w-20 h-5 bg-black/20 rounded-[100%] mt-4 animate-shadow-custom blur-[2px]"></div>
+        </div>
+        
+        <!-- Progress Bar Area -->
+        <div class="mt-8 w-64 h-3 bg-black/5 rounded-full overflow-hidden border border-black/10 relative">
+            <div class="h-full bg-[#2d2d2d] w-0 animate-progress-custom"></div>
+        </div>
+        <p class="mt-4 font-bold text-[#2d2d2d] tracking-widest uppercase text-xs animate-pulse">Loading...</p>
+        
+        <!-- Slow Connection Message -->
+        <div id="slow-connection-msg" class="hidden mt-6 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-lg border border-black/5 max-w-[280px] text-center">
+            <p class="text-[11px] font-bold text-[#2d2d2d]/80 leading-tight">
+                <i class="fas fa-wifi-slash mr-1"></i> Slow Connection Detected<br>
+                <span class="font-normal opacity-70">We're fetching heavy assets (like the local Tailwind library). Please stay on this page.</span>
+            </p>
+        </div>
+    </div>
 
-    <main class="flex-1 max-w-7xl mx-auto pt-8 pb-8 px-4 sm:px-6 lg:px-8 w-full">
+    <style>
+        @keyframes bounce-custom {
+            0%, 100% { transform: translateY(0) scaleX(1); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+            50% { transform: translateY(-100px) scaleX(0.95); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+        }
+        @keyframes shadow-custom {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(0.5); opacity: 0.1; }
+        }
+        @keyframes progress-custom {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+        .animate-bounce-custom {
+            animation: bounce-custom 1.2s infinite;
+        }
+        .animate-shadow-custom {
+            animation: shadow-custom 1.2s infinite;
+        }
+        .animate-progress-custom {
+            animation: progress-custom 2s ease-in-out forwards;
+        }
+    </style>
+
+    <script>
+        window.addEventListener('load', function() {
+            const preloader = document.getElementById('page-preloader');
+            if (preloader) {
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 500);
+            }
+        });
+
+        // Slow connection detection
+        setTimeout(() => {
+            const preloader = document.getElementById('page-preloader');
+            if (preloader && preloader.style.display !== 'none') {
+                const slowMsg = document.getElementById('slow-connection-msg');
+                if (slowMsg) slowMsg.classList.remove('hidden');
+            }
+        }, 5000); // Show message after 5 seconds if still loading
+    </script>
+
+    <main class="flex-1 max-w-7xl mx-auto pt-0 sm:pt-8 pb-8 px-4 sm:px-6 lg:px-8 w-full">
         {% block content %}{% endblock %}
     </main>
 
-    {% if current_user.is_authenticated and current_user.role == 'lecturer' %}
-    <!-- Lecturer Chatbot Widget -->
-    <div id="lectChatRoot" class="fixed bottom-5 right-5 z-50" data-user-name="{{ current_user.name|e }}">
-        <button id="lectChatFab"
-            class="group flex items-center gap-3 rounded-full bg-indigo-700 hover:bg-indigo-800 text-white shadow-2xl shadow-indigo-500/20 px-4 py-3 transition-colors">
-            <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/10">
-                <i class="fas fa-robot"></i>
-            </span>
-            <span class="hidden sm:block font-semibold text-sm">HR Assistant</span>
-        </button>
 
-        <div id="lectChatPanel"
-            class="hidden mt-3 w-[92vw] sm:w-[420px] h-[70vh] sm:h-[560px] bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
-            <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
-                        <i class="fas fa-comments"></i>
-                    </div>
-                    <div>
-                        <p class="font-bold leading-tight">Lecturer Assistant</p>
-                        <p class="text-[11px] text-white/70 leading-tight">Leave • Timetable • Attendance</p>
-                    </div>
-                </div>
-                <button id="lectChatClose" class="text-white/80 hover:text-white px-2 py-1 rounded-lg">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-
-            <div id="lectChatMsgs" class="h-[calc(100%-124px)] overflow-y-auto px-4 py-4 space-y-3 bg-slate-50"></div>
-
-            <div class="px-4 py-3 border-t bg-white">
-                <div class="flex gap-2 items-center">
-                    <input id="lectChatInput" type="text" autocomplete="off"
-                        placeholder="Type: Apply leave 03-01-2026 to 06-01-2026"
-                        class="flex-1 px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
-                    <button id="lectChatHelp" type="button"
-                        class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold">
-                        Help
-                    </button>
-                    <button id="lectChatSend"
-                        class="px-4 py-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold">
-                        Send
-                    </button>
-                </div>
-                <div id="lectChatQuick" class="hidden mt-2 flex flex-wrap gap-2">
-                    <button data-quick="Apply leave from 03-01-2026 to 06-01-2026"
-                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
-                        Apply Leave
-                    </button>
-                    <button data-quick="My timetable"
-                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100">
-                        Timetable
-                    </button>
-                    <button data-quick="My attendance"
-                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
-                        Attendance
-                    </button>
-                    <button data-quick="Leave balance"
-                        class="text-[11px] font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200">
-                        Leave Balance
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="{{ url_for('static', filename='js/lecturer_chatbot.js') }}"></script>
-    {% endif %}
 
     <footer class="mt-auto py-6 text-center text-slate-500 text-sm border-t bg-white">
-        &copy; 2026 Live College Office Management System | HRMS Core
+        Developed by the Incubation Center in 2026.
     </footer>
     <!-- Custom Premium Modal System -->
     <div id="customModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
@@ -143,6 +162,29 @@
             });
         };
 
+        window.Alert = function(title, message, icon = 'info-circle') {
+            const modal = document.getElementById('customModal');
+            const container = document.getElementById('modalContainer');
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('modalIcon').innerHTML = `<i class="fas fa-${icon}"></i>`;
+            document.getElementById('modalConfirm').innerText = 'OK';
+            document.getElementById('modalCancel').classList.add('hidden'); // Hide cancel button for alert
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                container.classList.remove('scale-95', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            return new Promise((resolve) => {
+                modalResolve = (val) => {
+                    document.getElementById('modalCancel').classList.remove('hidden'); // Reset for next use
+                    resolve(val);
+                };
+            });
+        };
+
         function closeModal(val) {
             const modal = document.getElementById('customModal');
             const container = document.getElementById('modalContainer');
@@ -156,6 +198,12 @@
         document.getElementById('modalConfirm').onclick = () => closeModal(true);
         document.getElementById('modalCancel').onclick = () => closeModal(false);
     </script>
+    <script src="{{ url_for('static', filename='js/hrms_chat_storage.js') }}"></script>
+    {% if current_user.is_authenticated and request.endpoint in ['admin_dashboard', 'lecturer_dashboard'] %}
+        {% include 'chatbot_widget.html' %}
+        {% include 'staff_chat_launcher.html' %}
+        <script src="{{ url_for('static', filename='js/hrms_fab_drag.js') }}"></script>
+    {% endif %}
 </body>
 
 </html>

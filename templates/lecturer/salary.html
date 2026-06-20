@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}My Salary Slips{% endblock %}
+
+{% block head %}
+<style>
+  body.salary-list-page { overflow-x: hidden; }
+</style>
+{% endblock %}
+
+{% block content %}
+<style>
+  main { max-width: none !important; padding: 0 !important; margin: 0 !important; background: #f8fafc; min-height: 100dvh; }
+  .glass-header { background: rgba(255,255,255,.95); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(226,232,240,.8); }
+  .salary-page { padding: 12px; max-width: 900px; margin: 0 auto; width: 100%; box-sizing: border-box; }
+  @media (min-width: 640px) { .salary-page { padding: 24px 32px; } }
+  .premium-card { background: white; border-radius: 20px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; overflow: hidden; width: 100%; }
+  .action-btn { transition: all .2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; border-radius: 12px; }
+  .salary-table-wrap { display: none; }
+  .salary-cards { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+  @media (min-width: 768px) {
+    .salary-table-wrap { display: block; }
+    .salary-cards { display: none; }
+  }
+  .salary-card-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 16px;
+    background: #fff;
+  }
+  .salary-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .salary-card-actions .action-btn {
+    width: 100%;
+    padding: 12px 10px;
+    font-size: 13px;
+  }
+</style>
+
+<script>document.body.classList.add('salary-list-page');</script>
+
+<div class="glass-header sticky top-0 z-40 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="p-2 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200 shrink-0">
+      <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="Logo" class="h-9 w-9 object-contain brightness-0 invert">
+    </div>
+    <div class="min-w-0">
+      <h1 class="text-lg sm:text-xl font-black text-slate-900 tracking-tight">My Salary Slips</h1>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">View & download</p>
+    </div>
+  </div>
+  <div class="flex gap-2 w-full sm:w-auto">
+    <a href="{{ url_for('lecturer_dashboard') }}" class="flex-1 sm:flex-none px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm flex items-center justify-center gap-2">
+      <i class="fas fa-arrow-left text-slate-400"></i> Back
+    </a>
+  </div>
+</div>
+
+<div class="salary-page">
+  <div class="premium-card">
+    <div class="p-4 sm:p-6 border-b border-slate-100">
+      <div class="text-xl sm:text-2xl font-black text-slate-900">Available Slips</div>
+      <div class="text-slate-500 font-bold text-sm mt-1">{{ salaries|length }} slip(s)</div>
+    </div>
+
+    <!-- Mobile: card layout (no horizontal scroll) -->
+    <div class="salary-cards">
+      {% for s in salaries %}
+      {% set payload = s.get('payload') or {} %}
+      {% set ready = (payload.get('employee_name') and payload.get('month_year')) %}
+      <div class="salary-card-item">
+        <div class="flex items-center justify-between gap-3">
+          <div class="font-black text-slate-900 text-lg">{{ s.get('month_year','') }}</div>
+          <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black shrink-0 {% if ready %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+            <span class="w-2 h-2 rounded-full {% if ready %}bg-emerald-500{% else %}bg-amber-500{% endif %}"></span>
+            {% if ready %}Ready{% else %}Draft{% endif %}
+          </span>
+        </div>
+        <div class="salary-card-actions">
+          <a class="action-btn bg-indigo-600 hover:bg-indigo-700 text-white"
+             href="{{ url_for('lecturer_salary_view', salary_id=s._id|string) }}">
+            <i class="fas fa-file-alt"></i> Slip View
+          </a>
+          <a class="action-btn bg-slate-900 hover:bg-black text-white"
+             href="{{ url_for('lecturer_salary_pdf', salary_id=s._id|string) }}">
+            <i class="fas fa-download"></i> Download
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+      {% if salaries|length == 0 %}
+      <div class="text-center text-slate-500 font-bold py-10">No salary slips available yet.</div>
+      {% endif %}
+    </div>
+
+    <!-- Desktop: table -->
+    <div class="salary-table-wrap overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-slate-50">
+          <tr class="text-left text-[11px] font-black text-slate-500 uppercase tracking-widest">
+            <th class="px-6 py-4">Month</th>
+            <th class="px-6 py-4">Status</th>
+            <th class="px-6 py-4 text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for s in salaries %}
+          {% set payload = s.get('payload') or {} %}
+          {% set ready = (payload.get('employee_name') and payload.get('month_year')) %}
+          <tr class="hover:bg-slate-50/60">
+            <td class="px-6 py-4 font-black text-slate-900">{{ s.get('month_year','') }}</td>
+            <td class="px-6 py-4">
+              <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black {% if ready %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+                <span class="w-2 h-2 rounded-full {% if ready %}bg-emerald-500{% else %}bg-amber-500{% endif %}"></span>
+                {% if ready %}Ready{% else %}Draft{% endif %}
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right">
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <a class="action-btn px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+                   href="{{ url_for('lecturer_salary_view', salary_id=s._id|string) }}">
+                  <i class="fas fa-file-alt"></i> Slip View
+                </a>
+                <a class="action-btn px-4 py-2 text-sm bg-slate-900 hover:bg-black text-white"
+                   href="{{ url_for('lecturer_salary_pdf', salary_id=s._id|string) }}">
+                  <i class="fas fa-download"></i> Download
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

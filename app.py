@@ -1,20 +1,100 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify
-from flask_socketio import SocketIO, emit
+from flask import Flask, render_template, request, redirect, url_for, flash, get_flashed_messages, session, send_file, jsonify, Response
+from datetime import datetime, timedelta, time
+from dotenv import load_dotenv
+load_dotenv()
+from flask_socketio import SocketIO, emit, join_room
 from io import BytesIO
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from utils.db import users, leaves, salaries, timetable, init_db, db, leave_class_allocations, faculty_notifications, timetable_history, leave_drafts, leave_types
+from flask_wtf.csrf import CSRFProtect, CSRFError
+from utils.db import users, leaves, salaries, timetable, init_db, db, leave_class_allocations, faculty_notifications, timetable_history, leave_drafts, leave_types, hod_requests, department_hods, permissions, broadcast_notifications, staff_conversations, staff_messages, staff_socket_sessions
 from bson.objectid import ObjectId
 import os
+import pandas as pd
+from chatbot_engine import get_hrms_response_stream
+from utils.auth import (
+    admin_required,
+    lecturer_required,
+    salary_access_required,
+    is_salary_unlocked,
+    verify_salary_password,
+)
+from utils.salary_pdf import build_salary_pdf_bytes
+from utils.salary_email import (
+    is_valid_email,
+    smtp_configured,
+    smtp_status_message,
+    send_salary_slip_email,
+    get_payroll_smtp_for_admin,
+    save_payroll_smtp,
+    clear_payroll_smtp,
+    test_smtp_login,
+    _looks_like_gmail_app_password,
+)
 
 app = Flask(__name__)
 app.jinja_env.add_extension('jinja2.ext.do')
-app.secret_key = os.urandom(24)
-socketio = SocketIO(app, async_mode='threading')
+
+
+@app.template_filter('salary_display')
+def salary_display_amount(v):
+    """Show blank in slip/view when amount is 0 or empty."""
+    if v is None:
+        return ""
+    s = str(v).strip()
+    if s == "":
+        return ""
+    try:
+        if float(s.replace(",", "")) == 0:
+            return ""
+    except Exception:
+        pass
+    return s
+
+
+def _salary_display_amt(v):
+    return salary_display_amount(v)
+
+
+app.secret_key = os.getenv("SECRET_KEY") or os.urandom(24)
+app.config.setdefault("WTF_CSRF_TIME_LIMIT", None)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 bcrypt = Bcrypt(app)
+csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
+
+
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.is_json:
+        return jsonify({
+            "ok": False,
+            "success": False,
+            "message": "Security token expired. Refresh the page and try again.",
+        }), 400
+    flash("Security token expired. Please try again.", "danger")
+    return redirect(request.referrer or url_for("index"))
+
+
+def emit_to_user(event_name, user_id, payload=None):
+    """Deliver a Socket.IO event to one logged-in user (user_{id} room)."""
+    if not user_id:
+        return
+    uid = str(user_id)
+    data = dict(payload or {})
+    data.setdefault("recipient_id", uid)
+    socketio.emit(event_name, data, room=f"user_{uid}")
+
+@app.errorhandler(500)
+def handle_500(e):
+    import traceback
+    with open("chatbot_errors.log", "a") as f:
+        f.write(f"\n[500 ERROR] {datetime.now()}\n")
+        traceback.print_exc(file=f)
+    return jsonify({"success": False, "message": "Internal Server Error", "error": str(e)}), 500
+
 
 class User(UserMixin):
     def __init__(self, user_data):
@@ -22,12 +102,29 @@ class User(UserMixin):
         self.username = user_data['username']
         self.role = user_data['role']
         self.name = user_data.get('name', '')
+        self.staff_id = user_data.get('staff_id', '')
+        self.designation = user_data.get('designation', '')
+        self.department = user_data.get('department', '')
+        self.category = user_data.get('category', '')
+        self.email = user_data.get('email', '')
+        self.phone = user_data.get('phone', '')
+        self.display_password = user_data.get('display_password', '')
 
 @login_manager.user_loader
 def load_user(user_id):
     user_data = users.find_one({"_id": ObjectId(user_id)})
     if user_data:
         return User(user_data)
+
+@app.route('/lecturer/update-phone', methods=['POST'])
+@lecturer_required
+def lecturer_update_phone():
+    new_phone = request.json.get('phone')
+    if not new_phone:
+        return jsonify({"success": False, "message": "Phone number is required"}), 400
+    
+    users.update_one({"_id": ObjectId(current_user.id)}, {"$set": {"phone": new_phone}})
+    return jsonify({"success": True, "message": "Phone number updated successfully"})
     return None
 
 @app.route('/')
@@ -45,27 +142,38 @@ def login():
         password = request.form.get('password')
         user_data = users.find_one({"username": username})
         
-        if user_data and bcrypt.check_password_hash(user_data['password'], password):
+        if not user_data:
+            flash('Invalid Username', 'danger')
+        elif not bcrypt.check_password_hash(user_data['password'], password):
+            flash('Invalid Password', 'danger')
+        else:
             user_obj = User(user_data)
             login_user(user_obj)
             if user_obj.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             return redirect(url_for('lecturer_dashboard'))
-        else:
-            flash('Invalid username or password', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
 @login_required
 def logout():
+    session.pop('salary_unlocked', None)
+    session.pop('salary_unlock_next', None)
     logout_user()
     return redirect(url_for('index'))
 
-from utils.auth import admin_required, lecturer_required
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta, time (moved to top)
 from utils.timetable_processor import extract_timetable_structure, log_event
 from difflib import get_close_matches
 import json
+import math
+import io
+from reportlab.lib.pagesizes import A4, letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.units import mm, inch
 import re
 import csv
 import fitz  # PyMuPDF for optional page-level images
@@ -90,11 +198,15 @@ def surname_key(norm_name: str) -> str:
 def partial_match(norm_small: str, norm_big: str) -> bool:
     if not norm_small or not norm_big:
         return False
+    small_tokens = norm_small.split()
+    # A single token like "MEGHA" is too ambiguous for substring matching.
+    if len(small_tokens) < 2:
+        return False
     if len(norm_small) > len(norm_big):
         norm_small, norm_big = norm_big, norm_small
     if norm_small in norm_big:
         return True
-    small_tokens = set(norm_small.split())
+    small_tokens = set(small_tokens)
     big_tokens = set(norm_big.split())
     return len(small_tokens & big_tokens) >= min(2, len(small_tokens))
 
@@ -134,23 +246,92 @@ def process_timetable_async(pdf_bytes, known_faculty_names, all_lecturers, lectu
 
             norm_ocr_name = normalize_name(faculty_name_raw)
             lecturer = None
+            ocr_tokens = norm_ocr_name.split()
+            is_single_token_name = len(ocr_tokens) == 1
 
             staff_id = norm_json_name_to_staff_id.get(norm_ocr_name)
             if staff_id:
                 lecturer = lecturers_by_staff_id.get(staff_id)
             if not lecturer:
                 lecturer = lecturers_by_norm_name.get(norm_ocr_name)
-            if not lecturer and lecturers_by_norm_name:
+            if not lecturer and lecturers_by_norm_name and not is_single_token_name:
                 for norm_name, lect in lecturers_by_norm_name.items():
                     if partial_match(norm_ocr_name, norm_name):
                         lecturer = lect
                         break
-            if not lecturer and lecturers_by_norm_name:
+            if not lecturer and lecturers_by_norm_name and not is_single_token_name:
                 norm_lecturer_names = list(lecturers_by_norm_name.keys())
                 best = get_close_matches(norm_ocr_name, norm_lecturer_names, n=1, cutoff=0.6)
                 if best:
                     lecturer = lecturers_by_norm_name.get(best[0])
-            if not lecturer:
+            if not lecturer and is_single_token_name and lecturers_by_norm_name:
+                token = ocr_tokens[0]
+                token_candidates = []
+                for norm_name, lect in lecturers_by_norm_name.items():
+                    if token in norm_name.split():
+                        token_candidates.append((norm_name, lect))
+                # If we need department-based disambiguation, we may pre-extract once.
+                pre_structured = None
+
+                if len(token_candidates) == 1:
+                    lecturer = token_candidates[0][1]
+                elif len(token_candidates) > 1:
+                    # If multiple candidates contain the same single OCR token,
+                    # prefer the one with a "non-generic" surname (avoid common ambiguous surnames).
+                    GENERIC_TOKENS = {"SHETTY", "RAO", "NAYAK", "KUMAR", "SINGH", "DEVI", "SHARMA"}
+                    # Prefer the lecturer whose DB name is just the single token (no surname).
+                    no_surname = [(n, l) for (n, l) in token_candidates if len((n or "").split()) == 1]
+                    if len(no_surname) == 1:
+                        lecturer = no_surname[0][1]
+                    else:
+                        # 1) Department-based disambiguation using the *image* (most reliable).
+                        try:
+                            log_event(
+                                f"Ambiguous single-name OCR '{faculty_name_raw}' - extracting department for disambiguation...",
+                                socketio=socketio
+                            )
+                            pre_structured = extract_timetable_structure(page["image"], faculty_name_hint=None, socketio=socketio)
+                        except Exception:
+                            pre_structured = None
+
+                        extracted_dept = ((pre_structured or {}).get("department") or "").strip().lower()
+                        if extracted_dept:
+                            dept_hits = []
+                            for _, l in token_candidates:
+                                l_dept = (l.get("department") or "").strip().lower()
+                                if l_dept and (extracted_dept in l_dept or l_dept in extracted_dept):
+                                    dept_hits.append(l)
+                            if len(dept_hits) == 1:
+                                lecturer = dept_hits[0]
+                                log_event(
+                                    f"Disambiguated by department '{extracted_dept}': {faculty_name_raw} -> {lecturer.get('name','')}",
+                                    socketio=socketio
+                                )
+
+                        # 2) Generic-surname penalty tie-break (only if still unmatched).
+                        if not lecturer:
+                            scored = []
+                            for n, l in token_candidates:
+                                parts = (n or "").split()
+                                extra = [p for p in parts[1:] if p and p != token]
+                                generic_count = sum(1 for p in extra if p in GENERIC_TOKENS)
+                                non_generic_count = sum(1 for p in extra if p and p not in GENERIC_TOKENS)
+                                # Prefer: fewer generic tokens, more non-generic tokens.
+                                scored.append(((generic_count, -non_generic_count, len(extra)), l))
+                            scored.sort(key=lambda x: x[0])
+                            best_score = scored[0][0] if scored else None
+                            best = [l for (s, l) in scored if s == best_score]
+                            if len(best) == 1:
+                                lecturer = best[0]
+
+                        # 3) If still ambiguous, do not guess.
+                        if not lecturer:
+                            candidate_names = [lect.get("name", "") for _, lect in token_candidates]
+                            log_event(
+                                f"Ambiguous single-name OCR '{faculty_name_raw}' -> skipping auto-match. Candidates: {candidate_names}",
+                                socketio=socketio
+                            )
+            if not lecturer and not is_single_token_name:
                 sk = surname_key(norm_ocr_name)
                 if sk:
                     candidates = lecturers_by_surname.get(sk, [])
@@ -176,8 +357,13 @@ def process_timetable_async(pdf_bytes, known_faculty_names, all_lecturers, lectu
             page["image"].save(fs_image_path, format="PNG")
             url_image_path = f"timetables/{filename}"
 
-            log_event(f"Extracting structure via Gemini for {matched_display_name}...", socketio=socketio)
-            structured = extract_timetable_structure(page["image"], faculty_name_hint=matched_display_name, socketio=socketio)
+            # If we already extracted once for department disambiguation, reuse it.
+            if "pre_structured" in locals() and pre_structured:
+                structured = pre_structured
+                log_event(f"Reusing extracted structure for {matched_display_name}.", socketio=socketio)
+            else:
+                log_event(f"Extracting structure via Gemini for {matched_display_name}...", socketio=socketio)
+                structured = extract_timetable_structure(page["image"], faculty_name_hint=matched_display_name, socketio=socketio)
             
             timetable.update_one(
                 {"lecturer_id": str(lecturer["_id"])},
@@ -309,39 +495,822 @@ def clear_all_leave_config():
     socketio.emit('leave_types_updated')
     return jsonify({"success": True, "message": "All leave categories and allocations cleared."})
 
+@app.route('/admin/api/assign-hod', methods=['POST'])
+@login_required
+@admin_required
+def assign_hod_api():
+    data = request.get_json()
+    dept = data.get('department')
+    hod_id = data.get('hod_id')
+    
+    if not dept:
+        return jsonify({"success": False, "message": "Department is required"}), 400
+        
+    if hod_id:
+        department_hods.update_one(
+            {"department": dept},
+            {"$set": {"hod_id": hod_id}},
+            upsert=True
+        )
+    else:
+        department_hods.delete_one({"department": dept})
+        
+    socketio.emit('hod_assigned', {"department": dept, "hod_id": hod_id})
+    return jsonify({"success": True})
+
 # Admin Routes
 @app.route('/admin/dashboard')
 @login_required
 @admin_required
 def admin_dashboard():
-    stats = {
-        "staff_count": users.count_documents({"role": "lecturer"}),
-        "pending_leaves": leaves.count_documents({"status": "Pending"}),
-        "timetable_entries": timetable.count_documents({})
-    }
-    # Only show recent PENDING leaves in the dashboard widget
-    recent_leaves = list(leaves.find({"status": "Pending"}).sort("_id", -1).limit(5))
+    # Consume stale flashes (e.g. from salary SMTP saves) so they do not pile up on the login page.
+    get_flashed_messages(with_categories=True)
 
-    # Pre-serialize recent leaves for use in inline JS (ObjectId is not JSON serializable)
-    recent_leaves_serialized = [
+    stats = {
+        "teaching_faculty_count": users.count_documents({
+            "role": "lecturer",
+            "staff_id": {"$regex": r"^BBHCF\d+$", "$options": "i"},
+        }),
+        "non_teaching_faculty_count": users.count_documents({
+            "role": "lecturer",
+            "staff_id": {"$regex": r"^BBHCFN\d+$", "$options": "i"},
+        }),
+        "pending_leaves": leaves.count_documents({"status": "Pending"}),
+        "pending_permissions": permissions.count_documents({"status": "Pending"}),
+    }
+    
+    # Unified Recent Requests (Leaves + Permissions)
+    recent_l = list(leaves.find({"status": "Pending"}).sort("_id", -1).limit(5))
+    recent_p = list(permissions.find({"status": "Pending"}).sort("_id", -1).limit(5))
+    
+    # Merge and Sort
+    all_recent = sorted(recent_l + recent_p, key=lambda x: x['_id'], reverse=True)[:5]
+
+    # Pre-serialize for use in inline JS
+    recent_serialized = [
         {
             "id": str(doc.get("_id")),
             "lecturer_name": doc.get("lecturer_name", ""),
-            "type": doc.get("type", ""),
+            "type": doc.get("type", "Permission"),
             "from_date": doc.get("from_date", ""),
             "to_date": doc.get("to_date", ""),
             "status": doc.get("status", ""),
             "half_day": doc.get("half_day", False),
-            "session": doc.get("session", "")
+            "session": doc.get("session", ""),
+            "mode": doc.get("mode", "full")
         }
-        for doc in recent_leaves
+        for doc in all_recent
     ]
+
+    # Fetch Recent Broadcasts
+    broadcasts = list(broadcast_notifications.find().sort("created_at", -1).limit(5))
+    print(f"DEBUG: Broadcast Count = {len(broadcasts)}")
+    for b in broadcasts:
+        b['_id'] = str(b['_id'])
+        if isinstance(b.get('created_at'), datetime):
+            b['created_at_fmt'] = b['created_at'].strftime("%Y-%m-%d %I:%M %p")
+        else:
+            b['created_at_fmt'] = "N/A"
+
+    # Fetch Admin Profile Pic
+    admin_doc = users.find_one({"_id": ObjectId(current_user.id)})
+    p_pic = admin_doc.get('profile_pic')
 
     return render_template(
         'admin/dashboard.html',
         stats=stats,
-        recent_leaves=recent_leaves,
-        recent_leaves_serialized=recent_leaves_serialized,
+        recent_leaves=all_recent,
+        recent_leaves_serialized=recent_serialized,
+        broadcasts=broadcasts,
+        profile_pic=p_pic,
+        salary_unlocked=is_salary_unlocked(),
+        smtp_configured=smtp_configured(),
+        smtp_status=smtp_status_message(),
+        payroll_smtp=get_payroll_smtp_for_admin(),
+        smtp_notice=request.args.get("smtp_notice"),
+    )
+
+def _amount_to_indian_words(amount) -> str:
+    """Convert rupee amount to words (Indian lakh/crore grouping). Returns '' for zero/invalid."""
+    try:
+        n = int(round(float(str(amount).replace(",", ""))))
+    except (TypeError, ValueError):
+        return ""
+    if n <= 0:
+        return ""
+
+    names = [
+        "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+        "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen",
+        "Eighteen", "Nineteen",
+    ]
+    tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+
+    def two_digit(x: int) -> str:
+        if x < 20:
+            return names[x]
+        t, r = divmod(x, 10)
+        return tens[t] + (f" {names[r]}" if r else "")
+
+    def three_digit(x: int) -> str:
+        h, r = divmod(x, 100)
+        out = ""
+        if h:
+            out = f"{two_digit(h)} Hundred"
+        if r:
+            out = f"{out} {two_digit(r)}".strip() if out else two_digit(r)
+        return out
+
+    crore = n // 10000000
+    lakh = (n % 10000000) // 100000
+    thousand = (n % 100000) // 1000
+    rest = n % 1000
+    parts = []
+    if crore:
+        parts.append(f"{three_digit(crore)} Crore")
+    if lakh:
+        parts.append(f"{three_digit(lakh)} Lakh")
+    if thousand:
+        parts.append(f"{three_digit(thousand)} Thousand")
+    if rest:
+        parts.append(three_digit(rest))
+    return " ".join(parts)
+
+
+def _salary_net_from_payload(earnings: dict, deductions: dict) -> float:
+    def _sum(d: dict) -> float:
+        total = 0.0
+        for v in (d or {}).values():
+            try:
+                total += float(str(v).replace(",", "") or 0)
+            except (TypeError, ValueError):
+                pass
+        return total
+
+    return _sum(earnings) - _sum(deductions)
+
+
+def _salary_doc_status(doc: dict) -> str:
+    """
+    Return one of: not_started | partial | complete
+    """
+    if not doc:
+        return "not_started"
+    payload = doc.get("payload") or {}
+    # Only consider HEADER fields for readiness status.
+    # Earnings/Deductions can be legitimately empty/0 and should not affect red/yellow/green.
+    required_keys = [
+        "month_year",
+        "employee_id",
+        "employee_name",
+        "department",
+        "paid_days",
+        "bank_ac_no",
+    ]
+    present = 0
+    for k in required_keys:
+        v = payload.get(k)
+        if v is not None and str(v).strip() != "":
+            present += 1
+
+    if present == len(required_keys):
+        return "complete"
+    if present == 0:
+        return "not_started"
+    return "partial"
+
+
+def _parse_month_year(value: str) -> str:
+    """Normalize month filter to 'May 2026' style."""
+    value = (value or "").strip()
+    if not value:
+        return datetime.now().strftime("%B %Y")
+    if len(value) == 7 and value[4] == "-":
+        try:
+            return datetime.strptime(value + "-01", "%Y-%m-%d").strftime("%B %Y")
+        except ValueError:
+            pass
+    try:
+        return datetime.strptime(value + " 1", "%B %Y %d").strftime("%B %Y")
+    except ValueError:
+        return value
+
+
+def _month_year_to_iso(month_year: str) -> str:
+    try:
+        return datetime.strptime((month_year or "").strip() + " 1", "%B %Y %d").strftime("%Y-%m")
+    except ValueError:
+        return datetime.now().strftime("%Y-%m")
+
+
+def _faculty_login_form_context(staff: dict) -> dict:
+    """Prefill faculty HRMS login fields on salary slip form."""
+    return {
+        "email": (staff.get("email") or "").strip(),
+        "username": (staff.get("username") or staff.get("staff_id") or "").strip(),
+        "display_password": staff.get("display_password") or "",
+    }
+
+
+def _apply_faculty_login_from_salary_form(staff: dict, form) -> str | None:
+    """Update lecturer login from salary slip form. Returns error message or None."""
+    email = (form.get("faculty_email") or "").strip()
+    username = (form.get("faculty_username") or "").strip()
+    password = form.get("faculty_password") or ""
+
+    update = {}
+    if email:
+        update["email"] = email
+    if username:
+        existing = users.find_one({"username": username, "_id": {"$ne": staff["_id"]}})
+        if existing:
+            return f"Username '{username}' is already used by another account."
+        update["username"] = username
+    if password.strip():
+        pwd = password.strip()
+        update["password"] = bcrypt.generate_password_hash(pwd).decode("utf-8")
+        update["display_password"] = pwd
+
+    if update:
+        users.update_one({"_id": staff["_id"]}, {"$set": update})
+    return None
+
+
+def _prefill_bank_ac_from_history(lecturer_id: str, month_year: str, payload: dict) -> str | None:
+    """If bank account empty, copy from this faculty's most recent saved slip."""
+    if (payload.get("bank_ac_no") or "").strip():
+        return None
+    prev = salaries.find_one(
+        {
+            "lecturer_id": lecturer_id,
+            "month_year": {"$ne": month_year},
+            "payload.bank_ac_no": {"$nin": ["", None]},
+        },
+        sort=[("updated_at", -1)],
+    )
+    if not prev:
+        return None
+    ac = ((prev.get("payload") or {}).get("bank_ac_no") or "").strip()
+    if not ac:
+        return None
+    payload["bank_ac_no"] = ac
+    return prev.get("month_year")
+
+
+@app.route('/admin/salary/unlock', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def admin_salary_unlock():
+    if is_salary_unlocked():
+        dest = session.pop("salary_unlock_next", None)
+        return redirect(dest or url_for("admin_salary_list"))
+
+    if request.method == 'POST':
+        password = request.form.get('password') or ''
+        if verify_salary_password(password):
+            session['salary_unlocked'] = True
+            dest = session.pop('salary_unlock_next', None) or url_for('admin_salary_list')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'ok': True, 'redirect': dest})
+            return redirect(dest)
+        msg = 'Incorrect password. Try again.'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'ok': False, 'message': msg}), 403
+        flash(msg, 'error')
+        return render_template('admin/salary_unlock.html')
+
+    return render_template('admin/salary_unlock.html')
+
+
+@app.route('/admin/salary')
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_list():
+    month_year = _parse_month_year(request.args.get("month_year") or "")
+    month_iso = _month_year_to_iso(month_year)
+
+    all_staff = list(users.find({"role": "lecturer"}).sort("staff_id", 1))
+    salary_docs = list(salaries.find({"month_year": month_year}))
+    by_lecturer_id = {d.get("lecturer_id"): d for d in salary_docs if d.get("lecturer_id")}
+
+    rows = []
+    complete_unpublished = 0
+    published_count = 0
+    email_ready_count = 0
+    for s in all_staff:
+        lecturer_id = str(s.get("_id"))
+        doc = by_lecturer_id.get(lecturer_id)
+        status = _salary_doc_status(doc)
+        published = bool(doc.get("published")) if doc else False
+        faculty_email = (s.get("email") or "").strip()
+        has_valid_email = is_valid_email(faculty_email)
+        email_hint = _salary_email_hint(status, doc, has_valid_email, faculty_email)
+        can_email = smtp_configured() and status == "complete" and doc and has_valid_email
+        if can_email:
+            email_ready_count += 1
+        if status == "complete" and not published:
+            complete_unpublished += 1
+        if published:
+            published_count += 1
+        rows.append({
+            "lecturer_id": lecturer_id,
+            "staff_id": s.get("staff_id", ""),
+            "name": s.get("name", ""),
+            "department": s.get("department", ""),
+            "email": faculty_email,
+            "has_valid_email": has_valid_email,
+            "email_hint": email_hint,
+            "can_email": can_email,
+            "status": status,
+            "published": published,
+            "emailed_at": doc.get("emailed_at") if doc else None,
+            "email_sent_to": doc.get("email_sent_to") if doc else None,
+            "updated_at": doc.get("updated_at") if doc else None,
+        })
+
+    email_report = session.pop("salary_email_report", None)
+
+    return render_template(
+        "admin/salary_list.html",
+        rows=rows,
+        month_year=month_year,
+        month_iso=month_iso,
+        complete_unpublished=complete_unpublished,
+        published_count=published_count,
+        email_ready_count=email_ready_count,
+        smtp_configured=smtp_configured(),
+        smtp_status=smtp_status_message(),
+        payroll_smtp=get_payroll_smtp_for_admin(),
+        email_report=email_report,
+    )
+
+
+@app.route('/admin/dashboard/sender-email', methods=['POST'])
+@login_required
+@admin_required
+def admin_dashboard_sender_email():
+    smtp_user = (request.form.get("smtp_user") or "").strip()
+    smtp_password = request.form.get("smtp_password") or ""
+
+    if not smtp_user or not is_valid_email(smtp_user):
+        return redirect(url_for("admin_dashboard", smtp_notice="invalid_email"))
+
+    existing = get_payroll_smtp_for_admin()
+    prev_user = (existing.get("smtp_user") or "").strip().lower()
+    user_changed = prev_user and prev_user != smtp_user.lower()
+
+    if not smtp_password.strip():
+        if not existing.get("has_password"):
+            return redirect(url_for("admin_dashboard", smtp_notice="password_required"))
+        if user_changed:
+            return redirect(url_for("admin_dashboard", smtp_notice="password_required_change"))
+    elif not _looks_like_gmail_app_password(smtp_password):
+        return redirect(url_for("admin_dashboard", smtp_notice="bad_app_password"))
+
+    save_payroll_smtp(smtp_user, smtp_password if smtp_password.strip() else None)
+    return redirect(url_for("admin_dashboard", smtp_notice="saved", smtp_user=smtp_user))
+
+
+@app.route('/admin/dashboard/sender-email/test', methods=['POST'])
+@login_required
+@admin_required
+def admin_dashboard_sender_email_test():
+    smtp_user = (request.form.get("smtp_user") or "").strip()
+    smtp_password = request.form.get("smtp_password") or ""
+    result = test_smtp_login(smtp_user or None, smtp_password or None)
+    return jsonify(result)
+
+
+@app.route('/admin/dashboard/sender-email/reset-env', methods=['POST'])
+@login_required
+@admin_required
+def admin_dashboard_sender_email_reset_env():
+    clear_payroll_smtp()
+    return redirect(url_for("admin_dashboard", smtp_notice="reset_env"))
+
+
+@app.route('/admin/salary/settings', methods=['POST'])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_settings():
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+    smtp_user = (request.form.get("smtp_user") or "").strip()
+    smtp_password = request.form.get("smtp_password") or ""
+
+    if not smtp_user or not is_valid_email(smtp_user):
+        flash("Enter a valid sender email address.", "error")
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    existing = get_payroll_smtp_for_admin()
+    prev_user = (existing.get("smtp_user") or "").strip().lower()
+    user_changed = prev_user and prev_user != smtp_user.lower()
+
+    if not smtp_password.strip():
+        if not existing.get("has_password"):
+            flash("Gmail App Password is required for first-time setup.", "error")
+            return redirect(url_for("admin_salary_list", month_year=month_year))
+        if user_changed:
+            flash("Enter App Password when changing the sender email.", "error")
+            return redirect(url_for("admin_salary_list", month_year=month_year))
+    elif not _looks_like_gmail_app_password(smtp_password):
+        flash(
+            "App Password must be 16 characters (from Google App Passwords). "
+            "Do not use your normal Gmail login password.",
+            "error",
+        )
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    save_payroll_smtp(smtp_user, smtp_password if smtp_password.strip() else None)
+    flash(f"Sender email saved: {smtp_user}. Salary slips will be sent from this account.", "success")
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/settings/reset-env', methods=['POST'])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_settings_reset_env():
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+    clear_payroll_smtp()
+    flash("Cleared saved sender login. HRMS will use SMTP_USER and SMTP_PASSWORD from .env.", "success")
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/settings/test', methods=['POST'])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_settings_test():
+    smtp_user = (request.form.get("smtp_user") or "").strip()
+    smtp_password = request.form.get("smtp_password") or ""
+    result = test_smtp_login(smtp_user or None, smtp_password or None)
+    return jsonify(result)
+
+
+def _salary_email_hint(status, doc, has_valid_email, faculty_email):
+    if not smtp_configured():
+        return "SMTP not configured"
+    if not doc:
+        return "Save slip first"
+    if status != "complete":
+        return "Complete slip first"
+    if not has_valid_email:
+        if not faculty_email:
+            return "No email — add in Manage Staff"
+        return "Invalid email — fix in Manage Staff"
+    return "Ready to email"
+
+
+def _send_salary_slip_to_faculty(staff: dict, doc: dict, month_year: str) -> dict:
+    """Send one slip. Returns {status, staff_id, name, email?, reason?}."""
+    staff_id = staff.get("staff_id", "")
+    name = staff.get("name", "")
+    faculty_email = (staff.get("email") or "").strip()
+
+    if not smtp_configured():
+        return {
+            "status": "skipped",
+            "staff_id": staff_id,
+            "name": name,
+            "reason": "Email not configured — set SMTP_USER and SMTP_PASSWORD in .env",
+        }
+    if not doc:
+        return {
+            "status": "skipped",
+            "staff_id": staff_id,
+            "name": name,
+            "reason": "Salary slip not saved for this month",
+        }
+    if _salary_doc_status(doc) != "complete":
+        return {
+            "status": "skipped",
+            "staff_id": staff_id,
+            "name": name,
+            "reason": "Slip not complete — fill all header fields",
+        }
+    if not is_valid_email(faculty_email):
+        return {
+            "status": "skipped",
+            "staff_id": staff_id,
+            "name": name,
+            "reason": "No valid email — update faculty profile in Manage Staff",
+        }
+
+    payload = doc.get("payload") or {}
+    try:
+        pdf_bytes, filename = build_salary_pdf_bytes(payload)
+        result = send_salary_slip_email(
+            faculty_email,
+            name,
+            staff_id,
+            month_year,
+            pdf_bytes,
+            filename,
+        )
+    except Exception as e:
+        return {
+            "status": "failed",
+            "staff_id": staff_id,
+            "name": name,
+            "email": faculty_email,
+            "reason": f"Could not prepare email: {e}",
+        }
+
+    if not result.get("ok"):
+        return {
+            "status": "failed",
+            "staff_id": staff_id,
+            "name": name,
+            "email": faculty_email,
+            "reason": result.get("reason", "Send failed"),
+        }
+
+    salaries.update_one(
+        {"_id": doc["_id"]},
+        {"$set": {"emailed_at": datetime.now(), "email_sent_to": faculty_email}},
+    )
+    return {
+        "status": "sent",
+        "staff_id": staff_id,
+        "name": name,
+        "email": faculty_email,
+    }
+
+
+def _store_salary_email_report(month_year: str, results: list) -> None:
+    sent = [r for r in results if r["status"] == "sent"]
+    skipped = [r for r in results if r["status"] == "skipped"]
+    failed = [r for r in results if r["status"] == "failed"]
+    session["salary_email_report"] = {
+        "month_year": month_year,
+        "sent": sent,
+        "skipped": skipped,
+        "failed": failed,
+        "sent_count": len(sent),
+        "skipped_count": len(skipped),
+        "failed_count": len(failed),
+    }
+
+
+@app.route('/admin/salary/bulk-email', methods=["POST"])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_bulk_email():
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+    if not smtp_configured():
+        flash("Cannot send emails: set SMTP_USER and SMTP_PASSWORD in .env", "danger")
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    salary_docs = list(salaries.find({"month_year": month_year}))
+    by_lecturer_id = {d.get("lecturer_id"): d for d in salary_docs if d.get("lecturer_id")}
+    all_staff = list(users.find({"role": "lecturer"}).sort("staff_id", 1))
+
+    results = []
+    for s in all_staff:
+        lecturer_id = str(s.get("_id"))
+        doc = by_lecturer_id.get(lecturer_id)
+        if not doc or _salary_doc_status(doc) != "complete":
+            continue
+        if not is_valid_email((s.get("email") or "").strip()):
+            results.append({
+                "status": "skipped",
+                "staff_id": s.get("staff_id", ""),
+                "name": s.get("name", ""),
+                "reason": "No valid email — update Manage Staff",
+            })
+            continue
+        results.append(_send_salary_slip_to_faculty(s, doc, month_year))
+
+    _store_salary_email_report(month_year, results)
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/<lecturer_id>/email', methods=["POST"])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_email(lecturer_id):
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+    staff = users.find_one({"_id": ObjectId(lecturer_id), "role": "lecturer"})
+    if not staff:
+        flash("Faculty not found.", "danger")
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    doc = salaries.find_one({"lecturer_id": lecturer_id, "month_year": month_year})
+    result = _send_salary_slip_to_faculty(staff, doc, month_year)
+    _store_salary_email_report(month_year, [result])
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/bulk-publish', methods=["POST"])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_bulk_publish():
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+    uploaded = 0
+    for doc in salaries.find({"month_year": month_year}):
+        if _salary_doc_status(doc) != "complete" or doc.get("published"):
+            continue
+        salaries.update_one(
+            {"_id": doc["_id"]},
+            {"$set": {"published": True, "published_at": datetime.now()}},
+        )
+        uploaded += 1
+    if uploaded:
+        flash(f"Bulk upload complete: {uploaded} slip(s) published to faculty for {month_year}.", "success")
+    else:
+        flash("No completed slips ready to upload for this month.", "warning")
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/cancel-month', methods=["POST"])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_cancel_month():
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+    result = salaries.update_many(
+        {"month_year": month_year, "published": True},
+        {"$set": {"published": False}, "$unset": {"published_at": ""}},
+    )
+    if result.modified_count:
+        flash(
+            f"Cancelled uploads for {month_year}. {result.modified_count} slip(s) hidden from faculty.",
+            "success",
+        )
+    else:
+        flash(f"No uploaded slips to cancel for {month_year}.", "info")
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/<lecturer_id>/publish', methods=["POST"])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_publish(lecturer_id):
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+
+    doc = salaries.find_one({"lecturer_id": lecturer_id, "month_year": month_year})
+    if not doc:
+        flash("Slip not found. Please save the slip first.", "danger")
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    status = _salary_doc_status(doc)
+    if status != "complete":
+        flash("Slip is not complete. Fill all required fields before uploading.", "warning")
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    salaries.update_one(
+        {"_id": doc["_id"]},
+        {"$set": {"published": True, "published_at": datetime.now()}}
+    )
+    flash("Slip uploaded (published) to faculty.", "success")
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/<lecturer_id>/unpublish', methods=["POST"])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_unpublish(lecturer_id):
+    month_year = _parse_month_year(request.form.get("month_year") or "")
+    doc = salaries.find_one({"lecturer_id": lecturer_id, "month_year": month_year})
+    if not doc or not doc.get("published"):
+        flash("This slip is not uploaded.", "info")
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    salaries.update_one(
+        {"_id": doc["_id"]},
+        {"$set": {"published": False}, "$unset": {"published_at": ""}},
+    )
+    flash("Upload cancelled. Slip hidden from faculty.", "success")
+    return redirect(url_for("admin_salary_list", month_year=month_year))
+
+
+@app.route('/admin/salary/<lecturer_id>/slip', methods=["GET", "POST"])
+@login_required
+@admin_required
+@salary_access_required
+def admin_salary_slip(lecturer_id):
+    staff = users.find_one({"_id": ObjectId(lecturer_id), "role": "lecturer"})
+    if not staff:
+        flash("Faculty not found.", "danger")
+        return redirect(url_for("admin_salary_list"))
+
+    month_year = _parse_month_year(request.values.get("month_year") or "")
+
+    existing = salaries.find_one({"lecturer_id": lecturer_id, "month_year": month_year}) or {}
+    payload = existing.get("payload") or {}
+
+    if request.method == "POST":
+        def _f(key, default=""):
+            return (request.form.get(key) or default).strip()
+
+        def _amount(key):
+            raw = _f(key)
+            if raw == "":
+                return "0"
+            try:
+                # Store a clean numeric string; keep whole numbers without trailing .0
+                n = float(raw.replace(",", ""))
+                return str(int(n)) if n.is_integer() else f"{n:.2f}"
+            except Exception:
+                return "0"
+
+        earnings = {
+            "basic_pay": _amount("earn_basic_pay"),
+            "da": _amount("earn_da"),
+            "hra": _amount("earn_hra"),
+            "spl_allowance": _amount("earn_spl_allowance"),
+            "allow_phd": _amount("earn_allow_phd"),
+            "hod_allowance": _amount("earn_hod_allowance"),
+            "addl_remuneration": _amount("earn_addl_remuneration"),
+        }
+        deductions = {
+            "pf": _amount("ded_pf"),
+            "pt": _amount("ded_pt"),
+            "esi": _amount("ded_esi"),
+            "lic_premium": _amount("ded_lic"),
+            "others": _amount("ded_others"),
+        }
+
+        net_pay = _salary_net_from_payload(earnings, deductions)
+        words = _amount_to_indian_words(net_pay)
+        netpay_words = f"{words} Only" if words else ""
+
+        payload = {
+            "month_year": month_year,
+            "employee_name": _f("employee_name", staff.get("name", "")),
+            "employee_id": _f("employee_id", staff.get("staff_id", "")),
+            "department": _f("department", staff.get("department", "")),
+            "paid_days": _f("paid_days"),
+            "bank_ac_no": _f("bank_ac_no"),
+            "earnings": earnings,
+            "deductions": deductions,
+            "netpay_words": netpay_words,
+            "notes": _f("notes"),
+        }
+
+        login_err = _apply_faculty_login_from_salary_form(staff, request.form)
+        if login_err:
+            flash(login_err, "error")
+            staff = users.find_one({"_id": ObjectId(lecturer_id), "role": "lecturer"}) or staff
+            bank_auto_from = _prefill_bank_ac_from_history(lecturer_id, month_year, payload)
+            faculty_login = _faculty_login_form_context(staff)
+            faculty_login["email"] = (request.form.get("faculty_email") or faculty_login["email"]).strip()
+            faculty_login["username"] = (request.form.get("faculty_username") or faculty_login["username"]).strip()
+            return render_template(
+                "admin/salary_slip_form.html",
+                staff=staff,
+                month_year=month_year,
+                payload=payload,
+                faculty_login=faculty_login,
+                bank_auto_from=bank_auto_from,
+            )
+
+        salaries.update_one(
+            {"lecturer_id": lecturer_id, "month_year": month_year},
+            {"$set": {
+                "lecturer_id": lecturer_id,
+                "staff_id": staff.get("staff_id", ""),
+                "lecturer_name": staff.get("name", ""),
+                "month_year": month_year,
+                "payload": payload,
+                "updated_at": datetime.now(),
+            }},
+            upsert=True
+        )
+
+        flash("Salary slip saved.", "success")
+        return redirect(url_for("admin_salary_list", month_year=month_year))
+
+    # Default prefill
+    if not payload:
+        payload = {
+            "month_year": month_year,
+            "employee_name": staff.get("name", ""),
+            "employee_id": staff.get("staff_id", ""),
+            "department": staff.get("department", ""),
+            "paid_days": "",
+            "bank_ac_no": "",
+            "earnings": {},
+            "deductions": {},
+            "notes": "",
+        }
+
+    bank_auto_from = _prefill_bank_ac_from_history(lecturer_id, month_year, payload)
+
+    return render_template(
+        "admin/salary_slip_form.html",
+        staff=staff,
+        month_year=month_year,
+        payload=payload,
+        faculty_login=_faculty_login_form_context(staff),
+        bank_auto_from=bank_auto_from,
     )
 
 
@@ -350,18 +1319,23 @@ def admin_dashboard():
 @admin_required
 def admin_api_recent_leaves():
     """
-    Small JSON API for polling recent pending leaves on the dashboard
-    (used for near real-time updates without a full page refresh).
+    Unified JSON API for polling both pending leaves and permissions on the dashboard
     """
+    recent_l = list(leaves.find({"status": "Pending"}).sort("_id", -1).limit(5))
+    recent_p = list(permissions.find({"status": "Pending"}).sort("_id", -1).limit(5))
+    
+    all_recent = sorted(recent_l + recent_p, key=lambda x: x['_id'], reverse=True)[:5]
+    
     items = []
-    for doc in leaves.find({"status": "Pending"}).sort("_id", -1).limit(5):
+    for doc in all_recent:
         items.append({
             "id": str(doc.get("_id")),
             "lecturer_name": doc.get("lecturer_name", ""),
-            "type": doc.get("type", ""),
+            "type": doc.get("type", "Permission"),
             "from_date": doc.get("from_date", ""),
             "to_date": doc.get("to_date", ""),
             "status": doc.get("status", ""),
+            "mode": doc.get("mode", "full")
         })
     return jsonify(items)
 
@@ -371,7 +1345,22 @@ def admin_api_recent_leaves():
 def manage_staff():
     # Always show lecturers sorted by Staff ID (BBHCF001, BBHCF002, ...)
     all_staff = list(users.find({"role": "lecturer"}).sort("staff_id", 1))
-    return render_template('admin/manage_staff.html', staff=all_staff)
+    
+    # Get unique departments from all lecturers
+    departments = sorted(list(set(s.get('department', 'N/A') for s in all_staff if s.get('department'))))
+    
+    # Get current HOD assignments and their signature status
+    hod_assignments = {}
+    hod_assignments_sig = {}
+    for h in department_hods.find():
+        dept = h['department']
+        hod_id = h['hod_id']
+        hod_assignments[dept] = hod_id
+        hod_user = users.find_one({"_id": ObjectId(hod_id)})
+        if hod_user and hod_user.get('signature_path'):
+            hod_assignments_sig[dept] = True
+    
+    return render_template('admin/manage_staff.html', staff=all_staff, departments=departments, hod_assignments=hod_assignments, hod_assignments_sig=hod_assignments_sig)
 
 @app.route('/admin/staff/new', methods=['GET', 'POST'])
 @login_required
@@ -385,6 +1374,7 @@ def admin_staff_new():
         "department": "",
         "category": "Teaching Faculty",
         "email": "",
+        "phone": "",
         "username": "",
     }
 
@@ -395,6 +1385,7 @@ def admin_staff_new():
         department = (request.form.get('department') or '').strip()
         category = (request.form.get('category') or '').strip()
         email = (request.form.get('email') or '').strip()
+        phone = (request.form.get('phone') or '').strip()
         username = (request.form.get('username') or '').strip()
         password = request.form.get('password') or ''
 
@@ -413,6 +1404,7 @@ def admin_staff_new():
             department=department,
             category=category,
             email=email,
+            phone=phone,
             username=username,
         )
 
@@ -433,6 +1425,7 @@ def admin_staff_new():
                 "department": department,
                 "category": category,
                 "email": email,
+                "phone": phone,
                 "username": username,
                 "password": password_hash,
                 "display_password": password,  # Store for admin display
@@ -459,7 +1452,9 @@ def admin_staff_edit(id):
         "department": staff_doc.get("department", ""),
         "category": staff_doc.get("category", "Teaching Faculty"),
         "email": staff_doc.get("email", ""),
+        "phone": staff_doc.get("phone", ""),
         "username": staff_doc.get("username", ""),
+        "display_password": staff_doc.get("display_password", ""),
     }
 
     if request.method == 'POST':
@@ -469,6 +1464,7 @@ def admin_staff_edit(id):
         department = (request.form.get('department') or '').strip()
         category = (request.form.get('category') or '').strip()
         email = (request.form.get('email') or '').strip()
+        phone = (request.form.get('phone') or '').strip()
         username = (request.form.get('username') or '').strip()
         new_password = request.form.get('password') or ''
 
@@ -483,6 +1479,7 @@ def admin_staff_edit(id):
             department=department,
             category=category,
             email=email,
+            phone=phone,
             username=username,
         )
 
@@ -507,6 +1504,7 @@ def admin_staff_edit(id):
                 "department": department,
                 "category": category,
                 "email": email,
+                "phone": phone,
                 "username": username,
             }
             if new_password.strip():
@@ -524,6 +1522,96 @@ def admin_staff_edit(id):
 def admin_staff_delete(id):
     users.delete_one({"_id": ObjectId(id), "role": "lecturer"})
     return redirect(url_for('manage_staff'))
+
+@app.route('/admin/broadcast', methods=['POST'])
+@login_required
+@admin_required
+def admin_broadcast():
+    message = request.form.get('message', '').strip()
+    if not message:
+        return jsonify({"success": False, "message": "Message is required"}), 400
+    
+    image_url = None
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and file.filename != '':
+            filename = f"broadcast_{int(datetime.now().timestamp())}.png"
+            save_dir = os.path.join(os.getcwd(), 'static', 'img', 'broadcasts')
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            file.save(os.path.join(save_dir, filename))
+            image_url = f"/static/img/broadcasts/{filename}"
+    
+    broadcast_notifications.insert_one({
+        "message": message,
+        "image_url": image_url,
+        "created_at": datetime.now(),
+        "sender": current_user.name
+    })
+    
+    socketio.emit('new_broadcast', {
+        "message": message,
+        "image_url": image_url,
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "sender": current_user.name
+    })
+    
+    return jsonify({"success": True, "message": "Broadcast sent successfully"})
+
+@app.route('/api/broadcasts', methods=['GET'])
+@login_required
+def get_notifications():
+    notifs = list(broadcast_notifications.find().sort("created_at", -1).limit(20))
+    for n in notifs:
+        n['_id'] = str(n['_id'])
+        n['created_at'] = n['created_at'].strftime("%Y-%m-%d %H:%M:%S")
+    return jsonify(notifs)
+
+@app.route('/admin/broadcast/delete/<id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_broadcast(id):
+    broadcast = broadcast_notifications.find_one({"_id": ObjectId(id)})
+    if broadcast and broadcast.get('image_url'):
+        # Extract relative path from URL (e.g. /static/img/broadcasts/xxx.png)
+        img_path = broadcast['image_url'].lstrip('/')
+        full_path = os.path.join(app.root_path, img_path)
+        if os.path.exists(full_path):
+            try:
+                os.remove(full_path)
+            except Exception as e:
+                print(f"Error deleting file {full_path}: {e}")
+                
+    broadcast_notifications.delete_one({"_id": ObjectId(id)})
+    return jsonify({"success": True, "message": "Broadcast deleted successfully"})
+@login_required
+@admin_required
+def admin_upload_signature(id):
+    if 'signature' not in request.files:
+        return jsonify({"success": False, "message": "No file part"}), 400
+    
+    file = request.files['signature']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file"}), 400
+    
+    # Simple validation: must be an image
+    if not file.content_type.startswith('image/'):
+        return jsonify({"success": False, "message": "File must be an image"}), 400
+        
+    filename = f"sig_{id}.png"
+    # Ensure directory exists (though we already created it)
+    save_dir = os.path.join(os.getcwd(), 'static', 'img', 'signatures')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+        
+    save_path = os.path.join(save_dir, filename)
+    file.save(save_path)
+    
+    users.update_one(
+        {"_id": ObjectId(id)},
+        {"$set": {"signature_path": f"img/signatures/{filename}"}}
+    )
+    return jsonify({"success": True, "path": f"img/signatures/{filename}"})
 
 
 @app.route('/admin/staff/delete-all', methods=['POST'])
@@ -774,6 +1862,181 @@ def get_timetable_metadata(staff_id):
         "structured": structured
     })
 
+
+def _iter_timetable_slots(structured):
+    """Yield slot dicts from a structured timetable document."""
+    if not isinstance(structured, dict):
+        return
+    tt = structured.get("timetable") or {}
+    for day in tt.get("days") or []:
+        slots = day.get("slots") or {}
+        if isinstance(slots, dict):
+            for slot in slots.values():
+                if isinstance(slot, dict):
+                    yield slot
+
+
+def _norm_slot_text(value):
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text or text.lower() in ("null", "none", "-"):
+        return ""
+    return text
+
+
+def _collect_timetable_catalog():
+    """Aggregate class, section, and subject options from all faculty timetables."""
+    classes = set()
+    sections = set()
+    class_sections = set()
+    subjects = set()
+    class_subject_map = {}
+
+    def _map_key(cls, sec):
+        return f"{cls}|{sec or ''}"
+
+    def _add_class_subject(cls, sec, sub):
+        for key in (_map_key(cls, sec), _map_key(cls, "")):
+            bucket = class_subject_map.setdefault(key, set())
+            bucket.add(sub)
+
+    def absorb_slot(slot):
+        cls = _norm_slot_text(slot.get("class"))
+        sec = _norm_slot_text(slot.get("section"))
+        sub = _norm_slot_text(slot.get("subject"))
+        if cls:
+            classes.add(cls)
+            class_sections.add((cls, sec))
+            if sec:
+                sections.add(sec)
+        if sub:
+            subjects.add(sub)
+        if cls and sub:
+            _add_class_subject(cls, sec, sub)
+
+    for doc in timetable.find({}, {"structured": 1}):
+        for slot in _iter_timetable_slots(doc.get("structured")):
+            absorb_slot(slot)
+
+    json_dir = os.path.join(os.path.dirname(__file__), "static", "json_timetables")
+    if os.path.isdir(json_dir):
+        for fname in os.listdir(json_dir):
+            if not fname.lower().endswith(".json"):
+                continue
+            try:
+                with open(os.path.join(json_dir, fname), "r", encoding="utf-8") as f:
+                    structured = json.load(f)
+                for slot in _iter_timetable_slots(structured):
+                    absorb_slot(slot)
+            except Exception:
+                continue
+
+    default_classes = [
+        "I BCA", "II BCA", "III BCA",
+        "I BBA", "II BBA", "III BBA",
+        "I BCOM", "II BCOM", "III BCOM",
+    ]
+    default_sections = ["A", "B", "C"]
+    for cls in default_classes:
+        classes.add(cls)
+    for sec in default_sections:
+        sections.add(sec)
+
+    return {
+        "classes": sorted(classes, key=lambda x: x.upper()),
+        "sections": sorted(sections, key=lambda x: x.upper()),
+        "class_sections": [
+            {"class": c, "section": s}
+            for c, s in sorted(class_sections, key=lambda x: (x[0].upper(), x[1].upper()))
+        ],
+        "subjects": sorted(subjects, key=lambda x: x.upper()),
+        "class_subject_map": {
+            key: sorted(subs, key=lambda x: x.upper())
+            for key, subs in class_subject_map.items()
+        },
+    }
+
+
+@app.route('/api/timetable/catalog')
+@login_required
+def timetable_catalog():
+    """Classes, sections, and subjects used across management timetables."""
+    return jsonify(_collect_timetable_catalog())
+
+
+def _persist_timetable_structured(lecturer_id, lecturer_name, staff_id, data):
+    """Save structured timetable to MongoDB and static/json_timetables/{staff_id}.json."""
+    timetable.update_one(
+        {"lecturer_id": lecturer_id},
+        {
+            "$set": {
+                "lecturer_id": lecturer_id,
+                "lecturer_name": lecturer_name,
+                "structured": data,
+                "updated_at": datetime.now(),
+            }
+        },
+        upsert=True,
+    )
+    json_dir = os.path.join(os.path.dirname(__file__), "static", "json_timetables")
+    os.makedirs(json_dir, exist_ok=True)
+    json_path = os.path.join(json_dir, f"{staff_id}.json")
+    with open(json_path, "w", encoding="utf-8") as f_json:
+        json.dump(data, f_json, indent=4, ensure_ascii=False)
+
+
+@app.route('/api/timetable/<staff_id>/save', methods=['POST'])
+@login_required
+def save_timetable_structured(staff_id):
+    """Save timetable grid edits (admin for any faculty, lecturer for own)."""
+    staff_id = (staff_id or "").strip().upper()
+    u = users.find_one({"staff_id": {"$regex": f"^{staff_id}$", "$options": "i"}})
+    if not u:
+        return jsonify({"success": False, "error": "User not found"}), 404
+
+    lecturer_id = str(u["_id"])
+    if current_user.role == 'admin':
+        pass
+    elif current_user.role == 'lecturer':
+        if current_user.id != lecturer_id:
+            return jsonify({"success": False, "error": "Forbidden"}), 403
+    else:
+        return jsonify({"success": False, "error": "Forbidden"}), 403
+
+    raw = (request.form.get("structured_json") or "").strip()
+    if not raw and request.is_json:
+        body = request.get_json(silent=True) or {}
+        if isinstance(body.get("structured"), dict):
+            raw = json.dumps(body["structured"])
+    if not raw:
+        return jsonify({"success": False, "error": "Timetable data cannot be empty."}), 400
+
+    try:
+        data = json.loads(raw)
+        if not isinstance(data, dict):
+            raise ValueError("Data must be a JSON object.")
+    except Exception as exc:
+        return jsonify({"success": False, "error": f"Invalid data format: {exc}"}), 400
+
+    try:
+        _persist_timetable_structured(
+            lecturer_id,
+            u.get("name") or "",
+            staff_id,
+            data,
+        )
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+    socketio.emit(
+        'timetable_updated',
+        {'staff_id': staff_id},
+        room=f'user_{lecturer_id}',
+    )
+    return jsonify({"success": True})
+
+
 def get_leave_types():
     types = list(db.leave_types.find().sort("name", 1))
     return types
@@ -807,7 +2070,12 @@ def admin_leaves():
     q = (request.args.get("q") or "").strip()
     month = (request.args.get("month") or "").strip()
 
-    all_leaves = list(leaves.find().sort("_id", -1))
+    # Fetch both standard leaves and time-based permissions
+    all_leaves_coll = list(leaves.find())
+    all_permissions_coll = list(permissions.find())
+    
+    # Merge and sort by ID (creation time) descending
+    all_leaves = sorted(all_leaves_coll + all_permissions_coll, key=lambda x: x['_id'], reverse=True)
 
     def matches_filters(doc):
         text_ok = True
@@ -966,9 +2234,17 @@ def api_get_lecturer_all_balances():
 @login_required
 @admin_required
 def admin_leaves_delete_all():
-    result = leaves.delete_many({})
-    count = result.deleted_count
-    flash(f"Deleted {count} leave record(s).", "success")
+    # 1. Clear both leaves and permissions
+    l_res = leaves.delete_many({})
+    p_res = permissions.delete_many({})
+    
+    # 2. Clear all linked data to prevent orphans
+    leave_class_allocations.delete_many({})
+    # Also clear related notifications
+    faculty_notifications.delete_many({"type": {"$in": ["class_assignment", "leave_status"]}})
+    
+    count = l_res.deleted_count + p_res.deleted_count
+    flash(f"Successfully deleted all {count} leave and permission records.", "success")
     return redirect(url_for('admin_leaves'))
 
 
@@ -976,8 +2252,26 @@ def admin_leaves_delete_all():
 @login_required
 @admin_required
 def admin_leave_delete(id):
-    leaves.delete_one({"_id": ObjectId(id)})
-    return jsonify({"success": True})
+    obj_id = ObjectId(id)
+    
+    # Try deleting from leaves first
+    res = leaves.delete_one({"_id": obj_id})
+    
+    # If not found in leaves, try permissions
+    if res.deleted_count == 0:
+        res = permissions.delete_one({"_id": obj_id})
+    
+    # Cascade delete: clean up allocations and notifications related to this ID
+    # Note: leave_id is typically stored as a string in these secondary collections
+    leave_class_allocations.delete_many({"leave_id": id})
+    faculty_notifications.delete_many({
+        "$or": [
+            {"leave_id": id},
+            {"allocation_id": id}
+        ]
+    })
+    
+    return jsonify({"success": True, "deleted": res.deleted_count > 0})
 
 
 @app.route('/admin/timetables', methods=['GET'])
@@ -1054,7 +2348,7 @@ def admin_timetables_upload():
             pdf_bytes, task_id, socketio, db
         )).start()
         
-        return redirect(url_for('admin_timetables', message="PDF upload successful. Processing started..."))
+        return redirect(url_for('admin_timetables', live='1', message="PDF upload successful. Processing started..."))
     except Exception as e:
         return redirect(url_for('admin_timetables', error=f"Upload error: {str(e)}"))
 
@@ -1089,8 +2383,12 @@ def admin_timetables_upload_image():
                 log_event(f"Worker Error: {str(e)}", socketio=socketio, status="error")
 
         threading.Thread(target=process_image_worker, args=(img_bytes,)).start()
-        return redirect(url_for('admin_timetables', message="Image upload successful. Processing started..."))
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": True, "message": "Processing started"})
+        return redirect(url_for('admin_timetables', live='1', message="Image upload successful. Processing started..."))
     except Exception as e:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify({"success": False, "error": str(e)}), 500
         return redirect(url_for('admin_timetables', error=f"Image upload error: {str(e)}"))
 
 @app.route('/admin/timetables/stop', methods=['POST'])
@@ -1202,6 +2500,26 @@ def review_leave(id, status):
             {"leave_id": id},
             {"$set": {"status": "approved"}}
         )
+        # Automatic Attendance Update for Half Days and Permissions
+        if leave_doc.get('half_day') or leave_doc.get('type') == 'Permission' or leave_doc.get('mode') == 'time':
+            # Extract times if it's a permission
+            t_from = None
+            t_to = None
+            if leave_doc.get('mode') == 'time':
+                try:
+                    t_from = leave_doc['from_date'].split(' ')[1]
+                    t_to = leave_doc['to_date'].split(' ')[1]
+                except: pass
+                
+            update_attendance_log_on_approval(
+                leave_doc['lecturer_id'], 
+                leave_doc['from_date'], 
+                is_half_day=leave_doc.get('half_day', False), 
+                session=leave_doc.get('session'),
+                is_permission=(leave_doc.get('type') == 'Permission' or leave_doc.get('mode') == 'time'),
+                time_from=t_from,
+                time_to=t_to
+            )
     
     # CASCADE REJECTION: If Rejected, delete everything
     elif status == "Rejected":
@@ -1250,6 +2568,9 @@ def get_all_leave_stats(lecturer_id):
     # Get all approved leaves for this lecturer once
     approved_leaves = list(leaves.find({"lecturer_id": str(lecturer_id), "status": "Approved"}))
     
+    # Get all approved permissions for this lecturer
+    approved_permissions = list(permissions.find({"lecturer_id": str(lecturer_id), "status": "Approved"}))
+    
     stats = []
     # Fetch standard types from dynamic collection - THIS IS THE SOURCE OF TRUTH
     db_types = [t['name'] for t in leave_types.find().sort("name", 1)]
@@ -1273,12 +2594,10 @@ def get_all_leave_stats(lecturer_id):
                 used += 1.0 # Assuming time-based leaves count as 1 day for now
             else:
                 try:
-                    f_date = datetime.strptime(l['from_date'].split(' ')[0], '%Y-%m-%d')
-                    t_date = datetime.strptime(l['to_date'].split(' ')[0], '%Y-%m-%d')
-                    days = (t_date - f_date).days + 1
-                    if days > 0: 
+                    days = count_working_leave_days(l['from_date'], l['to_date'])
+                    if days > 0:
                         used += float(days)
-                except: 
+                except Exception:
                     used += 1.0
         
         stats.append({
@@ -1287,6 +2606,14 @@ def get_all_leave_stats(lecturer_id):
             "used": used,
             "left": max(0.0, total - used)
         })
+    
+    # Add a special entry for Permission Count
+    stats.append({
+        "type": "Permission",
+        "used": len(approved_permissions),
+        "is_count_only": True
+    })
+    
     return stats
 
 @app.route('/admin/leave/api/<id>/<status>', methods=['POST'])
@@ -1311,6 +2638,26 @@ def api_review_leave(id, status):
             {"leave_id": id},
             {"$set": {"status": "approved"}}
         )
+        # Automatic Attendance Update for Half Days and Permissions
+        if leave_doc.get('half_day') or leave_doc.get('type') == 'Permission' or leave_doc.get('mode') == 'time':
+            # Extract times if it's a permission
+            t_from = None
+            t_to = None
+            if leave_doc.get('mode') == 'time':
+                try:
+                    t_from = leave_doc['from_date'].split(' ')[1]
+                    t_to = leave_doc['to_date'].split(' ')[1]
+                except: pass
+
+            update_attendance_log_on_approval(
+                leave_doc['lecturer_id'], 
+                leave_doc['from_date'], 
+                is_half_day=leave_doc.get('half_day', False), 
+                session=leave_doc.get('session'),
+                is_permission=(leave_doc.get('type') == 'Permission' or leave_doc.get('mode') == 'time'),
+                time_from=t_from,
+                time_to=t_to
+            )
     
     # CASCADE REJECTION: If Rejected, delete everything
     elif status == "Rejected":
@@ -1331,14 +2678,19 @@ def api_review_leave(id, status):
 
 def calculate_leaves_left(lecturer_id, leave_type="Casual Leave"):
     user_doc = users.find_one({"_id": ObjectId(lecturer_id)})
+    if not user_doc: return 0
     
-    if user_doc and "leave_balances" in user_doc:
-        total_leaves = user_doc["leave_balances"].get(leave_type, 0)
+    # Calculate across ALL leave types if none specified, or just one
+    user_balances = user_doc.get("leave_balances", {})
+    if not leave_type:
+        # Sum all balances
+        total_leaves = sum(float(v) for v in user_balances.values())
+        query = {"lecturer_id": lecturer_id, "status": "Approved"}
     else:
-        # If no balances object at all, fallback to legacy field or 0
-        total_leaves = user_doc.get("leaves_per_month", 0) if user_doc else 0
+        total_leaves = float(user_balances.get(leave_type, 0))
+        query = {"lecturer_id": lecturer_id, "status": "Approved", "type": leave_type}
         
-    approved_leaves = list(leaves.find({"lecturer_id": lecturer_id, "status": "Approved", "type": leave_type}))
+    approved_leaves = list(leaves.find(query))
     used_days = 0
     for l in approved_leaves:
         mode = l.get('mode', 'full')
@@ -1347,17 +2699,185 @@ def calculate_leaves_left(lecturer_id, leave_type="Casual Leave"):
         if is_half_day:
             used_days += 0.5
         elif mode == 'time':
-            used_days += 1
+            # Permission leave usually doesn't deduct from balance unless specified, 
+            # but for "perfect" calculation we follow existing logic or skip it.
+            # In this system, Permission Leave is usually separate.
+            pass
         else:
             try:
-                f_date = datetime.strptime(l['from_date'].split(' ')[0], '%Y-%m-%d')
-                t_date = datetime.strptime(l['to_date'].split(' ')[0], '%Y-%m-%d')
-                days = (t_date - f_date).days + 1
+                days = count_working_leave_days(l['from_date'], l['to_date'])
                 if days > 0:
                     used_days += days
             except Exception:
                 used_days += 1
     return max(0, total_leaves - used_days)
+
+def calculate_lecturer_attendance_stats(staff_id):
+    """Calculates attendance percentage based on JSON logs in current month"""
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    if not base_dir or not os.path.isdir(base_dir) or not staff_id:
+        return 0
+    
+    current_month = datetime.now().strftime("%Y-%m")
+    present_days = 0
+    total_working_days = 0
+    
+    # Fetch approved leaves/permissions for this staff_id for cross-referencing
+    from utils.db import leaves, permissions
+    approved_leaves = list(leaves.find({"staff_id": staff_id, "status": "Approved"}))
+    approved_permissions = list(permissions.find({"staff_id": staff_id, "status": "Approved"}))
+    
+    # Also find by lecturer_id if staff_id is an ObjectId string in some docs
+    user_doc = users.find_one({"staff_id": staff_id})
+    if user_doc:
+        uid = str(user_doc['_id'])
+        approved_leaves += list(leaves.find({"lecturer_id": uid, "status": "Approved"}))
+        approved_permissions += list(permissions.find({"lecturer_id": uid, "status": "Approved"}))
+
+    leave_dates = set()
+    for l in approved_leaves:
+        try:
+            start_dt = datetime.strptime(l['from_date'][:10], "%Y-%m-%d")
+            end_dt = datetime.strptime(l['to_date'][:10], "%Y-%m-%d")
+            curr = start_dt
+            while curr <= end_dt:
+                leave_dates.add(curr.strftime("%Y-%m-%d"))
+                curr += timedelta(days=1)
+        except: pass
+    
+    permission_dates = {p['date'] for p in approved_permissions if p.get('date')}
+
+    
+    try:
+        for fname in os.listdir(base_dir):
+            if not fname.lower().endswith(".json") or not fname.startswith(current_month):
+                continue
+            
+            total_working_days += 1
+            fpath = os.path.join(base_dir, fname)
+            try:
+                with open(fpath, encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict): data = [data]
+                    for row in data:
+                        if row.get("staff_id") == staff_id:
+                            is_on_leave = fname.replace(".json", "") in leave_dates or fname.replace(".json", "") in permission_dates
+                            if (row.get("checkin") and row.get("checkout")) or is_on_leave:
+                                present_days += 1
+                            break
+            except: continue
+            
+        if total_working_days == 0: return 100 # New month, assume 100% until first log
+        return round((present_days / total_working_days) * 100)
+    except:
+        return 0
+
+def calculate_lecturer_monthly_delay(staff_id, user_doc=None, month_str=None):
+    """Total delay (H:M:S) for the lecturer in the given month from attendance JSON logs."""
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    if not base_dir or not os.path.isdir(base_dir) or not staff_id:
+        return "00:00:00"
+
+    if not month_str:
+        month_str = datetime.now().strftime("%Y-%m")
+
+    fid = str(staff_id).strip().upper()
+    if fid in EXCLUDED_FACULTY_IDS:
+        return "00:00:00"
+
+    if user_doc is None:
+        user_doc = users.find_one({"staff_id": staff_id}) or {}
+
+    total_seconds = 0
+    try:
+        month_files = [
+            f for f in os.listdir(base_dir)
+            if f.startswith(month_str) and f.endswith(".json")
+        ]
+        for fname in month_files:
+            fpath = os.path.join(base_dir, fname)
+            date_obj = datetime.strptime(fname.replace(".json", ""), "%Y-%m-%d")
+            with open(fpath, encoding="utf-8") as f:
+                try:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        data = [data]
+                except Exception:
+                    f.seek(0)
+                    data = [json.loads(line) for line in f if line.strip()]
+
+            rows = [
+                r for r in data
+                if (r.get("staff_id") or r.get("student_id") or "").strip().upper() == fid
+            ]
+            if rows:
+                delay = compute_daily_delay(rows, date_obj, user_doc)
+                if delay and delay != "00:00:00" and ":" in str(delay):
+                    parts = str(delay).split(":")
+                    h, m, s = int(parts[0]), int(parts[1]), int(parts[2]) if len(parts) > 2 else 0
+                    total_seconds += h * 3600 + m * 60 + s
+    except Exception as e:
+        print(f"Monthly delay calc error for {staff_id}: {e}")
+
+    return format_to_hhmmss(total_seconds)
+
+def update_attendance_log_on_approval(lecturer_id, date_str, is_half_day=False, session=None, is_permission=False, time_from=None, time_to=None):
+    """
+    Updates the attendance JSON log for a given date by adding a status note
+    for Permissions and Half Days. Checkout time is NOT updated automatically anymore.
+    """
+    try:
+        from utils.db import users
+        lecturer = users.find_one({"_id": ObjectId(lecturer_id)})
+        if not lecturer: return False
+        
+        staff_id = lecturer.get('staff_id')
+        if not staff_id: return False
+        
+        base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+        if not base_dir or not os.path.isdir(base_dir):
+            return False
+            
+        # Clean date string to YYYY-MM-DD
+        date_iso = date_str.split(' ')[0]
+        fpath = os.path.join(base_dir, f"{date_iso}.json")
+        
+        if not os.path.exists(fpath):
+            return False
+            
+        with open(fpath, 'r', encoding='utf-8') as f:
+            try:
+                data = json.load(f)
+                if isinstance(data, dict): data = [data]
+            except:
+                return False
+                
+        # Generate detailed status note
+        if is_permission:
+            if time_from and time_to:
+                status_note = f"Permission ({time_from} to {time_to})"
+            else:
+                status_note = "Permission Leave"
+        elif is_half_day:
+            status_note = f"Half Day Leave ({session or 'Unknown'})"
+        else:
+            status_note = "Approved Leave/Permission"
+
+        updated = False
+        for row in data:
+            if row.get("staff_id") == staff_id:
+                # Update the status note. We don't touch checkout or delay anymore.
+                row["status_note"] = status_note
+                updated = True
+        
+        if updated:
+            with open(fpath, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+            return True
+            
+    except Exception as e:
+        print(f"Error updating attendance log: {e}")
+    return False
 
 # ============ TIMETABLE & CLASS ALLOCATION HELPERS ============
 
@@ -1472,12 +2992,112 @@ def get_classes_for_leave_period(staff_id, from_date, to_date):
         
         curr = start
         while curr <= end: # The <= ensures the 'To Date' is always included
-            day_list = get_classes_on_date(staff_id, curr.strftime('%Y-%m-%d'))
-            all_rows.extend(day_list)
+            if curr.weekday() != 6:  # Sunday not on timetable
+                day_list = get_classes_on_date(staff_id, curr.strftime('%Y-%m-%d'))
+                all_rows.extend(day_list)
             curr += timedelta(days=1)
     except Exception as e:
         print(f"Range Scanner Critical Error: {e}")
     return all_rows
+
+def count_working_leave_days(from_date_str, to_date_str, half_day=False):
+    """Count leave days in range, excluding Sundays (not on college timetable)."""
+    if half_day:
+        return 0.5
+
+    def to_date(s):
+        if not s:
+            return None
+        s = str(s).split(' ')[0].strip()
+        for fmt in ('%Y-%m-%d', '%d-%m-%Y'):
+            try:
+                return datetime.strptime(s, fmt).date()
+            except Exception:
+                continue
+        return None
+
+    start = to_date(from_date_str)
+    end = to_date(to_date_str)
+    if not start or not end:
+        return 1
+    if start > end:
+        start, end = end, start
+    count = 0
+    curr = start
+    while curr <= end:
+        if curr.weekday() != 6:
+            count += 1
+        curr += timedelta(days=1)
+    return count
+
+def clean_t(t):
+    """Helper to clean time strings from timetable"""
+    t = (t or '').strip().upper()
+    if not t: return None
+    try:
+        if ':' in t:
+            h_str, m_str = t.split(':')
+            h = int(h_str)
+            # Heuristic: 1-7 are PM, 8-12 are AM
+            if 1 <= h <= 7: h += 12
+            return f"{str(h).zfill(2)}:{m_str.zfill(2)}"
+        else:
+            # Handle cases where it's just an hour like "9" or "10"
+            h = int(t)
+            if 1 <= h <= 7: h += 12
+            return f"{str(h).zfill(2)}:00"
+    except: 
+        return None
+
+def get_faculty_duty_bounds(staff_id):
+    """Calculate the earliest start and latest end time for a faculty's duty.
+    Includes standard college hours plus any timetable-specific classes.
+    """
+    # 1. Start with standard college hours based on staff type
+    user_doc = users.find_one({"staff_id": staff_id})
+    staff_type = determine_staff_type(user_doc)
+    
+    # Use a dummy weekday to get standard hours (e.g., 9:25 - 16:30)
+    # Note: Saturday hours are handled during actual delay calculation, 
+    # but for Permission Application validation, we use a broad window.
+    from datetime import date
+    test_date = date(2026, 5, 4) # A Monday
+    deadline_in, threshold_out = get_thresholds_for(test_date, staff_type, staff_id)
+    
+    final_start = deadline_in.strftime("%H:%M")
+    final_end = threshold_out.strftime("%H:%M")
+    
+    # 2. Expand bounds based on actual timetable periods
+    data = load_faculty_timetable(staff_id)
+    if data and 'timetable' in data and 'periods' in data['timetable']:
+        periods = data['timetable']['periods']
+        for p in periods:
+            t_range = p.get('time', '')
+            if '-' in t_range:
+                try:
+                    s_part, e_part = t_range.split('-')
+                    s_cleaned = clean_t(s_part)
+                    e_cleaned = clean_t(e_part)
+                    
+                    if s_cleaned and s_cleaned < final_start:
+                        final_start = s_cleaned
+                    if e_cleaned and e_cleaned > final_end:
+                        final_end = e_cleaned
+                except:
+                    pass
+    
+    # 3. Safety fallbacks
+    if final_start < "06:00": final_start = "09:00"
+    if final_end < final_start: final_end = "16:30"
+    
+    return final_start, final_end
+
+@app.route('/api/faculty/duty-hours/<staff_id>')
+@login_required
+def api_get_duty_hours(staff_id):
+    start, end = get_faculty_duty_bounds(staff_id)
+    return jsonify({"success": True, "start": start, "end": end})
+
 
 def get_available_faculty_for_slot(date_str, time_slot, exclude_staff_id=None):
     """Get faculty members who are free during a specific time slot"""
@@ -1539,7 +3159,12 @@ def save_timetable_backup(staff_id, original_data, reason="leave_assignment"):
 @login_required
 @lecturer_required
 def lecturer_dashboard():
+    # Load recent leaves and permissions
     my_leaves = list(leaves.find({"lecturer_id": current_user.id}).sort("_id", -1).limit(5))
+    my_permissions = list(permissions.find({"lecturer_id": current_user.id}).sort("_id", -1).limit(5))
+    
+    # Combine and sort
+    combined = sorted(my_leaves + my_permissions, key=lambda x: x.get('_id'), reverse=True)[:5]
 
     tt_doc = timetable.find_one({"lecturer_id": current_user.id})
     timetable_image_url = None
@@ -1549,15 +3174,117 @@ def lecturer_dashboard():
         timetable_image_url = url_for("static", filename=image_path)
         has_timetable = True
 
-    leaves_left = calculate_leaves_left(current_user.id)
+    # Calculate real-time stats
+    staff_doc = users.find_one({"_id": ObjectId(current_user.id)})
+    staff_id = staff_doc.get("staff_id") if staff_doc else None
+    
+    leaves_left = calculate_leaves_left(current_user.id, leave_type=None) # Sum all types
+    attendance_percent = calculate_lecturer_attendance_stats(staff_id)
+    month_delay = calculate_lecturer_monthly_delay(staff_id, staff_doc) if staff_id else "00:00:00"
+    current_month_label = datetime.now().strftime("%B %Y")
+    
+    # Get unread notifications count for the badge
+    notif_count = faculty_notifications.count_documents({
+        "recipient_id": str(current_user.id),
+        "status": "unread"
+    })
+    # Re-calculate profile_locked based on actual file presence
+    p_pic = staff_doc.get('profile_pic')
+    is_locked = False
+    
+    if p_pic:
+        full_path = os.path.join(app.root_path, 'static', p_pic)
+        if os.path.exists(full_path):
+            # Only lock if file exists and (it was locked by admin or auto-locked)
+            is_locked = True if (staff_doc.get('profile_locked') or p_pic) else False
 
     return render_template(
         'lecturer/dashboard.html',
-        leaves=my_leaves,
+        leaves=combined,
         has_timetable=has_timetable,
         timetable_image_url=timetable_image_url,
-        leaves_left=leaves_left
+        leaves_left=leaves_left,
+        attendance_percent=attendance_percent,
+        month_delay=month_delay,
+        current_month_label=current_month_label,
+        notif_count=notif_count,
+        profile_pic=p_pic,
+        profile_locked=is_locked
     )
+
+@app.route('/lecturer/update-email', methods=['POST'])
+@lecturer_required
+def lecturer_update_email():
+    new_email = request.json.get('email')
+    if not new_email:
+        return jsonify({"success": False, "message": "Email is required"}), 400
+    
+    users.update_one({"_id": ObjectId(current_user.id)}, {"$set": {"email": new_email}})
+    return jsonify({"success": True, "message": "Email updated successfully"})
+
+@app.route('/lecturer/change-password', methods=['POST'])
+@lecturer_required
+def lecturer_change_password():
+    data = request.json
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    
+    if not old_password or not new_password:
+        return jsonify({"success": False, "message": "All fields are required"}), 400
+    
+    user_data = users.find_one({"_id": ObjectId(current_user.id)})
+    if not bcrypt.check_password_hash(user_data['password'], old_password):
+        return jsonify({"success": False, "message": "Incorrect old password"}), 401
+    
+    hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    users.update_one({"_id": ObjectId(current_user.id)}, {"$set": {"password": hashed_password, "display_password": new_password}})
+    return jsonify({"success": True, "message": "Password updated successfully"})
+
+@app.route('/lecturer/upload-profile-pic', methods=['POST'])
+@login_required
+@lecturer_required
+def upload_profile_pic():
+    if 'photo' not in request.files:
+        return jsonify({"success": False, "message": "No file"}), 400
+    
+    file = request.files['photo']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file"}), 400
+        
+    if not file.content_type.startswith('image/'):
+        return jsonify({"success": False, "message": "File must be an image"}), 400
+        
+    staff_doc = users.find_one({"_id": ObjectId(current_user.id)})
+    staff_id = staff_doc.get('staff_id', 'unknown')
+    
+    # Simple filename as requested: BBHCF048.png
+    filename = f"{staff_id}.png"
+    save_dir = os.path.join(app.root_path, 'static', 'img', 'profiles')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir, exist_ok=True)
+        
+    save_path = os.path.join(save_dir, filename)
+    file.save(save_path)
+    
+    relative_path = f"img/profiles/{filename}"
+    users.update_one(
+        {"_id": ObjectId(current_user.id)},
+        {"$set": {"profile_pic": relative_path, "profile_locked": True}} # Auto-lock after upload
+    )
+    socketio.emit('profile_lock_updated', {"userId": str(current_user.id), "locked": True})
+    return jsonify({"success": True, "path": url_for('static', filename=relative_path)})
+
+@app.route('/admin/api/toggle-profile-lock/<id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_profile_lock(id):
+    user = users.find_one({"_id": ObjectId(id)})
+    if not user:
+        return jsonify({"success": False, "message": "User not found"}), 404
+    
+    new_status = not user.get('profile_locked', False)
+    users.update_one({"_id": ObjectId(id)}, {"$set": {"profile_locked": new_status}})
+    return jsonify({"success": True, "locked": new_status})
 
 
 @app.route('/admin/api-keys', methods=['GET', 'POST'])
@@ -1748,6 +3475,7 @@ def _chatbot_make_reply(text: str, *, actions=None, cards=None, ok: bool = True,
 
 @app.route('/lecturer/api/chat', methods=['POST'])
 def lecturer_chat_api():
+    import traceback
     """
     Lightweight lecturer chatbot endpoint (session-based state).
     The UI sends either:
@@ -2007,6 +3735,194 @@ def lecturer_chat_api():
     )
 
 
+# --- Attendance Delay Calculation Helpers ---
+
+def parse_ts(ts_str):
+    if not ts_str: return None
+    try:
+        # Handle formats like 2026-04-25T20:53:03 or 2026-04-25 20:53:03
+        return datetime.fromisoformat(ts_str.replace(" ", "T"))
+    except:
+        return None
+
+def determine_staff_type(user_doc):
+    """Classifies staff into categories like 'teaching', 'admin', etc."""
+    if not user_doc: return 'teaching'
+    category = (user_doc.get('category') or '').strip().lower()
+    designation = (user_doc.get('designation') or '').strip().lower()
+    
+    if 'sanitary worker' in designation: return 'sanitary'
+    if 'attender' in designation: return 'attender'
+    if 'security guard' in designation: return 'security'
+    if 'computer programmer' in designation: return 'programmer'
+    
+    if category == 'teaching faculty' or 'teaching' in category:
+        return 'teaching'
+    if 'non-teaching' in category or 'admin' in category:
+        return 'admin' 
+    return 'teaching'
+
+def get_thresholds_for(date_obj, staff_type, faculty_id=None):
+    """Defines the exact Check-in and Check-out deadlines."""
+    weekday = date_obj.weekday() # 0=Mon, 5=Sat
+    is_saturday = (weekday == 5)
+    fid_upper = (faculty_id or '').strip().upper()
+    
+    if fid_upper == 'BBHCFN020':
+        return time(9, 0), (time(13, 30) if is_saturday else time(17, 30))
+
+    if staff_type == 'teaching': # BBHCF
+        checkin_deadline = time(9, 25)
+        checkout_after = time(13, 0) if is_saturday else time(16, 30)
+    elif staff_type == 'admin': # BBHCFN
+        checkin_deadline = time(9, 15)
+        checkout_after = time(13, 30) if is_saturday else time(17, 15)
+    elif staff_type == 'sanitary':
+        checkin_deadline = time(8, 45)
+        checkout_after = time(17, 15)
+    else:
+        checkin_deadline = time(9, 30)
+        checkout_after = time(16, 30)
+        
+    return checkin_deadline, checkout_after
+
+def format_to_hhmmss(seconds):
+    if seconds <= 0: return "00:00:00"
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    s = seconds % 60
+    return f"{int(h):02}:{int(m):02}:{int(s):02}"
+
+def compute_daily_delay(records, date_obj, user_doc):
+    """Calculates exactly how much time was missed during required duty hours,
+    subtracting any approved permissions or leaves.
+    """
+    checkins = [parse_ts(r.get('checkin')) for r in records if r.get('checkin')]
+    checkouts = [parse_ts(r.get('checkout')) for r in records if r.get('checkout')]
+    
+    if not checkins or not checkouts: return 'Absent'
+    
+    # 1. Define the Required Duty Window for the day
+    staff_type = determine_staff_type(user_doc)
+    deadline_in, threshold_out = get_thresholds_for(date_obj, staff_type, user_doc.get('staff_id'))
+    
+    ref_date = min(checkins).date()
+    req_start = datetime.combine(ref_date, deadline_in)
+    req_end = datetime.combine(ref_date, threshold_out)
+    
+    # 2. Collect all "Covered" intervals (Actual Attendance + Permissions/Leaves)
+    covered_intervals = []
+    
+    # Add actual physical attendance
+    # We pair each checkin with its corresponding checkout (if available)
+    for r in records:
+        ci = parse_ts(r.get('checkin'))
+        co = parse_ts(r.get('checkout'))
+        if ci and co:
+            covered_intervals.append((ci, co))
+        elif ci:
+            # If no checkout yet, and it's today, we can assume they are still here
+            # But for delay calc, we usually only care about closed intervals or early-in.
+            # To be safe, we'll treat a missing checkout as "present until now" if it's today.
+            if ref_date == datetime.now().date():
+                covered_intervals.append((ci, datetime.now()))
+    
+    # Add Permissions/Leaves from status_note
+    status_note = ""
+    for r in records:
+        if r.get('status_note'):
+            status_note = r.get('status_note')
+            break
+            
+    if status_note:
+        if "Half Day Leave (Morning)" in status_note:
+            # Exempt until 12:30 PM
+            covered_intervals.append((datetime.combine(ref_date, time(0,0)), datetime.combine(ref_date, time(12,30))))
+        elif "Half Day Leave (Afternoon)" in status_note:
+            # Exempt from 12:30 PM onwards
+            covered_intervals.append((datetime.combine(ref_date, time(12,30)), datetime.combine(ref_date, time(23,59))))
+        elif "Permission" in status_note:
+            import re
+            match = re.search(r"\((\d{1,2}:\d{2})\s+to\s+(\d{1,2}:\d{2})\)", status_note)
+            if match:
+                try:
+                    p_s_str, p_e_str = match.groups()
+                    p_start_t = datetime.strptime(p_s_str, "%H:%M").time()
+                    p_end_t = datetime.strptime(p_e_str, "%H:%M").time()
+                    covered_intervals.append((datetime.combine(ref_date, p_start_t), datetime.combine(ref_date, p_end_t)))
+                except: pass
+
+    # 3. Merge overlapping intervals to get total covered time
+    covered_intervals.sort()
+    merged = []
+    if covered_intervals:
+        curr_start, curr_end = covered_intervals[0]
+        for next_start, next_end in covered_intervals[1:]:
+            if next_start <= curr_end:
+                curr_end = max(curr_end, next_end)
+            else:
+                merged.append((curr_start, curr_end))
+                curr_start, curr_end = next_start, next_end
+        merged.append((curr_start, curr_end))
+    
+    # 4. Calculate Gaps within the Required Duty Window
+    total_delay_seconds = 0
+    last_pos = req_start
+    
+    for m_start, m_end in merged:
+        if m_start > req_end: break
+        if m_end < req_start: continue
+        
+        # Any gap between last_pos and the start of this covered interval is a delay
+        actual_covered_start = max(req_start, m_start)
+        if actual_covered_start > last_pos:
+            total_delay_seconds += int((actual_covered_start - last_pos).total_seconds())
+        
+        # Advance last_pos to the end of this covered interval
+        last_pos = max(last_pos, m_end)
+        
+    # Final gap at the end of the day
+    if last_pos < req_end:
+        total_delay_seconds += int((req_end - last_pos).total_seconds())
+        
+    return format_to_hhmmss(total_delay_seconds)
+
+# --- Attendance Report Constants & PDF Helpers ---
+EXCLUDED_FACULTY_IDS = {'BBHCF010', 'BBHCF017', 'BBHCF018', 'BBHCF044', 'BBHCFN029'}
+
+def create_pdf_header():
+    """Identical PDF Header Design from the Report Tool"""
+    styles = getSampleStyleSheet()
+    header_title = ParagraphStyle('HeaderTitle', parent=styles['Title'], alignment=0, fontSize=16, leading=19)
+    header_sub = ParagraphStyle('HeaderSub', parent=styles['Normal'], alignment=0, fontSize=10, leading=12)
+    
+    # Logo setup - adjusted for main project path
+    try:
+        logo_path = os.path.join(app.root_path, "static", "img", "logo-removebg-preview.png")
+        if os.path.exists(logo_path):
+            logo_img = Image(logo_path)
+            logo_img._restrictSize(26*mm, 26*mm)
+        else:
+            logo_img = ''
+    except Exception:
+        logo_img = ''
+    
+    header_text = [
+        Paragraph('Dr. B. B. Hegde First Grade College, Kundapura', header_title),
+        Paragraph('A Unit of Coondapur Education Society (R)', header_sub)
+    ]
+    
+    header_table = Table([[logo_img, header_text]], colWidths=[26*mm, (A4[0] - (18*mm + 18*mm) - 26*mm)])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LINEBELOW', (0,0), (-1,0), 0.75, colors.lightgrey),
+        ('LEFTPADDING', (0,0), (-1,-1), 0),
+        ('RIGHTPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+    ]))
+    return header_table
+
 @app.route('/lecturer/attendance')
 @login_required
 @lecturer_required
@@ -2039,106 +3955,115 @@ def lecturer_attendance():
         "rows_for_staff_before_filters": 0,
     }
     today_str = datetime.now().strftime("%Y-%m-%d")
+    
+    # Fetch approved leaves and permissions for this lecturer to cross-reference
+    approved_leaves = list(leaves.find({
+        "lecturer_id": str(current_user.id),
+        "status": "Approved"
+    }))
+    approved_permissions = list(permissions.find({
+        "lecturer_id": str(current_user.id),
+        "status": "Approved"
+    }))
+    
+    leave_dates = {}
+    for l in approved_leaves:
+        # Assuming from_date and to_date are strings like "YYYY-MM-DD" or similar
+        # We need to map every date in the range to the leave type
+        try:
+            start_dt = datetime.strptime(l['from_date'][:10], "%Y-%m-%d")
+            end_dt = datetime.strptime(l['to_date'][:10], "%Y-%m-%d")
+            curr = start_dt
+            while curr <= end_dt:
+                leave_dates[curr.strftime("%Y-%m-%d")] = l['type']
+                curr += timedelta(days=1)
+        except: pass
+        
+    permission_dates = {p['date']: "Permission" for p in approved_permissions if p.get('date')}
 
     if base_dir and debug_info["dir_exists"] and staff_id:
         for fname in os.listdir(base_dir):
-            if not fname.lower().endswith(".json"):
+            if not fname.lower().endswith(".json") or not fname.startswith(selected_month):
                 continue
+            
             fpath = os.path.join(base_dir, fname)
-            debug_info["json_files"].append(fname)
+            iso_date = fname.replace(".json", "")
+            display_date = ""
+            try:
+                d_obj = datetime.strptime(iso_date, "%Y-%m-%d")
+                display_date = d_obj.strftime("%d-%m-%Y")
+            except:
+                display_date = iso_date
 
             try:
                 with open(fpath, encoding="utf-8") as f:
-                    # Try to load as a JSON array or object first
                     try:
                         data = json.load(f)
-                        if isinstance(data, dict):
-                            data = [data]
-                    except json.JSONDecodeError:
-                        # Fallback: newline-delimited JSON objects
+                        if isinstance(data, dict): data = [data]
+                    except:
                         f.seek(0)
-                        data = []
-                        for line in f:
-                            line = line.strip()
-                            if not line:
-                                continue
-                            try:
-                                data.append(json.loads(line))
-                            except Exception:
-                                continue
+                        data = [json.loads(line) for line in f if line.strip()]
 
+                user_found = False
                 for row in data:
-                    debug_info["total_rows_all_files"] += 1
+                    if row.get("staff_id") == staff_id:
+                        user_found = True
+                        checkin = row.get("checkin") or ""
+                        checkout = row.get("checkout") or ""
+                        time_in = ""
+                        time_out = ""
+                        
+                        if checkin:
+                            try: time_in = datetime.fromisoformat(checkin).time().strftime("%H:%M")
+                            except: time_in = checkin[11:16] if len(checkin) >= 16 else ""
+                        
+                        if checkout:
+                            try: time_out = datetime.fromisoformat(checkout).time().strftime("%H:%M")
+                            except: time_out = checkout[11:16] if len(checkout) >= 16 else ""
 
-                    if row.get("staff_id") != staff_id:
-                        continue
-                    debug_info["rows_for_staff_before_filters"] += 1
-
-                    checkin = row.get("checkin") or ""
-                    checkout = row.get("checkout") or ""
-                    name = row.get("name") or ""
-
-                    # Derive date and month from checkin
-                    iso_date = ""
-                    display_date = ""
-                    time_in = ""
-                    time_out = ""
-                    if checkin:
+                        status = "Present" if (checkin and checkout) else ("Checked-in" if checkin else "Unknown")
+                        
                         try:
-                            dt = datetime.fromisoformat(checkin)
-                            iso_date = dt.date().isoformat()
-                            display_date = dt.date().strftime("%d-%m-%Y")
-                            time_in = dt.time().strftime("%H:%M")
-                        except Exception:
-                            # Fallback: first 10 chars as date, last 8 as time if possible
-                            if len(checkin) >= 10:
-                                iso_date = checkin[:10]
-                                try:
-                                    dparts = iso_date.split("-")
-                                    if len(dparts) == 3:
-                                        display_date = f"{dparts[2]}-{dparts[1]}-{dparts[0]}"
-                                except Exception:
-                                    display_date = iso_date
-                            if len(checkin) >= 19:
-                                time_in = checkin[11:16]
+                            dt_obj = datetime.fromisoformat(iso_date)
+                            delay_val = compute_daily_delay([row], dt_obj, staff_doc)
+                        except:
+                            delay_val = "00:00:00"
 
-                    if checkout:
-                        try:
-                            dt_out = datetime.fromisoformat(checkout)
-                            time_out = dt_out.time().strftime("%H:%M")
-                        except Exception:
-                            if len(checkout) >= 19:
-                                time_out = checkout[11:16]
+                        # Override status if on leave/permission
+                        l_type = leave_dates.get(iso_date)
+                        p_type = permission_dates.get(iso_date)
+                        if l_type: status = l_type
+                        elif p_type: status = "Permission"
 
-                    # Month filter based on iso_date (YYYY-MM)
-                    if iso_date and not iso_date.startswith(selected_month):
-                        continue
+                        records.append({
 
-                    # Simple status from presence of checkin/checkout
-                    if checkin and checkout:
-                        status = "Present"
-                    elif checkin:
-                        status = "Checked-in"
-                    else:
-                        status = "Unknown"
-
-                    extra = f"In: {checkin}  Out: {checkout}"
-                    if name:
-                        extra = f"{name} | " + extra
-
-                    text_blob = f"{iso_date} {time_in} {time_out} {status} {extra}".lower()
-                    if search_q and search_q not in text_blob:
-                        continue
-
+                            "date": iso_date,
+                            "display_date": display_date,
+                            "time_in": time_in,
+                            "time_out": time_out,
+                            "status": status,
+                            "delay": delay_val
+                        })
+                        break
+                
+                if not user_found:
+                    # Override status if on leave/permission even if no record in file
+                    l_type = leave_dates.get(iso_date)
+                    p_type = permission_dates.get(iso_date)
+                    
+                    status = "Absent"
+                    if l_type: status = l_type
+                    elif p_type: status = "Permission"
+                    
                     records.append({
                         "date": iso_date,
-                        "display_date": display_date or iso_date,
-                        "time_in": time_in,
-                        "time_out": time_out,
+                        "display_date": display_date,
+                        "time_in": "--:--",
+                        "time_out": "--:--",
                         "status": status,
-                        "extra": extra,
+                        "delay": "Absent"
                     })
-            except Exception:
+            except:
                 continue
 
     # Sort by date+time descending
@@ -2158,6 +4083,657 @@ def lecturer_attendance():
         debug_info=debug_info,
     )
 
+@app.route('/admin/faculty-attendance')
+@login_required
+
+@admin_required
+def admin_faculty_attendance():
+    """
+    Admin view for all faculty attendance.
+    Reads all JSON files in ATTENDANCE_DIR and summarizes them.
+    Also cross-references with approved leaves and permissions.
+    """
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    
+    # Filters
+    selected_date = (request.args.get("date") or "").strip()
+    staff_filter = (request.args.get("staff_id") or "").strip().upper()
+    
+    view_date = selected_date or datetime.now().strftime('%Y-%m-%d')
+    records = []
+    
+    # 1. Fetch all faculty to ensure we cover everyone
+    all_staff = list(users.find({"role": "lecturer"}).sort("staff_id", 1))
+    staff_lookup = {s['staff_id']: s for s in all_staff}
+    
+    # 2. Fetch approved leaves and permissions for the view date
+    # Leaves: from_date <= view_date <= to_date
+    approved_leaves = list(leaves.find({
+        "status": "Approved",
+        "from_date": {"$lte": f"{view_date} 23:59:59"},
+        "to_date": {"$gte": f"{view_date} 00:00:00"}
+    }))
+    
+    # Permissions: date == view_date
+    approved_permissions = list(permissions.find({
+        "status": "Approved",
+        "date": view_date
+    }))
+    
+    leave_map = {l['lecturer_id']: l['type'] for l in approved_leaves}
+    # Permission map - some might use staff_id or lecturer_id (ObjectId string)
+    permission_map = {}
+    for p in approved_permissions:
+        pid = p.get('lecturer_id') or p.get('staff_id')
+        permission_map[pid] = "Permission"
+
+    attendance_data_map = {}
+    
+    if base_dir and os.path.isdir(base_dir):
+        files_to_read = []
+        if selected_date:
+            fname = f"{selected_date}.json"
+            if os.path.exists(os.path.join(base_dir, fname)):
+                files_to_read = [fname]
+        else:
+            files_to_read = sorted([f for f in os.listdir(base_dir) if f.lower().endswith(".json")], reverse=True)[:30]
+            
+        for fname in files_to_read:
+            fpath = os.path.join(base_dir, fname)
+            date_part = fname.replace(".json", "")
+            
+            try:
+                with open(fpath, encoding="utf-8") as f:
+                    try:
+                        data = json.load(f)
+                        if isinstance(data, dict): data = [data]
+                    except:
+                        f.seek(0)
+                        data = [json.loads(line) for line in f if line.strip()]
+                
+                for row in data:
+                    s_id = str(row.get("staff_id") or "").upper()
+                    if not s_id: continue
+                    
+                    if staff_filter and s_id != staff_filter:
+                        continue
+                    
+                    # For summary stats, we only care about the view_date
+                    if date_part == view_date:
+                        attendance_data_map[s_id] = row
+
+                    # Add to records list for the table
+                    u_doc = staff_lookup.get(s_id)
+                    try:
+                        dt_obj = datetime.fromisoformat(date_part)
+                        delay_val = compute_daily_delay([row], dt_obj, u_doc)
+                    except:
+                        delay_val = "00:00:00"
+
+                    status = "Present" if (row.get("checkin") and row.get("checkout")) else ("Checked-in" if row.get("checkin") else "Unknown")
+                    
+                    # Override status if on leave/permission
+                    if date_part == view_date:
+                        l_type = leave_map.get(str(u_doc['_id']) if u_doc else "")
+                        p_type = permission_map.get(str(u_doc['_id']) if u_doc else "") or permission_map.get(s_id)
+                        if l_type: status = l_type
+                        elif p_type: status = "Permission"
+
+                    records.append({
+                        "date": date_part,
+                        "staff_id": s_id,
+                        "name": row.get("name") or (u_doc['name'] if u_doc else "Unknown"),
+                        "checkin": row.get("checkin") or "",
+                        "checkout": row.get("checkout") or "",
+                        "status": status,
+                        "delay": delay_val
+                    })
+            except:
+                continue
+
+    # Add staff who are NOT in the attendance file but might be on leave or absent
+    if selected_date or view_date == datetime.now().strftime('%Y-%m-%d'):
+        present_ids = set(attendance_data_map.keys())
+        for staff in all_staff:
+            s_id = staff['staff_id']
+            if staff_filter and s_id != staff_filter:
+                continue
+                
+            if s_id not in present_ids:
+                l_type = leave_map.get(str(staff['_id']))
+                p_type = permission_map.get(str(staff['_id'])) or permission_map.get(s_id)
+                
+                status = "Absent"
+                if l_type: status = l_type
+                elif p_type: status = "Permission"
+                
+                records.append({
+                    "date": view_date,
+                    "staff_id": s_id,
+                    "name": staff.get('name', 'Unknown'),
+                    "checkin": "",
+                    "checkout": "",
+                    "status": status,
+                    "delay": "Absent"
+                })
+
+    # Sort records by date descending, then name
+    records.sort(key=lambda x: (x['date'], x['name']), reverse=True)
+    
+    # Calculate stats for the current/selected view
+    total_staff_count = len(all_staff)
+    present_count = 0
+    late_count = 0
+    checked_in_count = 0
+    on_leave_count = 0
+    
+    view_records = [r for r in records if r['date'] == view_date]
+    for r in view_records:
+        if r['status'] == 'Present':
+            present_count += 1
+        elif r['status'] == 'Checked-in':
+            checked_in_count += 1
+        elif r['status'] not in ['Absent', 'Unknown']:
+            on_leave_count += 1
+            
+        if r['delay'] != '00:00:00':
+            late_count += 1
+            
+    stats = {
+        "total": total_staff_count,
+        "present": present_count,
+        "late": late_count,
+        "checked_in": checked_in_count,
+        "on_leave": on_leave_count,
+        "absent": max(0, total_staff_count - (present_count + checked_in_count + on_leave_count)),
+        "view_date": view_date
+    }
+    
+    return render_template(
+        "admin/faculty_attendance.html",
+        records=records,
+        all_staff=all_staff,
+        selected_date=selected_date,
+        staff_filter=staff_filter,
+        stats=stats
+    )
+
+@app.route('/api/admin/attendance/log', methods=['POST'])
+@login_required
+@admin_required
+def api_log_attendance():
+    """
+    Log attendance manually or from device.
+    Writes to JSON file and emits socket event for live updates.
+    """
+    data = request.json
+    s_id = data.get('staff_id', '').upper()
+    checkin = data.get('checkin')
+    checkout = data.get('checkout')
+    date_str = data.get('date') or datetime.now().strftime('%Y-%m-%d')
+    
+    if not s_id:
+        return jsonify({"success": False, "message": "Staff ID required"}), 400
+        
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    if not base_dir or not os.path.isdir(base_dir):
+        return jsonify({"success": False, "message": "Attendance directory not configured"}), 500
+        
+    fpath = os.path.join(base_dir, f"{date_str}.json")
+    
+    try:
+        records = []
+        if os.path.exists(fpath):
+            with open(fpath, 'r', encoding='utf-8') as f:
+                try:
+                    records = json.load(f)
+                    if isinstance(records, dict): records = [records]
+                except:
+                    f.seek(0)
+                    records = [json.loads(line) for line in f if line.strip()]
+        
+        # Find existing record for this staff on this day
+        found = False
+        for r in records:
+            if str(r.get('staff_id', '')).upper() == s_id:
+                if checkin: r['checkin'] = checkin
+                if checkout: r['checkout'] = checkout
+                found = True
+                break
+        
+        if not found:
+            u_doc = users.find_one({"staff_id": s_id})
+            records.append({
+                "staff_id": s_id,
+                "name": u_doc.get('name') if u_doc else "Unknown",
+                "checkin": checkin or "",
+                "checkout": checkout or ""
+            })
+            
+        with open(fpath, 'w', encoding='utf-8') as f:
+            json.dump(records, f, indent=4)
+            
+        # Emit SocketIO event for live update
+        socketio.emit('attendance_update', {
+            "date": date_str,
+            "staff_id": s_id,
+            "checkin": checkin,
+            "checkout": checkout
+        })
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/admin/attendance-report/daily/pdf')
+@login_required
+@admin_required
+def admin_daily_attendance_report_pdf():
+    """Export daily attendance report as PDF, matching the original design."""
+    date_str = request.args.get('date')
+    if not date_str:
+        return "Date is required", 400
+    
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    fpath = os.path.join(base_dir, f"{date_str}.json")
+    if not os.path.exists(fpath):
+        return f"No attendance data found for {date_str}", 404
+        
+    try:
+        with open(fpath, encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+                if isinstance(data, dict): data = [data]
+            except:
+                f.seek(0)
+                data = [json.loads(line) for line in f if line.strip()]
+        
+        # Group by ID and calculate delays
+        records_by_id = {}
+        for row in data:
+            fid = (row.get('staff_id') or row.get('student_id') or '').strip().upper()
+            if fid in EXCLUDED_FACULTY_IDS: continue
+            records_by_id.setdefault(fid, []).append(row)
+            
+        dt_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        
+        # Get all faculty from DB
+        all_lecturers = list(users.find({"role": "lecturer"}))
+        table_data = [['Faculty ID', 'Name', 'Check-in', 'Check-out', 'Status', 'Delay']]
+        
+        # Natural sort for IDs
+        def natural_sort_key(u):
+            fid = u.get('staff_id', '').upper()
+            match = re.search(r'(\d+)', fid)
+            return (fid[:match.start()] if match else fid, int(match.group(1)) if match else 0, fid)
+        
+        all_lecturers.sort(key=natural_sort_key)
+        
+        styles = getSampleStyleSheet()
+        cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontSize=10, leading=12)
+        
+        for u in all_lecturers:
+            fid = u.get('staff_id', '').upper()
+            if fid in EXCLUDED_FACULTY_IDS: continue
+            
+            rows = records_by_id.get(fid, [])
+            if rows:
+                row = rows[0] # Simplification
+                ci = row.get('checkin') or ""
+                co = row.get('checkout') or ""
+                status = "Present" if (ci and co) else ("Checked-in" if ci else "Unknown")
+                delay = compute_daily_delay(rows, dt_obj, u)
+                
+                ci_time = parse_ts(ci).strftime('%H:%M:%S') if parse_ts(ci) else "--:--"
+                co_time = parse_ts(co).strftime('%H:%M:%S') if parse_ts(co) else "--:--"
+            else:
+                ci_time, co_time, status, delay = "Absent", "Absent", "Absent", "00:00:00"
+            
+            table_data.append([
+                fid,
+                Paragraph(u.get('name', 'Unknown'), cell_style),
+                ci_time,
+                co_time,
+                status,
+                delay
+            ])
+            
+        # PDF Generation
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=18)
+        story = [create_pdf_header(), Spacer(1, 10)]
+        
+        report_title_style = ParagraphStyle('ReportTitle', parent=styles['Heading2'], fontSize=14, spaceAfter=5, alignment=1, fontName='Helvetica-Bold')
+        story.append(Paragraph(f"Faculty Attendance Report - {date_str}", report_title_style))
+        story.append(Spacer(1, 15))
+        
+        table = Table(table_data, colWidths=[80, 180, 65, 65, 60, 60], repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.whitesmoke]),
+        ]))
+        story.append(table)
+        doc.build(story)
+        buffer.seek(0)
+        return send_file(buffer, as_attachment=True, download_name=f"Daily_Attendance_{date_str}.pdf", mimetype='application/pdf')
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+@app.route('/admin/attendance-report/monthly/pdf')
+@login_required
+@admin_required
+def admin_monthly_attendance_report_pdf():
+    """Export monthly delay summary as PDF."""
+    month_str = request.args.get('month') # YYYY-MM
+    if not month_str:
+        return "Month is required", 400
+        
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    all_lecturers = list(users.find({"role": "lecturer"}))
+    
+    # Natural sort
+    def natural_sort_key(u):
+        fid = u.get('staff_id', '').upper()
+        match = re.search(r'(\d+)', fid)
+        return (fid[:match.start()] if match else fid, int(match.group(1)) if match else 0, fid)
+    all_lecturers.sort(key=natural_sort_key)
+    
+    summary = []
+    
+    # Iterate through all files for that month
+    month_files = [f for f in os.listdir(base_dir) if f.startswith(month_str) and f.endswith(".json")]
+    
+    for u in all_lecturers:
+        fid = u.get('staff_id', '').upper()
+        if fid in EXCLUDED_FACULTY_IDS: continue
+        
+        total_seconds = 0
+        for fname in month_files:
+            fpath = os.path.join(base_dir, fname)
+            date_obj = datetime.strptime(fname.replace(".json", ""), "%Y-%m-%d")
+            
+            with open(fpath, encoding="utf-8") as f:
+                try:
+                    data = json.load(f)
+                    if isinstance(data, dict): data = [data]
+                except:
+                    f.seek(0)
+                    data = [json.loads(line) for line in f if line.strip()]
+            
+            rows = [r for r in data if (r.get('staff_id') or r.get('student_id') or '').strip().upper() == fid]
+            if rows:
+                delay = compute_daily_delay(rows, date_obj, u)
+                if delay and ":" in delay:
+                    h, m, s = map(int, delay.split(":"))
+                    total_seconds += h * 3600 + m * 60 + s
+        
+        summary.append({
+            'fid': fid,
+            'name': u.get('name', 'Unknown'),
+            'total_delay': format_to_hhmmss(total_seconds)
+        })
+        
+    # PDF Generation
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=40, bottomMargin=18)
+    styles = getSampleStyleSheet()
+    story = [create_pdf_header(), Spacer(1, 20)]
+    
+    story.append(Paragraph(f"Monthly Delay Summary - {month_str}", ParagraphStyle('Title', parent=styles['Heading2'], alignment=1, spaceAfter=20)))
+    
+    table_data = [['Faculty ID', 'Name', 'Total Delay (H:M:S)']]
+    cell_style = ParagraphStyle('Cell', parent=styles['Normal'], fontSize=11)
+    
+    for item in summary:
+        table_data.append([
+            item['fid'],
+            Paragraph(item['name'], cell_style),
+            item['total_delay']
+        ])
+        
+    table = Table(table_data, colWidths=[100, 250, 100], repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    story.append(table)
+    doc.build(story)
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"Monthly_Delay_Report_{month_str}.pdf", mimetype='application/pdf')
+
+@app.route('/admin/attendance-report/detailed/pdf')
+@login_required
+@admin_required
+def admin_detailed_faculty_report_pdf():
+    """Export detailed attendance for one faculty for a month."""
+    staff_id = request.args.get('staff_id')
+    month_str = request.args.get('month') # YYYY-MM
+    
+    if not staff_id or not month_str:
+        return "Staff ID and Month are required", 400
+        
+    u_doc = users.find_one({"staff_id": staff_id.upper()})
+    if not u_doc:
+        return f"Faculty {staff_id} not found", 404
+        
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    month_files = sorted([f for f in os.listdir(base_dir) if f.startswith(month_str) and f.endswith(".json")])
+    
+    story = [create_pdf_header(), Spacer(1, 20)]
+    styles = getSampleStyleSheet()
+    
+    story.append(Paragraph("Detailed Faculty Attendance Report", ParagraphStyle('Title', parent=styles['Heading2'], alignment=1)))
+    story.append(Paragraph(f"Faculty: {u_doc.get('name')} ({staff_id})", ParagraphStyle('Sub', parent=styles['Normal'], alignment=1)))
+    story.append(Paragraph(f"Month: {month_str}", ParagraphStyle('Sub', parent=styles['Normal'], alignment=1, spaceAfter=20)))
+    
+    table_data = [['Date', 'Check-in', 'Check-out', 'Status', 'Delay']]
+    
+    for fname in month_files:
+        date_part = fname.replace(".json", "")
+        date_obj = datetime.strptime(date_part, "%Y-%m-%d")
+        fpath = os.path.join(base_dir, fname)
+        
+        with open(fpath, encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+                if isinstance(data, dict): data = [data]
+            except:
+                f.seek(0)
+                data = [json.loads(line) for line in f if line.strip()]
+                
+        rows = [r for r in data if (r.get('staff_id') or r.get('student_id') or '').strip().upper() == staff_id.upper()]
+        if rows:
+            row = rows[0]
+            ci = row.get('checkin') or ""
+            co = row.get('checkout') or ""
+            status = "Present" if (ci and co) else ("Checked-in" if ci else "Unknown")
+            delay = compute_daily_delay(rows, date_obj, u_doc)
+            ci_time = parse_ts(ci).strftime('%H:%M:%S') if parse_ts(ci) else "--:--"
+            co_time = parse_ts(co).strftime('%H:%M:%S') if parse_ts(co) else "--:--"
+        else:
+            ci_time, co_time, status, delay = "--", "--", "Absent", "00:00:00"
+            
+        table_data.append([date_part, ci_time, co_time, status, delay])
+        
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=18)
+    table = Table(table_data, colWidths=[90, 80, 80, 100, 80], repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.black),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.whitesmoke]),
+    ]))
+    story.append(table)
+    doc.build(story)
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"Detailed_Attendance_{staff_id}_{month_str}.pdf", mimetype='application/pdf')
+
+@app.route('/admin/attendance-report/daily/excel')
+@login_required
+@admin_required
+def admin_daily_attendance_report_excel():
+    """Export daily attendance report as Excel."""
+    date_str = request.args.get('date')
+    if not date_str:
+        return "Date is required", 400
+        
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    fpath = os.path.join(base_dir, f"{date_str}.json")
+    if not os.path.exists(fpath):
+        return f"No data found for {date_str}", 404
+        
+    with open(fpath, encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+            if isinstance(data, dict): data = [data]
+        except:
+            f.seek(0)
+            data = [json.loads(line) for line in f if line.strip()]
+            
+    records_by_id = { (r.get('staff_id') or r.get('student_id') or '').strip().upper(): r for r in data }
+    all_lecturers = list(users.find({"role": "lecturer"}))
+    
+    excel_data = []
+    dt_obj = datetime.strptime(date_str, "%Y-%m-%d")
+    
+    for u in all_lecturers:
+        fid = u.get('staff_id', '').upper()
+        row = records_by_id.get(fid, {})
+        ci = row.get('checkin') or ""
+        co = row.get('checkout') or ""
+        
+        excel_data.append({
+            'Staff ID': fid,
+            'Name': u.get('name'),
+            'Check-in': parse_ts(ci).strftime('%H:%M:%S') if parse_ts(ci) else "Absent",
+            'Check-out': parse_ts(co).strftime('%H:%M:%S') if parse_ts(co) else "Absent",
+            'Status': "Present" if (ci and co) else ("Checked-in" if ci else "Absent"),
+            'Delay': compute_daily_delay([row] if row else [], dt_obj, u)
+        })
+        
+    df = pd.DataFrame(excel_data)
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Attendance')
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"Daily_Attendance_{date_str}.xlsx", mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+@app.route('/api/admin/attendance/notifications/delays')
+@login_required
+@admin_required
+def api_admin_attendance_notifications_delays():
+    """Get monthly delay analysis data."""
+    month = request.args.get('month') # MM
+    year = request.args.get('year') # YYYY
+    if not month or not year:
+        return jsonify({"success": False, "error": "Month and year required"})
+        
+    month_str = f"{year}-{month.zfill(2)}"
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    all_lecturers = list(users.find({"role": "lecturer"}))
+    month_files = [f for f in os.listdir(base_dir) if f.startswith(month_str) and f.endswith(".json")]
+    
+    results = []
+    for u in all_lecturers:
+        fid = u.get('staff_id', '').upper()
+        if fid in EXCLUDED_FACULTY_IDS: continue
+        
+        total_seconds = 0
+        delay_count = 0
+        for fname in month_files:
+            fpath = os.path.join(base_dir, fname)
+            date_obj = datetime.strptime(fname.replace(".json", ""), "%Y-%m-%d")
+            with open(fpath, encoding="utf-8") as f:
+                try: data = json.load(f)
+                except: continue
+                if isinstance(data, dict): data = [data]
+            
+            rows = [r for r in data if (r.get('staff_id') or r.get('student_id') or '').strip().upper() == fid]
+            if rows:
+                delay = compute_daily_delay(rows, date_obj, u)
+                if delay and delay != "00:00:00":
+                    h, m, s = map(int, delay.split(":"))
+                    total_seconds += h * 3600 + m * 60 + s
+                    delay_count += 1
+                    
+        if delay_count > 0:
+            results.append({
+                'faculty_id': fid,
+                'faculty_name': u.get('name'),
+                'total_delay': format_to_hhmmss(total_seconds),
+                'delay_count': delay_count
+            })
+            
+    results.sort(key=lambda x: x['delay_count'], reverse=True)
+    return jsonify({"success": True, "data": results})
+
+@app.route('/api/admin/attendance/notifications/absences')
+@login_required
+@admin_required
+def api_admin_attendance_notifications_absences():
+    """Get monthly absence analysis data."""
+    month = request.args.get('month')
+    year = request.args.get('year')
+    if not month or not year:
+        return jsonify({"success": False, "error": "Month and year required"})
+        
+    month_str = f"{year}-{month.zfill(2)}"
+    base_dir = (os.getenv("ATTENDANCE_DIR") or "").strip()
+    all_lecturers = list(users.find({"role": "lecturer"}))
+    month_files = [f for f in os.listdir(base_dir) if f.startswith(month_str) and f.endswith(".json")]
+    
+    results = []
+    for u in all_lecturers:
+        fid = u.get('staff_id', '').upper()
+        if fid in EXCLUDED_FACULTY_IDS: continue
+        
+        absent_count = 0
+        present_count = 0
+        max_consecutive = 0
+        current_consecutive = 0
+        
+        # Check every day of the month files
+        for fname in sorted(month_files):
+            fpath = os.path.join(base_dir, fname)
+            with open(fpath, encoding="utf-8") as f:
+                try: data = json.load(f)
+                except: continue
+                if isinstance(data, dict): data = [data]
+            
+            rows = [r for r in data if (r.get('staff_id') or r.get('student_id') or '').strip().upper() == fid]
+            if rows:
+                present_count += 1
+                current_consecutive = 0
+            else:
+                absent_count += 1
+                current_consecutive += 1
+                max_consecutive = max(max_consecutive, current_consecutive)
+                
+        if absent_count > 0:
+            results.append({
+                'faculty_id': fid,
+                'faculty_name': u.get('name'),
+                'absent_count': absent_count,
+                'present_count': present_count,
+                'max_continuous_absent': max_consecutive
+            })
+            
+    results.sort(key=lambda x: x['absent_count'], reverse=True)
+    return jsonify({"success": True, "data": results})
+
 @app.route('/lecturer/apply-leave', methods=['GET', 'POST'])
 @login_required
 @lecturer_required
@@ -2167,36 +4743,100 @@ def apply_leave():
         leave_mode = request.form.get('mode', 'full')
         
         if leave_mode == 'time':
-            today_str = datetime.now().strftime('%Y-%m-%d')
+            # Use user-selected date as base
+            base_date = request.form.get('from_date') or datetime.now().strftime('%Y-%m-%d')
             time_from = request.form.get('time_from', '')
             time_to = request.form.get('time_to', '')
-            from_date = f"{today_str} {time_from}"
-            to_date = f"{today_str} {time_to}"
+            from_date = f"{base_date} {time_from}"
+            to_date = f"{base_date} {time_to}"
+            
+            # Validation: Permission must be within Duty Hours
+            lecturer = users.find_one({"_id": ObjectId(current_user.id)})
+            staff_id = lecturer.get('staff_id')
+            duty_start, duty_end = get_faculty_duty_bounds(staff_id)
+            
+            # Convert to comparable integers (minutes from midnight)
+            def to_mins(t):
+                try:
+                    h, m = map(int, t.split(':'))
+                    return h * 60 + m
+                except: return 0
+            
+            req_start = to_mins(time_from)
+            req_end = to_mins(time_to)
+            d_start = to_mins(duty_start)
+            d_end = to_mins(duty_end)
+            
+            if req_start < d_start or req_end > d_end:
+                flash(f"Invalid Permission Time! Your duty hours are {duty_start} to {duty_end}. Please apply within these hours.", "danger")
+                return redirect(url_for('apply_leave', mode='time'))
         else:
             from_date = request.form.get('from_date')
             to_date = request.form.get('to_date')
 
-        # FRESH START: Delete any old drafts/temporary allocations before submitting new application
-        leave_class_allocations.delete_many({
+        # CLEANUP: Delete only STALE drafts (Pending/Rejected) before submitting.
+        # We must PRESERVE 'accepted' drafts so they can be linked to this leave.
+        old_stale_drafts = list(leave_class_allocations.find({
             "assigned_by": str(current_user.id),
-            "is_draft": True
-        })
+            "is_draft": True,
+            "status": {"$in": ["Pending", "rejected"]}
+        }))
+        old_stale_ids = [str(d['_id']) for d in old_stale_drafts]
+        
+        if old_stale_ids:
+            leave_class_allocations.delete_many({"_id": {"$in": [ObjectId(id) for id in old_stale_ids]}})
+            faculty_notifications.delete_many({"allocation_id": {"$in": old_stale_ids}})
 
-        leave_data = {
-            "lecturer_id": current_user.id,
-            "lecturer_name": current_user.name,
-            "type": request.form.get('type'),
-            "from_date": from_date,
-            "to_date": to_date,
-            "reason": request.form.get('reason'),
-            "status": "Pending",
-            "created_at": datetime.now(),
-            "mode": leave_mode,
-            "half_day": request.form.get('half_day') == 'on',
-            "session": request.form.get('session') if request.form.get('half_day') == 'on' else None
-        }
-        res = leaves.insert_one(leave_data)
-        leave_id = str(res.inserted_id)
+        if leave_mode == 'time':
+            permission_data = {
+                "lecturer_id": current_user.id,
+                "lecturer_name": current_user.name,
+                "type": "Permission",
+                "from_date": from_date,
+                "to_date": to_date,
+                "reason": request.form.get('reason'),
+                "status": "Pending",
+                "created_at": datetime.now(),
+                "mode": "time",
+                "half_day": False
+            }
+            res = permissions.insert_one(permission_data)
+            leave_id = str(res.inserted_id)
+        else:
+            no_class_dates_raw = request.form.get('no_class_dates_json')
+            no_class_dates = []
+            if no_class_dates_raw:
+                try:
+                    import json
+                    no_class_dates = json.loads(no_class_dates_raw) or []
+                except Exception:
+                    no_class_dates = []
+
+            half_day_flag = request.form.get('half_day') == 'on'
+            leave_data = {
+                "lecturer_id": current_user.id,
+                "lecturer_name": current_user.name,
+                "type": request.form.get('type'),
+                "from_date": from_date,
+                "to_date": to_date,
+                "reason": request.form.get('reason'),
+                "status": "Pending",
+                "created_at": datetime.now(),
+                "mode": leave_mode,
+                "half_day": half_day_flag,
+                "session": request.form.get('session') if half_day_flag else None,
+                "no_class_dates": no_class_dates,
+                "working_days": count_working_leave_days(from_date, to_date, half_day=half_day_flag)
+            }
+            res = leaves.insert_one(leave_data)
+            leave_id = str(res.inserted_id)
+        
+        # Link HOD request to this leave
+        hod_requests.find_one_and_update(
+            {"requester_id": str(current_user.id), "status": "Approved", "leave_id": {"$exists": False}},
+            {"$set": {"leave_id": leave_id}},
+            sort=[("created_at", -1)]
+        )
         
         # Process assignments if provided (integrated flow)
         assignments_raw = request.form.get('assignments_json')
@@ -2218,12 +4858,15 @@ def apply_leave():
                             "status": {"$in": ["accepted", "approved", "finalized"]}
                         })
                         if existing:
-                            # Already officially linked, just update the leave_id and skip notification
-                            leave_class_allocations.update_one({"_id": existing['_id']}, {"$set": {"leave_id": leave_id}})
+                            # Already accepted by colleague! Link it to this leave and mark as permanent.
+                            leave_class_allocations.update_one(
+                                {"_id": existing['_id']}, 
+                                {"$set": {"leave_id": leave_id, "is_draft": False}}
+                            )
                             continue
 
                         target_faculty = users.find_one({"_id": ObjectId(assigned_to_id)})
-                        # 1. Save Allocation Record
+                        # 1. Save Allocation Record (Permanent, not a draft)
                         alloc_res = leave_class_allocations.insert_one({
                             "leave_id": leave_id,
                             "assigned_by": str(current_user.id),
@@ -2232,7 +4875,8 @@ def apply_leave():
                             "assigned_to_name": target_faculty.get('name', 'Unknown') if target_faculty else 'Unknown',
                             "class_details": class_details,
                             "status": "Pending",
-                            "created_at": datetime.now()
+                            "created_at": datetime.now(),
+                            "is_draft": False
                         })
                         alloc_id = str(alloc_res.inserted_id)
 
@@ -2262,10 +4906,11 @@ def apply_leave():
         socketio.emit('new_leave_request', {
             "id": leave_id,
             "lecturer_name": current_user.name,
-            "type": request.form.get('type'),
+            "type": "Permission" if leave_mode == 'time' else request.form.get('type'),
             "from_date": from_date,
             "to_date": to_date,
-            "status": "Pending"
+            "status": "Pending",
+            "mode": leave_mode
         })
         
         # CLEANUP: Clear the draft after successful submission
@@ -2274,7 +4919,7 @@ def apply_leave():
         flash("Leave application submitted successfully with class assignments!", "success")
         return redirect(url_for('lecturer_dashboard'))
     
-    return render_template('lecturer/apply_leave.html', mode=mode)
+    return render_template('lecturer/apply_leave.html', mode=mode, current_user_staff_id=getattr(current_user, 'staff_id', ''))
 
 
 @app.route('/lecturer/leave/<id>/cancel', methods=['POST'])
@@ -2325,8 +4970,52 @@ def api_cancel_leave(id):
 @login_required
 @lecturer_required
 def view_salary():
-    my_salaries = list(salaries.find({"lecturer_id": current_user.id}).sort("month_year", -1))
+    # Show only uploaded/published slips to lecturers
+    my_salaries = list(salaries.find({"lecturer_id": current_user.id, "published": True}).sort("month_year", -1))
     return render_template('lecturer/salary.html', salaries=my_salaries)
+
+@app.route('/lecturer/salary/<salary_id>')
+@login_required
+@lecturer_required
+def lecturer_salary_view(salary_id):
+    doc = salaries.find_one({"_id": ObjectId(salary_id), "lecturer_id": current_user.id})
+    if not doc:
+        flash("Salary slip not found.", "danger")
+        return redirect(url_for("view_salary"))
+    payload = doc.get("payload") or {}
+    return render_template("lecturer/salary_view.html", salary=doc, payload=payload)
+
+
+def _num(v):
+    try:
+        if v is None:
+            return 0.0
+        s = str(v).strip()
+        if s == "":
+            return 0.0
+        return float(s)
+    except Exception:
+        return 0.0
+
+
+@app.route('/lecturer/salary/<salary_id>/pdf')
+@login_required
+@lecturer_required
+def lecturer_salary_pdf(salary_id):
+    doc = salaries.find_one({"_id": ObjectId(salary_id), "lecturer_id": current_user.id})
+    if not doc:
+        flash("Salary slip not found.", "danger")
+        return redirect(url_for("view_salary"))
+
+    pdf_bytes, filename = build_salary_pdf_bytes(doc.get("payload") or {})
+    buffer = BytesIO(pdf_bytes)
+    inline = request.args.get("inline") == "1"
+    return send_file(
+        buffer,
+        mimetype="application/pdf",
+        as_attachment=not inline,
+        download_name=filename,
+    )
 
 
 @app.route('/lecturer/timetable')
@@ -2334,6 +5023,9 @@ def view_salary():
 @lecturer_required
 def lecturer_timetable():
     """Show the logged-in lecturer's own timetable image and structured data."""
+    if current_user.staff_id and current_user.staff_id.startswith('BBHCFN'):
+        flash('Timetable is not available for your category.', 'info')
+        return redirect(url_for('lecturer_dashboard'))
     # 1. Try DB first
     tt_doc = timetable.find_one({"lecturer_id": current_user.id})
     
@@ -2406,34 +5098,24 @@ def edit_lecturer_timetable():
             flash(f"Invalid data format: {exc}", "danger")
             return redirect(url_for('lecturer_timetable'))
 
-        # Update or Create in DB
-        timetable.update_one(
-            {"lecturer_id": current_user.id},
-            {
-                "$set": {
-                    "lecturer_id": current_user.id,
-                    "lecturer_name": current_user.name,
-                    "structured": data,
-                    "updated_at": datetime.now()
-                }
-            },
-            upsert=True
-        )
-
-        # Persistence: Sync back to the static JSON folder
         staff_doc = users.find_one({"_id": ObjectId(current_user.id)})
-        staff_id = staff_doc.get("staff_id") if staff_doc else current_user.username.upper()
-        
-        json_dir = os.path.join(os.path.dirname(__file__), "static", "json_timetables")
-        os.makedirs(json_dir, exist_ok=True)
-        json_path = os.path.join(json_dir, f"{staff_id}.json")
-        
+        staff_id = (staff_doc.get("staff_id") if staff_doc else current_user.username).upper()
         try:
-            with open(json_path, "w", encoding="utf-8") as f_json:
-                json.dump(data, f_json, indent=4, ensure_ascii=False)
-        except Exception as json_err:
-            print(f"Error saving JSON file at {json_path}: {json_err}")
+            _persist_timetable_structured(
+                current_user.id,
+                current_user.name,
+                staff_id,
+                data,
+            )
+        except Exception as exc:
+            flash(f"Failed to save timetable: {exc}", "danger")
+            return redirect(url_for('lecturer_timetable'))
 
+        socketio.emit(
+            'timetable_updated',
+            {'staff_id': staff_id},
+            room=f'user_{current_user.id}',
+        )
         flash("Timetable synchronized successfully.", "success")
         return redirect(url_for('lecturer_timetable'))
 
@@ -2609,6 +5291,20 @@ def api_request_substitution():
         "created_at": datetime.now(),
         "is_draft": True
     }
+    # CLEANUP: Delete only STALE draft allocations/notifications for this exact class
+    # PRESERVE 'accepted' ones so the user doesn't have to ask again if they refresh
+    old_stale = list(leave_class_allocations.find({
+        "assigned_by": str(current_user.id),
+        "class_details.date": class_details.get('date'),
+        "class_details.time": class_details.get('time'),
+        "is_draft": True,
+        "status": {"$in": ["Pending", "rejected"]}
+    }))
+    old_stale_ids = [str(a['_id']) for a in old_stale]
+    if old_stale_ids:
+        leave_class_allocations.delete_many({"_id": {"$in": [ObjectId(i) for i in old_stale_ids]}})
+        faculty_notifications.delete_many({"allocation_id": {"$in": old_stale_ids}})
+
     res = leave_class_allocations.insert_one(alloc_data)
     alloc_id = str(res.inserted_id)
     
@@ -2693,7 +5389,57 @@ def api_preview_classes():
         today = datetime.now().strftime('%Y-%m-%d')
         classes = get_classes_on_date(staff_id, today)
         if time_from and time_to:
-            classes = [c for c in classes if time_from <= c.get('time', '') <= time_to]
+            def time_to_min(t_str):
+                """Converts time string (9.45, 1:05, 13:10) to minutes from midnight"""
+                try:
+                    if not t_str: return 0
+                    # Clean and split
+                    t_str = t_str.strip().replace('.', ':')
+                    # Remove any characters that aren't digits or colons
+                    t_str = "".join(c for c in t_str if c.isdigit() or c == ':')
+                    if not t_str: return 0
+                    
+                    parts = t_str.split(':')
+                    h = int(parts[0])
+                    m = int(parts[1]) if (len(parts) > 1 and parts[1]) else 0
+                    
+                    # Robust AM/PM heuristic for college hours:
+                    # 1-7 are PM (1:00 PM to 7:00 PM)
+                    # 8-12 are AM (8:00 AM to 12:00 PM)
+                    if 1 <= h <= 7:
+                        h += 12
+                    return h * 60 + m
+                except Exception as e:
+                    return 0
+
+            u_start = time_to_min(time_from)
+            u_end = time_to_min(time_to)
+            
+            filtered = []
+            for c in classes:
+                c_time = (c.get('time') or '').strip()
+                if not c_time or c_time.upper() == 'TBD': continue
+                
+                # Split by '-' or ' TO ' or ' - '
+                time_parts = re.split(r'[-–]| TO ', c_time, flags=re.IGNORECASE)
+                
+                if len(time_parts) >= 2:
+                    try:
+                        c_start = time_to_min(time_parts[0])
+                        c_end = time_to_min(time_parts[1])
+                        
+                        # Strict overlap check: max(starts) < min(ends)
+                        # We also ensure the class has a valid duration (c_start < c_end)
+                        if c_start < c_end and max(u_start, c_start) < min(u_end, c_end):
+                            filtered.append(c)
+                    except:
+                        continue
+                else:
+                    # Single time point comparison
+                    point = time_to_min(c_time)
+                    if u_start <= point < u_end:
+                        filtered.append(c)
+            classes = filtered
     else:
         if from_date and to_date:
             classes = get_classes_for_leave_period(staff_id, from_date, to_date)
@@ -2717,31 +5463,349 @@ def api_preview_classes():
     for f in faculty:
         f['_id'] = str(f['_id'])
         
-    # Get existing live assignments for these dates (Ignore rejected ones)
     live_allocs = list(leave_class_allocations.find({
         "assigned_by": str(current_user.id),
-        "status": {"$in": ["pending", "accepted", "approved", "finalized"]}
+        "status": {"$in": ["Pending", "pending", "accepted", "approved", "finalized", "pending_faculty", "requested"]}
     }))
     
     # Map allocations to classes by a unique key (subject+date+time) for easy frontend syncing
     alloc_map = {}
     for a in live_allocs:
-        c = a.get('class_details', {})
+        c = a.get('class_details') or {}
         # Normalize: Trim spaces and ignore case for robust matching
         sub = str(c.get('subject', '')).strip().upper()
-        key = f"{c.get('date')}_{c.get('time')}_{sub}".replace(' ', '_')
+        raw_key = f"{c.get('date')}_{c.get('time')}_{sub}"
+        key = re.sub(r"\s+", "_", raw_key)
         alloc_map[key] = {
             "status": a.get('status'),
             "faculty_id": a.get('assigned_to'),
             "allocation_id": str(a.get('_id'))
         }
 
+    # Get HOD status for current user (Only requests not yet linked to a leave)
+    hod_req = hod_requests.find_one({
+        "requester_id": str(current_user.id),
+        "status": {"$in": ["Pending", "Approved", "Rejected"]},
+        "leave_id": {"$exists": False}
+    }, sort=[("created_at", -1)])
+    
+    hod_status = hod_req.get('status', 'Not Requested') if hod_req else 'Not Requested'
+
+    # Get Assigned HOD details for UI (New Dynamic Logic)
+    lecturer = users.find_one({"_id": ObjectId(current_user.id)})
+    dept = lecturer.get('department') if lecturer else None
+    hod_info = {"name": "HOD Not Assigned", "dept": dept or "Unknown Department"}
+    if dept:
+        hod_assignment = department_hods.find_one({"department": dept})
+        if hod_assignment and hod_assignment.get('hod_id'):
+            hod_user = users.find_one({"_id": ObjectId(hod_assignment['hod_id'])})
+            if hod_user:
+                hod_info["name"] = hod_user.get('name')
+                hod_info["dept"] = f"HOD, {dept}"
+
     return jsonify({
         "success": True,
         "classes": classes,
         "faculty": faculty,
-        "live_allocations": alloc_map
+        "live_allocations": alloc_map,
+        "hod_status": hod_status,
+        "hod_info": hod_info
     })
+
+@app.route('/lecturer/api/request-hod-permission', methods=['POST'])
+@login_required
+@lecturer_required
+def api_request_hod_permission():
+    # Get HOD based on department (Dynamic Logic)
+    lecturer = users.find_one({"_id": ObjectId(current_user.id)})
+    dept = lecturer.get('department')
+    
+    if not dept:
+        return jsonify({"success": False, "message": "Your department is not set in your profile. Please contact Admin."}), 400
+        
+    hod_assignment = department_hods.find_one({"department": dept})
+    if not hod_assignment:
+        return jsonify({"success": False, "message": f"HOD for the {dept} department has not been assigned yet."}), 404
+        
+    hod_user = users.find_one({"_id": ObjectId(hod_assignment['hod_id'])})
+    if not hod_user:
+        return jsonify({"success": False, "message": "Assigned HOD user record not found."}), 404
+        
+    hod_id = str(hod_user['_id'])
+    hod_name = hod_user.get('name', 'HOD')
+    
+    # Check if a request already exists for this user (draft/pending and not yet linked)
+    existing = hod_requests.find_one({
+        "requester_id": str(current_user.id),
+        "status": "Pending",
+        "leave_id": {"$exists": False}
+    })
+    if existing:
+        return jsonify({"success": True, "message": "Request already pending.", "request_id": str(existing['_id'])})
+        
+    # Get extra details from request
+    data = request.json or {}
+    
+    # Create request
+    req_data = {
+        "requester_id": str(current_user.id),
+        "requester_name": current_user.name,
+        "hod_id": hod_id,
+        "hod_name": hod_name,
+        "status": "Pending",
+        "leave_type": data.get('type'),
+        "from_date": data.get('from_date'),
+        "to_date": data.get('to_date'),
+        "reason": data.get('reason'),
+        "half_day": data.get('half_day', False),
+        "session": data.get('session'),
+        "mode": data.get('mode', 'full'),
+        "created_at": datetime.now()
+    }
+    res = hod_requests.insert_one(req_data)
+    req_id = str(res.inserted_id)
+    
+    # Send Notification to HOD
+    faculty_notifications.insert_one({
+        "recipient_id": str(hod_user['_id']),
+        "sender_id": str(current_user.id),
+        "sender_name": current_user.name,
+        "message": f"{current_user.name} has requested HOD permission for leave.",
+        "type": "hod_permission",
+        "request_id": req_id,
+        "status": "unread",
+        "created_at": datetime.now()
+    })
+    
+    socketio.emit('new_hod_request', {
+        "recipient_id": str(hod_user['_id']),
+        "message": f"New HOD permission request from {current_user.name}",
+        "request_id": req_id
+    })
+    
+    return jsonify({"success": True, "request_id": req_id})
+
+@app.route('/lecturer/api/respond-hod-permission/<request_id>/<action>', methods=['POST'])
+@login_required
+@lecturer_required
+def respond_hod_permission(request_id, action):
+    if action not in ['approve', 'reject']:
+        return jsonify({"success": False, "message": "Invalid action"}), 400
+        
+    req = hod_requests.find_one({"_id": ObjectId(request_id)})
+    if not req:
+        return jsonify({"success": False, "message": "Request not found"}), 404
+        
+    # Verify this request is for the current user (HOD)
+    if req.get('hod_id') != str(current_user.id):
+        return jsonify({"success": False, "message": "Not authorized"}), 403
+        
+    new_status = 'Approved' if action == 'approve' else 'Rejected'
+    hod_requests.update_one(
+        {"_id": ObjectId(request_id)},
+        {"$set": {"status": new_status, "responded_at": datetime.now()}}
+    )
+    
+    # Notify the requester
+    emit_to_user('hod_permission_response', req.get('requester_id'), {
+        'request_id': request_id,
+        'status': new_status,
+        'message': f"HOD has {action}ed your permission request"
+    })
+    
+    # MARK NOTIFICATION AS READ: To fix the persistent badge count
+    faculty_notifications.update_many(
+        {"request_id": request_id, "recipient_id": str(current_user.id)},
+        {"$set": {"status": "read"}}
+    )
+    
+    return jsonify({"success": True, "message": f"Request {action}ed successfully"})
+
+
+@app.route('/lecturer/api/clear-hod-permission', methods=['POST'])
+@login_required
+@lecturer_required
+def api_clear_hod_permission():
+    """Clear HOD permission if form changes"""
+    hod_requests.delete_many({
+        "requester_id": str(current_user.id),
+        "status": {"$in": ["Pending", "Approved", "Rejected"]},
+        "leave_id": {"$exists": False}
+    })
+    return jsonify({"success": True})
+
+
+@app.route('/lecturer/hod-permission/<request_id>/preview-sheet')
+@login_required
+@lecturer_required
+def hod_preview_sheet(request_id):
+    """Show a preview of the class allocations for an HOD permission request"""
+    req = hod_requests.find_one({"_id": ObjectId(request_id)})
+    if not req:
+        flash("Request not found.", "danger")
+        return redirect(url_for('my_class_assignments'))
+    
+    # Verify authorization (Only HOD or the Requester can see)
+    if req.get('hod_id') != str(current_user.id) and req.get('requester_id') != str(current_user.id):
+        flash("Not authorized.", "danger")
+        return redirect(url_for('lecturer_dashboard'))
+    
+    # Fallback to requester's latest draft if request is missing metadata (dates/reason)
+    if not req.get('from_date'):
+        draft_doc = leave_drafts.find_one({"user_id": req.get('requester_id')})
+        if draft_doc and 'draft_data' in draft_doc:
+            d = draft_doc['draft_data']
+            # Only update local 'req' object for display, don't mutate DB
+            req['from_date'] = d.get('from_date')
+            req['to_date'] = d.get('to_date')
+            req['leave_type'] = d.get('type')
+            req['reason'] = d.get('reason')
+            req['half_day'] = d.get('half_day')
+            req['session'] = d.get('session')
+
+    # Lecturer details for the sheet
+    lecturer = users.find_one({"_id": ObjectId(req.get('requester_id'))})
+    staff_id = lecturer.get('staff_id') if lecturer else None
+    
+    # Calculate Total Days / Duration
+    total_days = 0
+    duration_str = None
+    f_val = req.get('from_date', '')
+    t_val = req.get('to_date', '')
+    
+    try:
+        from datetime import datetime
+        def parse_dt(dt_str):
+            if not dt_str: return None
+            dt_str = str(dt_str).strip()
+            # Try full datetime formats
+            for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%d-%m-%Y %H:%M', '%Y/%m/%d %H:%M'):
+                try: return datetime.strptime(dt_str, fmt)
+                except: continue
+            # Try date only
+            for fmt in ('%Y-%m-%d', '%d-%m-%Y'):
+                try: return datetime.strptime(dt_str, fmt)
+                except: continue
+            return None
+
+        f_dt = parse_dt(f_val)
+        t_dt = parse_dt(t_val)
+        
+        if f_dt and t_dt:
+            # For time-based, calculate hours/minutes
+            if ' ' in str(f_val) and ' ' in str(t_val):
+                diff = t_dt - f_dt
+                total_seconds = int(diff.total_seconds())
+                hours, remainder = divmod(total_seconds, 3600)
+                minutes, _ = divmod(remainder, 60)
+                
+                if hours > 0:
+                    duration_str = f"{hours}h {minutes}m"
+                else:
+                    duration_str = f"{minutes}m"
+                total_days = total_seconds // 60
+            else:
+                total_days = count_working_leave_days(f_val, t_val, half_day=req.get('half_day', False))
+        elif req.get('mode') == 'time':
+            # Fallback for time mode if parsing failed but it's clearly a permission
+            total_days = 60 # Default to 60 mins if unknown
+            duration_str = "1h (Est.)"
+        else:
+            total_days = "N/A"
+    except Exception as e:
+        print(f"DEBUG: HOD Preview calc failed: {e}")
+        total_days = 60 if req.get('mode') == 'time' else "N/A"
+        duration_str = "1h (Est.)" if req.get('mode') == 'time' else None
+
+    # For query filtering, extract just the date part
+    f_str = f_val.split(' ')[0] if f_val else ''
+    t_str = t_val.split(' ')[0] if t_val else ''
+    
+    # Get all allocations requested by this person that are currently active
+    # AND fall within the requested leave period
+    query = {
+        "assigned_by": req.get('requester_id'),
+        "status": {"$in": ["Pending", "pending", "pending_faculty", "accepted", "approved", "finalized"]}
+    }
+    
+    if f_str and t_str:
+        query["class_details.date"] = {"$gte": f_str, "$lte": t_str}
+    
+    allocations_raw = list(leave_class_allocations.find(query))
+    
+    # Original classes context
+    original_classes = get_classes_for_leave_period(staff_id, f_str, t_str) if staff_id and f_str and t_str else []
+    
+    # Filter for Half Day Session
+    if req.get('half_day'):
+        session = str(req.get('session', '')).lower()
+        if session == 'morning':
+            # Morning = Periods 0, I, II, III
+            original_classes = [c for c in original_classes if str(c.get('period')) in ['0', 'I', 'II', 'III']]
+        elif session == 'afternoon':
+            # Afternoon = Periods IV, V, VI, VII
+            original_classes = [c for c in original_classes if str(c.get('period')) in ['IV', 'V', 'VI', 'VII']]
+
+    # Unified list construction
+    alloc_map = {}
+    for alloc in allocations_raw:
+        c = alloc.get('class_details', {})
+        # Create a ROBUST key: Date + Period (Reliable across minor subject/class naming variations)
+        key = f"{c.get('date')}_{c.get('period')}"
+        alloc_map[key] = alloc
+    
+    display_list = []
+    if not original_classes and allocations_raw:
+        for alloc in allocations_raw:
+            assigned_to = users.find_one({"_id": ObjectId(alloc.get('assigned_to', ''))})
+            display_list.append({
+                'class_details': alloc.get('class_details', {}),
+                'status': alloc.get('status'),
+                'assigned_to_name': assigned_to.get('name') if assigned_to else 'Unknown'
+            })
+    else:
+        for c in original_classes:
+            # Use the same ROBUST key for matching
+            key = f"{c.get('date')}_{c.get('period')}"
+            alloc = alloc_map.get(key)
+            if alloc:
+                assigned_to = users.find_one({"_id": ObjectId(alloc.get('assigned_to', ''))})
+                display_list.append({
+                    'class_details': c,
+                    'status': alloc.get('status'),
+                    'assigned_to_name': assigned_to.get('name') if assigned_to else 'Unknown'
+                })
+            else:
+                display_list.append({'class_details': c, 'status': 'Pending', 'assigned_to_name': None})
+            
+    # Group by date
+    dates_seen = {}
+    for item in display_list:
+        d = item['class_details'].get('date')
+        if d not in dates_seen:
+            dates_seen[d] = {'date': d, 'day': item['class_details'].get('day'), 'group_classes': []}
+        dates_seen[d]['group_classes'].append(item)
+    
+    # Sort dates chronologically
+    grouped_items = sorted(dates_seen.values(), key=lambda x: x['date'])
+
+    # Update session text for better clarity
+    if req.get('half_day'):
+        s = str(req.get('session', '')).lower()
+        if s == 'morning':
+            req['session_display'] = 'Morning (Period 0 - III)'
+        elif s == 'afternoon':
+            req['session_display'] = 'Afternoon (Period IV - VII)'
+
+    return render_template(
+        'lecturer/hod_preview_sheet.html',
+        hod_req=req,
+        lecturer=lecturer,
+        total_days=total_days,
+        duration_str=duration_str,
+        grouped_items=grouped_items,
+        total_classes=len(display_list)
+    )
 
 
 @app.route('/lecturer/api/faculty-timetable/<staff_id>')
@@ -2768,6 +5832,9 @@ def api_faculty_timetable(staff_id):
 @login_required
 @lecturer_required
 def my_class_assignments():
+    if current_user.staff_id and current_user.staff_id.startswith('BBHCFN'):
+        flash('Assignments are not applicable for your category.', 'info')
+        return redirect(url_for('lecturer_dashboard'))
     """Show pending class assignments for the current faculty member"""
     # Get unread/pending notifications
     raw = list(faculty_notifications.find({
@@ -2775,6 +5842,17 @@ def my_class_assignments():
         "status": {"$in": ["unread", "pending"]}
     }).sort("created_at", -1))
     
+    # HOD CHECK: If user is assigned as HOD for ANY department (Dynamic Logic)
+    is_hod = department_hods.find_one({"hod_id": str(current_user.id)}) is not None
+    
+    hod_pending = []
+    if is_hod:
+        hod_pending = list(hod_requests.find({
+            "hod_id": str(current_user.id),
+            "status": "Pending"
+        }).sort("created_at", -1))
+        for h in hod_pending: h['id'] = str(h['_id'])
+
     # Get accepted/approved assignments history
     accepted_assignments = list(leave_class_allocations.find({
         "assigned_to": str(current_user.id),
@@ -2792,6 +5870,16 @@ def my_class_assignments():
     # GHOST HUNTER: Verify each notification has a real allocation record and isn't a duplicate
     notifications_raw = []
     for n in raw:
+        # 0. HOD SYNC: If it's an HOD permission, check if it's still pending
+        if n.get('type') == 'hod_permission':
+            req_id = n.get('request_id')
+            if req_id:
+                req_doc = hod_requests.find_one({"_id": ObjectId(req_id)})
+                if not req_doc or req_doc.get('status') != 'Pending':
+                    faculty_notifications.delete_one({"_id": n['_id']})
+                continue
+            continue
+
         alloc_id = n.get('allocation_id')
         c = n.get('class_details', {})
         sub = str(c.get('subject', '')).strip().upper()
@@ -2853,7 +5941,9 @@ def my_class_assignments():
         'lecturer/my_assignments.html',
         notifications=notifications,
         allocations=allocations,
-        accepted_assignments=accepted_assignments
+        accepted_assignments=accepted_assignments,
+        hod_pending=hod_pending,
+        is_hod=is_hod
     )
 
 
@@ -2879,11 +5969,20 @@ def respond_to_assignment(allocation_id, action):
         {"$set": {"status": new_status, "responded_at": datetime.now()}}
     )
     
-    # Update notification status (mark all notifications for this allocation as read)
-    faculty_notifications.update_many(
-        {"allocation_id": allocation_id, "recipient_id": current_user.id},
-        {"$set": {"status": "read", "response": action}}
+    # PERMANENT REMOVAL: Delete the notification so it never reappears on refresh
+    faculty_notifications.delete_many(
+        {"allocation_id": allocation_id, "recipient_id": current_user.id}
     )
+    
+    # GHOST PURGE: Also delete any other notifications for the SAME class and recipient
+    # (In case there were duplicate requests from draft resets)
+    c = allocation.get('class_details', {})
+    faculty_notifications.delete_many({
+        "recipient_id": current_user.id,
+        "class_details.date": c.get('date'),
+        "class_details.time": c.get('time'),
+        "class_details.subject": c.get('subject')
+    })
     
     # Notify the leave applicant
     recipient_id = None
@@ -2898,8 +5997,7 @@ def respond_to_assignment(allocation_id, action):
         recipient_id = allocation.get('assigned_by')
 
     if recipient_id:
-        socketio.emit('assignment_response', {
-            'recipient_id': str(recipient_id),
+        emit_to_user('assignment_response', recipient_id, {
             'allocation_id': allocation_id,
             'action': action,
             'message': f"{current_user.name} has {action}ed your class assignment"
@@ -2921,35 +6019,26 @@ def respond_to_assignment(allocation_id, action):
 # Admin routes for managing class allocations
 @app.route('/admin/leave/<leave_id>/class-allocation-sheet')
 @login_required
-@admin_required
 def admin_class_allocation_sheet(leave_id):
     """Show detailed formal sheet view of class allocations for a leave request"""
     leave_doc = leaves.find_one({"_id": ObjectId(leave_id)})
     if not leave_doc:
-        flash("Leave request not found.", "danger")
-        return redirect(url_for('admin_leaves'))
+        # Check permissions collection if not in leaves
+        leave_doc = permissions.find_one({"_id": ObjectId(leave_id)})
+        if not leave_doc:
+            flash("Leave or Permission request not found.", "danger")
+            return redirect(url_for('admin_dashboard'))
+    
+    # Check if user is admin OR the lecturer who applied
+    if current_user.role != 'admin' and str(leave_doc.get('lecturer_id')) != str(current_user.id):
+        flash("Not authorized to view this sheet.", "danger")
+        return redirect(url_for('lecturer_dashboard'))
     
     # Get all allocations for this leave
-    allocations_raw = list(leave_class_allocations.find({"leave_id": leave_id}))
-    
-    # Convert allocations to JSON-serializable format
-    allocations = []
-    for alloc in allocations_raw:
-        assigned_to = users.find_one({"_id": ObjectId(alloc.get('assigned_to', ''))}) if alloc.get('assigned_to') else None
-        assigned_by = users.find_one({"_id": ObjectId(alloc.get('assigned_by', ''))}) if alloc.get('assigned_by') else None
-        
-        allocations.append({
-            'id': str(alloc['_id']),
-            'leave_id': alloc.get('leave_id'),
-            'assigned_to': alloc.get('assigned_to'),
-            'assigned_by': alloc.get('assigned_by'),
-            'assigned_to_name': assigned_to.get('name') if assigned_to else 'Unknown',
-            'assigned_by_name': assigned_by.get('name') if assigned_by else 'Unknown',
-            'class_details': alloc.get('class_details', {}),
-            'status': alloc.get('status'),
-            'created_at': alloc.get('created_at').isoformat() if alloc.get('created_at') else None,
-            'responded_at': alloc.get('responded_at').isoformat() if alloc.get('responded_at') else None
-        })
+    allocations_raw = list(leave_class_allocations.find({
+        "leave_id": leave_id,
+        "status": {"$in": ["Pending", "pending", "pending_faculty", "accepted", "approved", "finalized"]}
+    }))
     
     # Fresh Lecturer Details (for Dept/Designation)
     lecturer = users.find_one({"_id": ObjectId(leave_doc.get('lecturer_id', ''))})
@@ -2957,16 +6046,53 @@ def admin_class_allocation_sheet(leave_id):
     
     # Calculate Total Days
     total_days = 0
+    duration_str = None
     try:
         from datetime import datetime
-        f_str = leave_doc.get('from_date', '').split(' ')[0]
-        t_str = leave_doc.get('to_date', '').split(' ')[0]
-        f_dt = datetime.strptime(f_str, '%Y-%m-%d')
-        t_dt = datetime.strptime(t_str, '%Y-%m-%d')
-        total_days = (t_dt - f_dt).days + 1
-        if leave_doc.get('half_day'):
-            total_days = 0.5
-    except:
+        f_val = leave_doc.get('from_date', '')
+        t_val = leave_doc.get('to_date', '')
+        
+        f_str = f_val.split(' ')[0]
+        t_str = t_val.split(' ')[0]
+        total_days = count_working_leave_days(f_str, t_str, half_day=leave_doc.get('half_day', False))
+
+        if leave_doc.get('mode') == 'time':
+            try:
+                def parse_dt(dt_str):
+                    if not dt_str: return None
+                    dt_str = str(dt_str).strip()
+                    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%d-%m-%Y %H:%M', '%Y/%m/%d %H:%M'):
+                        try: return datetime.strptime(dt_str, fmt)
+                        except: continue
+                    # Try to split by space and take first two parts
+                    try:
+                        parts = dt_str.split(' ')
+                        if len(parts) >= 2:
+                            d_part = parts[0]
+                            t_part = parts[1]
+                            # Try date + time
+                            for d_fmt in ('%Y-%m-%d', '%d-%m-%Y'):
+                                for t_fmt in ('%H:%M:%S', '%H:%M'):
+                                    try: return datetime.strptime(f"{d_part} {t_part}", f"{d_fmt} {t_fmt}")
+                                    except: continue
+                    except: pass
+                    return None
+                
+                f_dt_full = parse_dt(f_val)
+                t_dt_full = parse_dt(t_val)
+                
+                if f_dt_full and t_dt_full:
+                    diff = t_dt_full - f_dt_full
+                    total_seconds = int(diff.total_seconds())
+                    hours, remainder = divmod(total_seconds, 3600)
+                    minutes, _ = divmod(remainder, 60)
+                    duration_str = f"{hours}h {minutes}m"
+                    total_days = 1 
+            except: pass
+        else:
+            print(f"DEBUG: Sheet Mode is '{leave_doc.get('mode')}' for leave {leave_id}")
+    except Exception as e:
+        print(f"DEBUG: Main total_days calculation failed: {e}")
         total_days = "N/A"
 
     # Get Leave Stats for the Credits section (CL, EL, RH)
@@ -2978,6 +6104,90 @@ def admin_class_allocation_sheet(leave_id):
     }
     
     original_classes = get_classes_for_leave_period(staff_id, f_str, t_str) if staff_id else []
+
+    # Filter for Half Day Session if applicable
+    if leave_doc.get('half_day'):
+        session = str(leave_doc.get('session', '')).lower()
+        if session == 'morning':
+            # Morning = Periods 0, I, II, III
+            original_classes = [c for c in original_classes if str(c.get('period')) in ['0', 'I', 'II', 'III']]
+        elif session == 'afternoon':
+            # Afternoon = Periods IV, V, VI, VII
+            original_classes = [c for c in original_classes if str(c.get('period')) in ['IV', 'V', 'VI', 'VII']]
+
+    # Construct a unified list of items to display
+    # We start with the FULL set of classes for the period (Original Timetable)
+    # and then 'overlay' any existing allocations on top of them.
+    
+    # 1. Map existing allocations for easy lookup
+    alloc_map = {}
+    for alloc in allocations_raw:
+        c = alloc.get('class_details', {})
+        # Create a ROBUST key: Date + Period (Reliable across minor subject/class naming variations)
+        key = f"{c.get('date')}_{c.get('period')}"
+        alloc_map[key] = alloc
+    
+    # 2. Build the display list based on the full period's classes
+    display_list = []
+    
+    # Fallback: if we have no original classes (e.g. error), just show allocations
+    if not original_classes and allocations_raw:
+        for alloc in allocations_raw:
+            display_list.append({
+                'class_details': alloc.get('class_details', {}),
+                'status': alloc.get('status'),
+                'assigned_to_name': alloc.get('assigned_to_name', 'Unknown')
+            })
+    else:
+        for c in original_classes:
+            # Use the same ROBUST key for matching
+            key = f"{c.get('date')}_{c.get('period')}"
+            alloc = alloc_map.get(key)
+            
+            if alloc:
+                assigned_to = users.find_one({"_id": ObjectId(alloc.get('assigned_to', ''))}) if alloc.get('assigned_to') else None
+                display_list.append({
+                    'class_details': c,
+                    'status': alloc.get('status'),
+                    'assigned_to_name': assigned_to.get('name') if assigned_to else 'Unknown'
+                })
+            else:
+                display_list.append({
+                    'class_details': c,
+                    'status': 'Pending',
+                    'assigned_to_name': None
+                })
+            
+    # Group by date
+    dates_seen = {}
+    for item in display_list:
+        date = item['class_details'].get('date')
+        if date not in dates_seen:
+            dates_seen[date] = []
+        dates_seen[date].append(item)
+    
+    # Maintain chronological order
+    unique_dates = []
+    for item in display_list:
+        date = item['class_details'].get('date')
+        if date not in unique_dates:
+            unique_dates.append(date)
+            
+    grouped_items = []
+    sort_map = {"0": 0, "I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6, "VII": 7}
+
+    for date in unique_dates:
+        items_for_date = dates_seen[date]
+        items_for_date.sort(key=lambda x: sort_map.get(str(x['class_details'].get('period')), 99))
+        
+        grouped_items.append({
+            'date': date,
+            'day': items_for_date[0]['class_details'].get('day'),
+            'group_classes': items_for_date
+        })
+    
+    # Calculate total classes for row filling logic in template
+    total_classes = sum(len(g['group_classes']) for g in grouped_items)
     
     # Load original timetable backup
     original_timetable = None
@@ -2988,16 +6198,36 @@ def admin_class_allocation_sheet(leave_id):
     if backup_doc:
         original_timetable = backup_doc.get('original_data')
     
+    # Get HOD approval status for this specific leave
+    hod_req = hod_requests.find_one({
+        "leave_id": leave_id,
+        "status": "Approved"
+    })
+    hod_approved = hod_req is not None
+    hod_signature = None
+    if hod_req:
+        hod_user = users.find_one({"_id": ObjectId(hod_req['hod_id'])})
+        if hod_user:
+            hod_signature = hod_user.get('signature_path')
+
     return render_template(
         'admin/leave_application_sheet.html',
         leave=leave_doc,
+        leave_id=leave_id,
         lecturer=lecturer,
-        allocations=allocations,
+        grouped_items=grouped_items,
+        total_classes=total_classes,
         leave_stats=leave_stats_map,
         total_days=total_days,
-        original_classes=original_classes,
+        duration_str=duration_str,
         original_timetable=original_timetable,
-        applicant_name=leave_doc.get('lecturer_name')
+        applicant_name=leave_doc.get('lecturer_name'),
+        hod_approved=hod_approved,
+        hod_signature=hod_signature,
+        request_is_time=(
+            leave_doc.get('mode') == 'time'
+            or (leave_doc.get('type') or '').strip().lower() == 'permission'
+        ),
     )
 
 
@@ -3173,23 +6403,163 @@ def remove_class_from_timetable(staff_id, class_details):
 @login_required
 @lecturer_required
 def api_get_notifications():
-    """Get unread notifications for current user"""
-    notifications = list(faculty_notifications.find({
-        "recipient_id": current_user.id,
+    """Get unread notifications for current user with auto-cleanup of ghosts"""
+    raw = list(faculty_notifications.find({
+        "recipient_id": str(current_user.id),
         "status": "unread"
     }).sort("created_at", -1))
     
+    valid_notifications = []
+    
+    for n in raw:
+        # 1. HOD Sync check
+        if n.get('type') == 'hod_permission':
+            req_id = n.get('request_id')
+            if req_id:
+                req_doc = hod_requests.find_one({"_id": ObjectId(req_id)})
+                if not req_doc or req_doc.get('status') != 'Pending':
+                    faculty_notifications.delete_one({"_id": n['_id']})
+                    continue
+            valid_notifications.append(n)
+            continue
+            
+        # 2. Class Assignment check
+        alloc_id = n.get('allocation_id')
+        if alloc_id:
+            exists = leave_class_allocations.find_one({"_id": ObjectId(alloc_id)})
+            if not exists or exists.get('status') in ['approved', 'finalized', 'accepted', 'rejected']:
+                faculty_notifications.delete_one({"_id": n['_id']})
+                continue
+        
+        valid_notifications.append(n)
+
     # Convert ObjectIds to strings for JSON serialization
-    for n in notifications:
+    for n in valid_notifications:
         n['_id'] = str(n['_id'])
         if 'leave_id' in n:
             n['leave_id'] = str(n['leave_id'])
     
     return jsonify({
         "success": True,
-        "notifications": notifications,
-        "count": len(notifications)
+        "notifications": valid_notifications,
+        "count": len(valid_notifications)
     })
+
+
+@app.route('/admin/permissions')
+@login_required
+@admin_required
+def admin_permissions():
+    """Manage Permission Leave requests (separate from formal leaves)"""
+    all_permissions = list(permissions.find().sort("created_at", -1))
+    # Add display dates/times
+    for p in all_permissions:
+        p['_id'] = str(p['_id'])
+        # Duration string for display
+        try:
+            from datetime import datetime
+            f_val = p.get('from_date', '')
+            t_val = p.get('to_date', '')
+            def parse_dt(dt_str):
+                for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%d-%m-%Y %H:%M'):
+                    try: return datetime.strptime(dt_str, fmt)
+                    except: continue
+                return None
+            f_dt = parse_dt(f_val)
+            t_dt = parse_dt(t_val)
+            if f_dt and t_dt:
+                diff = t_dt - f_dt
+                hours, remainder = divmod(diff.total_seconds(), 3600)
+                minutes, _ = divmod(remainder, 60)
+                p['duration_display'] = f"{int(hours)}h {int(minutes)}m"
+        except:
+            p['duration_display'] = "N/A"
+            
+    return render_template('admin/permissions.html', permissions=all_permissions)
+
+
+@app.route('/admin/permission/api/<pid>/<status>', methods=['POST'])
+@login_required
+@admin_required
+def admin_api_review_permission(pid, status):
+    """API endpoint for reviewing permission requests from the dashboard"""
+    permission_doc = permissions.find_one({"_id": ObjectId(pid)})
+    if not permission_doc:
+        return jsonify({"success": False, "message": "Not found"}), 404
+        
+    permissions.update_one({"_id": ObjectId(pid)}, {"$set": {"status": status}})
+    
+    if status == "Approved":
+        # Extract times for permission
+        t_from = None
+        t_to = None
+        try:
+            t_from = permission_doc['from_date'].split(' ')[1]
+            t_to = permission_doc['to_date'].split(' ')[1]
+        except: pass
+
+        update_attendance_log_on_approval(
+            permission_doc['lecturer_id'],
+            permission_doc['from_date'],
+            is_permission=True,
+            time_from=t_from,
+            time_to=t_to
+        )
+
+    # Notify via socket for real-time dashboard updates
+    leaves_left = calculate_leaves_left(permission_doc['lecturer_id'])
+    socketio.emit('leave_status_update', {
+        'id': pid,
+        'status': status,
+        'lecturer_id': permission_doc['lecturer_id'],
+        'leaves_left': leaves_left
+    })
+    
+    return jsonify({"success": True})
+
+@app.route('/admin/permission/<pid>/update-status', methods=['POST'])
+@login_required
+@admin_required
+def admin_update_permission_status(pid):
+    """Update status for a permission request (Form-based)"""
+    status = request.form.get('status')
+    
+    # NEW: Fetch the permission doc to get lecturer_id and date
+    permission_doc = permissions.find_one({"_id": ObjectId(pid)})
+    
+    permissions.update_one({"_id": ObjectId(pid)}, {"$set": {"status": status}})
+    
+    # NEW: Update attendance log if approved
+    if status == "Approved" and permission_doc:
+        # Extract times for permission
+        t_from = None
+        t_to = None
+        try:
+            t_from = permission_doc['from_date'].split(' ')[1]
+            t_to = permission_doc['to_date'].split(' ')[1]
+        except: pass
+
+        update_attendance_log_on_approval(
+            permission_doc['lecturer_id'],
+            permission_doc['from_date'],
+            is_permission=True,
+            time_from=t_from,
+            time_to=t_to
+        )
+        
+    flash(f"Permission status updated to {status}.", "success")
+    return redirect(url_for('admin_permissions'))
+
+@app.route('/admin/permissions/delete-all', methods=['POST'])
+@login_required
+@admin_required
+def admin_permissions_delete_all():
+    """Wipe all permission leave records from the system"""
+    result = permissions.delete_many({})
+    count = result.deleted_count
+    flash(f"Deleted {count} permission record(s).", "success")
+    return redirect(url_for('admin_permissions'))
+
 
 
 
@@ -3200,22 +6570,493 @@ def cancel_substitution(allocation_id):
     """Cancel a pending substitution request sent by the lecturer"""
     try:
         from bson import ObjectId
-        # Delete the allocation record
-        leave_class_allocations.delete_one({
-            "_id": ObjectId(allocation_id), 
-            "assigned_by": str(current_user.id),
-            "status": {"$in": ["pending", "Pending", "pending_faculty"]}
+        
+        # Find the allocation first to know who to notify
+        alloc = leave_class_allocations.find_one({
+            "_id": ObjectId(allocation_id),
+            "assigned_by": str(current_user.id)
         })
-        # Delete the notification
-        faculty_notifications.delete_one({"allocation_id": allocation_id})
+        
+        if alloc:
+            recipient_id = alloc.get('assigned_to')
+            # Delete the allocation record
+            leave_class_allocations.delete_one({"_id": ObjectId(allocation_id)})
+            # Delete the notification
+            faculty_notifications.delete_one({"allocation_id": allocation_id})
+            
+            # Emit socket event to the recipient to remove it from their UI immediately
+            emit_to_user('assignment_recalled', recipient_id, {
+                "allocation_id": allocation_id,
+            })
+            
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+
+@app.route('/api/chat', methods=['POST'])
+@login_required
+def api_chat():
+    try:
+        import traceback
+        data = request.get_json() or {}
+        message = data.get('message', '')
+        page_name = data.get('page', 'Unknown')
+        chat_history = data.get('history') or []
+        
+        # 1. Gather Basic Context
+        context = {
+            "user_name": current_user.name,
+            "user_role": current_user.role,
+            "current_page": page_name,
+            "server_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        
+        # 2. Gather Role-Specific Live Data
+        if current_user.role == 'admin':
+            context.update({
+                "pending_leaves_count": leaves.count_documents({"status": "Pending"}),
+                "pending_permissions_count": permissions.count_documents({"status": "Pending"}),
+                "total_staff_count": users.count_documents({"role": "lecturer"}),
+            })
+        else:
+            # For faculty, get their specific data
+            staff_id = current_user.staff_id
+            context.update({
+                "my_staff_id": staff_id,
+                "my_pending_leaves": leaves.count_documents({"lecturer_id": str(current_user.id), "status": "Pending"}),
+            })
+            
+            # 1. Fetch Schedules using robust helpers
+            today_dt = datetime.now()
+            tomorrow_dt = today_dt + timedelta(days=1)
+            
+            def get_readable_day(dt):
+                cls_list = get_classes_on_date(staff_id, dt.strftime('%Y-%m-%d'))
+                if not cls_list: return "No classes"
+                return " | ".join([f"Period {c['period']} ({c['time']}): {c['subject']} for {c['class']}" for c in cls_list])
+
+            context["my_schedule_today"] = get_readable_day(today_dt)
+            context["my_schedule_tomorrow"] = get_readable_day(tomorrow_dt)
+            
+            weekly_summary = []
+            for i in range(7):
+                d = today_dt + timedelta(days=i)
+                d_name = d.strftime('%A').upper()
+                cls = get_classes_on_date(staff_id, d.strftime('%Y-%m-%d'))
+                if cls:
+                    weekly_summary.append(f"{d_name}: {len(cls)} classes")
+            
+            context["my_weekly_summary"] = ", ".join(weekly_summary)
+            context["today_day_name"] = today_dt.strftime('%A').upper()
+            context["today_full_date"] = today_dt.strftime('%d %B %Y')
+            
+            # 2. Fetch Attendance Stats
+            att_percent = calculate_lecturer_attendance_stats(staff_id)
+            context["my_attendance_percentage"] = f"{att_percent}%"
+            
+            # 3. Fetch Leave Balances
+            user_doc = users.find_one({"_id": ObjectId(current_user.id)})
+            if user_doc and "leave_balances" in user_doc:
+                bal_str = ", ".join([f"{k}: {v}" for k, v in user_doc["leave_balances"].items()])
+                context["my_leave_balances"] = bal_str
+            
+        # 3. Get AI Response Stream
+
+        def generate():
+            try:
+                for chunk in get_hrms_response_stream(message, context, chat_history=chat_history):
+                    yield f"data: {json.dumps({'text': chunk})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(generate(), mimetype='text/event-stream')
+    except Exception as e:
+        with open("chatbot_errors.log", "a") as f:
+            f.write(f"\n--- Error at {datetime.now()} ---\n")
+            traceback.print_exc(file=f)
+        return jsonify({"success": False, "message": str(e)})
+
+
+# --- Staff WhatsApp-style messaging (separate from AI chatbot) ---
+STAFF_CHAT_UPLOAD_DIR = os.path.join(os.getcwd(), 'static', 'uploads', 'chat')
+STAFF_CHAT_ALLOWED_EXT = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.doc', '.docx', '.txt', '.xls', '.xlsx'}
+STAFF_CHAT_MAX_BYTES = 10 * 1024 * 1024
+
+
+def _staff_chat_conversation_id(uid_a, uid_b):
+    return '_'.join(sorted([str(uid_a), str(uid_b)]))
+
+
+def _staff_chat_user_avatar(user_doc):
+    staff_id = (user_doc or {}).get('staff_id', '')
+    if staff_id:
+        rel = os.path.join('static', 'img', 'profiles', f'{staff_id}.png')
+        if os.path.exists(rel):
+            return f'/static/img/profiles/{staff_id}.png'
+    return None
+
+
+def _staff_chat_user_payload(user_doc):
+    return {
+        'id': str(user_doc['_id']),
+        'name': user_doc.get('name') or user_doc.get('username', 'User'),
+        'role': user_doc.get('role', ''),
+        'department': user_doc.get('department', ''),
+        'staff_id': user_doc.get('staff_id', ''),
+        'avatar': _staff_chat_user_avatar(user_doc),
+    }
+
+
+def _staff_chat_other_participant(conv, my_id):
+    for pid in conv.get('participants', []):
+        if pid != str(my_id):
+            return pid
+    return None
+
+
+def _staff_chat_socket_id(user_id):
+    """Return active Socket.IO socket id for a given user."""
+    if not user_id:
+        return None
+    doc = staff_socket_sessions.find_one({'user_id': str(user_id)})
+    socket_id = (doc or {}).get('socket_id')
+    return socket_id if socket_id else None
+
+
+@app.route('/staff-chat')
+@login_required
+def staff_chat_page():
+    return render_template('staff_chat.html')
+
+
+@app.route('/api/staff-chat/contacts')
+@login_required
+def staff_chat_contacts():
+    my_id = str(current_user.id)
+    query = {'_id': {'$ne': ObjectId(my_id)}}
+    if current_user.role == 'lecturer':
+        query['role'] = {'$in': ['lecturer', 'admin']}
+    else:
+        query['role'] = {'$in': ['lecturer', 'admin']}
+    docs = list(users.find(query).sort('name', 1))
+    return jsonify([_staff_chat_user_payload(u) for u in docs])
+
+
+@app.route('/api/staff-chat/conversations')
+@login_required
+def staff_chat_conversations():
+    my_id = str(current_user.id)
+    convs = list(staff_conversations.find({'participants': my_id}).sort('updated_at', -1))
+    result = []
+    for conv in convs:
+        if my_id in (conv.get('hidden_for') or []):
+            continue
+        other_id = _staff_chat_other_participant(conv, my_id)
+        if not other_id:
+            continue
+        other_doc = users.find_one({'_id': ObjectId(other_id)})
+        if not other_doc:
+            continue
+        unread = (conv.get('unread') or {}).get(my_id, 0)
+        updated = conv.get('updated_at')
+        result.append({
+            'conversation_id': conv.get('conversation_id'),
+            'other_user': _staff_chat_user_payload(other_doc),
+            'last_message': conv.get('last_message', ''),
+            'last_sender_name': conv.get('last_sender_name', ''),
+            'updated_at': updated.isoformat() if updated else None,
+            'unread': unread,
+        })
+    return jsonify(result)
+
+
+@app.route('/api/staff-chat/messages/<other_user_id>')
+@login_required
+def staff_chat_messages(other_user_id):
+    my_id = str(current_user.id)
+    conv_id = _staff_chat_conversation_id(my_id, other_user_id)
+    conv = staff_conversations.find_one({'conversation_id': conv_id}) or {}
+    cleared_at = (conv.get('cleared_at') or {}).get(my_id)
+    query = {'conversation_id': conv_id}
+    if cleared_at:
+        query['created_at'] = {'$gt': cleared_at}
+    msgs = list(staff_messages.find(query).sort('created_at', 1).limit(200))
+    staff_conversations.update_one(
+        {'conversation_id': conv_id},
+        {'$set': {f'unread.{my_id}': 0}},
+    )
+    out = []
+    for m in msgs:
+        if my_id in (m.get('deleted_for') or []):
+            continue
+        att = m.get('attachment')
+        out.append({
+            'id': str(m['_id']),
+            'sender_id': m.get('sender_id'),
+            'sender_name': m.get('sender_name', ''),
+            'text': m.get('text', ''),
+            'attachment': att,
+            'deleted_for_all': bool(m.get('deleted_for_all')),
+            'created_at': m['created_at'].isoformat() if m.get('created_at') else None,
+            'is_mine': m.get('sender_id') == my_id,
+        })
+    return jsonify({'conversation_id': conv_id, 'messages': out})
+
+
+@app.route('/api/staff-chat/send', methods=['POST'])
+@login_required
+def staff_chat_send():
+    my_id = str(current_user.id)
+    payload = request.get_json(silent=True) or {}
+    other_id = request.form.get('recipient_id') or payload.get('recipient_id')
+    text = (request.form.get('text') or payload.get('text') or '').strip()
+    if not other_id:
+        return jsonify({'success': False, 'message': 'Recipient is required'}), 400
+    if other_id == my_id:
+        return jsonify({'success': False, 'message': 'Cannot chat with yourself'}), 400
+
+    recipient_doc = users.find_one({'_id': ObjectId(other_id)})
+    if not recipient_doc:
+        return jsonify({'success': False, 'message': 'Recipient not found'}), 404
+
+    uploaded_file = request.files.get('file')
+    has_uploaded_file = bool(uploaded_file and uploaded_file.filename)
+    if not text and not has_uploaded_file:
+        return jsonify({'success': False, 'message': 'Message or file is required'}), 400
+
+    attachment = None
+    if has_uploaded_file:
+        ext = os.path.splitext(uploaded_file.filename)[1].lower()
+        if ext not in STAFF_CHAT_ALLOWED_EXT:
+            return jsonify({'success': False, 'message': 'File type not allowed'}), 400
+        uploaded_file.seek(0, os.SEEK_END)
+        size = uploaded_file.tell()
+        uploaded_file.seek(0)
+        if size > STAFF_CHAT_MAX_BYTES:
+            return jsonify({'success': False, 'message': 'File too large (max 10MB)'}), 400
+        os.makedirs(STAFF_CHAT_UPLOAD_DIR, exist_ok=True)
+        safe_name = re.sub(r'[^\w.\-]', '_', uploaded_file.filename)[:120]
+        filename = f"{int(datetime.now().timestamp())}_{my_id[:6]}_{safe_name}"
+        save_path = os.path.join(STAFF_CHAT_UPLOAD_DIR, filename)
+        uploaded_file.save(save_path)
+        is_image = ext in {'.png', '.jpg', '.jpeg', '.gif', '.webp'}
+        attachment = {
+            'url': f'/static/uploads/chat/{filename}',
+            'name': uploaded_file.filename,
+            'type': 'image' if is_image else 'file',
+        }
+
+    conv_id = _staff_chat_conversation_id(my_id, other_id)
+    now = datetime.now()
+    preview = text or (f"📎 {attachment['name']}" if attachment else '')
+    msg_doc = {
+        'conversation_id': conv_id,
+        'sender_id': my_id,
+        'sender_name': current_user.name or current_user.username,
+        'text': text,
+        'attachment': attachment,
+        'created_at': now,
+    }
+    inserted = staff_messages.insert_one(msg_doc)
+    staff_conversations.update_one(
+        {'conversation_id': conv_id},
+        {
+            '$set': {
+                'conversation_id': conv_id,
+                'participants': sorted([my_id, str(other_id)]),
+                'last_message': preview[:200],
+                'last_sender_name': current_user.name or current_user.username,
+                'updated_at': now,
+            },
+            '$inc': {f'unread.{other_id}': 1},
+            '$pull': {'hidden_for': {'$in': [my_id, str(other_id)]}},
+        },
+        upsert=True,
+    )
+    payload = {
+        'id': str(inserted.inserted_id),
+        'conversation_id': conv_id,
+        'sender_id': my_id,
+        'sender_name': current_user.name or current_user.username,
+        'text': text,
+        'attachment': attachment,
+        'created_at': now.isoformat(),
+        'is_mine': True,
+        'other_user_id': other_id,
+    }
+    # Emit to the sender and recipient so outgoing/incoming both appear instantly.
+    sender_sid = _staff_chat_socket_id(my_id)
+    recipient_sid = _staff_chat_socket_id(other_id)
+
+    if sender_sid:
+        socketio.emit('staff_chat_message', payload, to=sender_sid)
+    else:
+        socketio.emit('staff_chat_message', payload, room=f'user_{my_id}')
+
+    if recipient_sid:
+        # On recipient screen this should render as "theirs".
+        payload_for_recipient = dict(payload)
+        payload_for_recipient['is_mine'] = False
+        socketio.emit('staff_chat_message', payload_for_recipient, to=recipient_sid)
+    else:
+        socketio.emit('staff_chat_message', dict(payload, is_mine=False), room=f'user_{other_id}')
+    return jsonify({'success': True, 'message': payload})
+
+
+@app.route('/api/staff-chat/message/<msg_id>/delete', methods=['POST'])
+@login_required
+def staff_chat_delete_message(msg_id):
+    my_id = str(current_user.id)
+    body = request.get_json(silent=True) or {}
+    scope = body.get('scope', 'me')
+    other_user_id = body.get('other_user_id')
+
+    if not msg_id or str(msg_id).lower() in {'null', 'none', ''}:
+        return jsonify({'success': False, 'message': 'Invalid message id'}), 400
+    try:
+        msg_obj_id = ObjectId(msg_id)
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid message id'}), 400
+
+    msg = staff_messages.find_one({'_id': msg_obj_id})
+    if not msg:
+        return jsonify({'success': False, 'message': 'Message not found'}), 404
+
+    conv_id = msg.get('conversation_id')
+    if not conv_id:
+        return jsonify({'success': False, 'message': 'Invalid message'}), 400
+
+    conv = staff_conversations.find_one({'conversation_id': conv_id}) or {}
+    if my_id not in (conv.get('participants') or []):
+        return jsonify({'success': False, 'message': 'Not allowed'}), 403
+
+    if scope == 'all':
+        if msg.get('sender_id') != my_id:
+            return jsonify({'success': False, 'message': 'Delete for all allowed only for your messages'}), 403
+        now = datetime.now()
+        staff_messages.update_one(
+            {'_id': ObjectId(msg_id)},
+            {
+                '$set': {
+                    'deleted_for_all': True,
+                    'text': '',
+                    'attachment': None,
+                    'deleted_at': now,
+                    'deleted_by': my_id,
+                }
+            },
+        )
+        if other_user_id:
+            recipient_sid = _staff_chat_socket_id(other_user_id)
+            if recipient_sid:
+                socketio.emit(
+                    'staff_chat_message_deleted',
+                    {'message_id': msg_id, 'conversation_id': conv_id, 'scope': 'all'},
+                    to=recipient_sid,
+                )
+            else:
+                socketio.emit(
+                    'staff_chat_message_deleted',
+                    {'message_id': msg_id, 'conversation_id': conv_id, 'scope': 'all'},
+                    room=f'user_{other_user_id}',
+                )
+        return jsonify({'success': True})
+
+    staff_messages.update_one(
+        {'_id': ObjectId(msg_id)},
+        {'$addToSet': {'deleted_for': my_id}},
+    )
+    return jsonify({'success': True})
+
+
+@app.route('/api/staff-chat/conversation/<other_user_id>/delete', methods=['POST'])
+@login_required
+def staff_chat_delete_conversation(other_user_id):
+    my_id = str(current_user.id)
+    conv_id = _staff_chat_conversation_id(my_id, other_user_id)
+    now = datetime.now()
+    staff_conversations.update_one(
+        {'conversation_id': conv_id},
+        {
+            '$addToSet': {'hidden_for': my_id},
+            '$set': {f'cleared_at.{my_id}': now, f'unread.{my_id}': 0},
+        },
+        upsert=True,
+    )
+    return jsonify({'success': True})
+
+
+@app.route('/api/staff-chat/unread-count')
+@login_required
+def staff_chat_unread_count():
+    my_id = str(current_user.id)
+    total = 0
+    for conv in staff_conversations.find({'participants': my_id}, {'unread': 1}):
+        total += (conv.get('unread') or {}).get(my_id, 0)
+    return jsonify({'count': total})
+
+
+@socketio.on('connect')
+def staff_chat_socket_connect():
+    # Try to join the user's room immediately.
+    # If `current_user` is unavailable, `register_socket` (from the client) will handle it.
+    try:
+        if current_user.is_authenticated:
+            sid = request.sid
+            user_id = str(current_user.id)
+            staff_socket_sessions.update_one(
+                {'user_id': user_id},
+                {'$set': {'socket_id': sid, 'updated_at': datetime.now()}},
+                upsert=True,
+            )
+            join_room(f'user_{user_id}')
+    except Exception:
+        # Never block connect due to DB issues.
+        pass
+
+
+@socketio.on('disconnect')
+def staff_chat_socket_disconnect():
+    try:
+        sid = request.sid
+        staff_socket_sessions.update_one(
+            {'socket_id': sid},
+            {'$set': {'socket_id': None, 'updated_at': datetime.now()}},
+        )
+    except Exception:
+        # Never block disconnect due to DB issues.
+        pass
+
+
+@socketio.on('register_socket')
+def staff_chat_register_socket(data):
+    """
+    Store browser Socket.IO socket id in Mongo so we can emit directly to the recipient.
+    """
+    data = data or {}
+    uid = str(data.get('user_id', '')).strip()
+    if not uid:
+        return False
+    try:
+        ObjectId(uid)
+    except Exception:
+        return False
+    # Validate user exists (prevents storing arbitrary socket ids).
+    if not users.find_one({'_id': ObjectId(uid)}):
+        return False
+    sid = request.sid
+    staff_socket_sessions.update_one(
+        {'user_id': uid},
+        {'$set': {'socket_id': sid, 'updated_at': datetime.now()}},
+        upsert=True,
+    )
+    join_room(f'user_{uid}')
+    return True
 
 
 if __name__ == '__main__':
     init_db()
     # On some Windows setups (especially with newer Python), the watchdog reloader can throw WinError 10038.
     # Disabling the reloader keeps dev runs stable; restart the server manually after code changes.
-    socketio.run(app, debug=True, port=8000, use_reloader=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', debug=True, port=8000, use_reloader=False, allow_unsafe_werkzeug=True)
 

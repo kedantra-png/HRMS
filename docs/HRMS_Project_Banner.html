@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HRMS Project Banner 2×3</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #64748b; font-family: 'Poppins', sans-serif; padding: 20px;
+    }
+    .banner {
+      width: 600px; height: 900px; background: #fff; border: 3px solid #0f172a;
+      overflow: hidden; display: flex; flex-direction: column; position: relative;
+    }
+    .top-ribbon {
+      background: #1e3a5f; color: #fff; text-align: center;
+      font-size: 0.55rem; font-weight: 800; letter-spacing: 0.1em;
+      padding: 5px 8px; text-transform: uppercase;
+    }
+    .hero {
+      padding: 6px 12px 4px; display: grid;
+      grid-template-columns: 1fr auto auto; gap: 8px; align-items: start;
+    }
+    .hero-left h1 {
+      font-size: 2.8rem; font-weight: 900; color: #1e3a5f; line-height: 0.95;
+    }
+    .green-ribbon {
+      display: inline-block; margin-top: 3px;
+      background: linear-gradient(90deg, #16a34a, #22c55e); color: #fff;
+      font-size: 0.48rem; font-weight: 800; letter-spacing: 0.08em;
+      padding: 3px 10px; clip-path: polygon(0 0, 100% 0, 96% 100%, 0% 100%);
+      text-transform: uppercase;
+    }
+    .hero-desc {
+      margin-top: 4px; font-size: 0.5rem; font-weight: 600;
+      color: #475569; line-height: 1.35; max-width: 280px;
+    }
+    .logo-badge { text-align: center; width: 72px; }
+    .logo-badge .logo-ring {
+      width: 46px; height: 46px; border: 2.5px solid #1e3a5f; border-radius: 50%;
+      margin: 0 auto 2px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(180deg, #e0f2fe, #fff);
+    }
+    .logo-badge .logo-ring i { font-size: 1rem; color: #1e3a5f; }
+    .logo-badge .logo-text {
+      font-size: 0.38rem; font-weight: 900; color: #1e3a5f; line-height: 1.1;
+    }
+    .cloud-badge { width: 58px; text-align: center; }
+    .cloud-badge .ring {
+      width: 44px; height: 44px; border: 2.5px solid #1e3a5f; border-radius: 50%;
+      margin: 0 auto 2px; display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: #1e3a5f;
+    }
+    .cloud-badge span {
+      font-size: 0.34rem; font-weight: 800; color: #1e3a5f; line-height: 1.1; display: block;
+    }
+
+    /* Device mockups */
+    .devices-wrap {
+      margin: 2px 10px 0; padding: 6px 4px 4px;
+      background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+      border: 2px solid #cbd5e1; border-radius: 6px;
+      display: flex; align-items: flex-end; justify-content: center; gap: 8px;
+      min-height: 118px;
+    }
+    .laptop {
+      width: 200px; background: #334155; border-radius: 6px 6px 0 0;
+      padding: 4px 4px 0; position: relative;
+    }
+    .laptop-screen {
+      background: #fff; border-radius: 3px 3px 0 0; padding: 3px; min-height: 90px;
+      display: grid; grid-template-columns: 28px 1fr; gap: 2px; font-size: 0.28rem;
+    }
+    .laptop-sidebar {
+      background: #1e3a5f; border-radius: 2px; padding: 2px 1px;
+      color: #94a3b8; font-weight: 700; line-height: 1.5;
+    }
+    .laptop-sidebar .active { color: #fff; }
+    .laptop-main { display: flex; flex-direction: column; gap: 2px; }
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+    .stat-card {
+      border-radius: 2px; padding: 2px; text-align: center; color: #fff; font-weight: 800;
+    }
+    .stat-card b { display: block; font-size: 0.42rem; }
+    .stat-card span { font-size: 0.22rem; opacity: 0.9; }
+    .stat-card.c1{background:#3b82f6}.stat-card.c2{background:#22c55e}
+    .stat-card.c3{background:#eab308;color:#1e293b}.stat-card.c4{background:#f97316}
+    .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; flex: 1; }
+    .mini-chart {
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 2px;
+      padding: 2px; font-size: 0.22rem; font-weight: 700; color: #475569;
+    }
+    .mini-chart .bars {
+      display: flex; align-items: flex-end; gap: 1px; height: 18px; margin-top: 2px;
+    }
+    .mini-chart .bars i {
+      display: block; width: 4px; background: #3b82f6; border-radius: 1px;
+    }
+    .laptop-base {
+      height: 4px; background: #475569; border-radius: 0 0 3px 3px; margin: 0 -2px;
+    }
+    .phone {
+      width: 52px; background: #1e293b; border-radius: 8px; padding: 3px 2px 4px;
+    }
+    .phone-screen {
+      background: #fff; border-radius: 4px; padding: 3px 2px; min-height: 82px;
+      font-size: 0.22rem;
+    }
+    .phone-screen .stat-row { grid-template-columns: 1fr 1fr; margin-bottom: 3px; }
+    .phone-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px;
+    }
+    .phone-btn {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 3px;
+      text-align: center; padding: 3px 1px; font-weight: 800; color: #1e40af;
+    }
+    .phone-btn i { display: block; font-size: 0.45rem; margin-bottom: 1px; }
+
+    /* Integrations strip under devices */
+    .integ-strip {
+      margin: 4px 10px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    }
+    .integ-pill {
+      display: flex; align-items: center; gap: 4px; padding: 4px 5px;
+      border-radius: 6px; font-size: 0.38rem; font-weight: 800;
+    }
+    .integ-pill i { font-size: 0.7rem; }
+    .integ-pill.db { background: #fffbeb; border: 2px solid #f59e0b; color: #92400e; }
+    .integ-pill.wa { background: #f0fdf4; border: 2px solid #25d366; color: #166534; }
+    .integ-pill.em { background: #eff6ff; border: 2px solid #3b82f6; color: #1e40af; }
+
+    .sec-head {
+      background: #1e3a5f; color: #fff; text-align: center;
+      font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em;
+      padding: 3px; text-transform: uppercase;
+      margin: 5px 10px 0; border-radius: 3px 3px 0 0;
+    }
+    .sec-head.green { background: #16a34a; }
+
+    .features-box {
+      margin: 0 10px; padding: 5px 3px 6px;
+      border: 2px solid #e2e8f0; border-top: none;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+    }
+    .feat-item { text-align: center; padding: 2px 1px; }
+    .feat-icon {
+      width: 22px; height: 22px; border-radius: 50%; margin: 0 auto 2px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.5rem; color: #fff;
+    }
+    .feat-icon.c1{background:#3b82f6}.feat-icon.c2{background:#8b5cf6}
+    .feat-icon.c3{background:#f97316}.feat-icon.c4{background:#06b6d4}
+    .feat-icon.c5{background:#ec4899}.feat-icon.c6{background:#25d366}
+    .feat-icon.c7{background:#f59e0b}.feat-icon.c8{background:#6366f1}
+    .feat-icon.c9{background:#14b8a6}
+    .feat-title { font-size: 0.36rem; font-weight: 800; color: #1e293b; line-height: 1.1; }
+    .feat-sub { font-size: 0.28rem; font-weight: 600; color: #64748b; line-height: 1.15; }
+
+    .apps-box {
+      margin: 0 10px; padding: 5px 3px;
+      border: 2px solid #e2e8f0; border-top: none;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+    }
+    .app-item { text-align: center; font-size: 0.34rem; font-weight: 800; color: #334155; line-height: 1.15; }
+    .app-item i { display: block; font-size: 0.75rem; color: #1e3a5f; margin-bottom: 2px; }
+
+    .benefits-box {
+      margin: 0 10px; padding: 5px 6px;
+      border: 2px solid #bbf7d0; border-top: none; background: #f0fdf4;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; text-align: center;
+    }
+    .ben-item { font-size: 0.3rem; font-weight: 700; color: #166534; line-height: 1.15; }
+    .ben-item i { display: block; font-size: 0.65rem; margin-bottom: 1px; color: #16a34a; }
+
+    .conclusion-bar {
+      margin: 5px 10px 0; background: linear-gradient(90deg, #1e3a5f, #2563eb);
+      color: #fff; text-align: center; padding: 5px 8px; border-radius: 5px;
+      font-size: 0.42rem; font-weight: 700; line-height: 1.35;
+    }
+
+    .footer {
+      margin-top: auto; background: #1e3a5f; color: #fff;
+      padding: 6px 8px; display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 3px; text-align: center;
+    }
+    .foot-item { font-size: 0.32rem; font-weight: 700; line-height: 1.1; }
+    .foot-item i { display: block; font-size: 0.65rem; margin-bottom: 2px; }
+    .foot-item.wa i { color: #25d366; }
+    .foot-item.em i { color: #60a5fa; }
+    .foot-item.db i { color: #fbbf24; }
+    .ratio-tag {
+      text-align: center; font-size: 0.32rem; font-weight: 800;
+      color: #94a3b8; padding: 2px; letter-spacing: 0.06em; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+<article class="banner">
+
+  <div class="top-ribbon">Complete Payroll &amp; HR Management System</div>
+
+  <div class="hero">
+    <div class="hero-left">
+      <h1>HRMS</h1>
+      <div class="green-ribbon">Smart HR · Simple Payroll</div>
+      <p class="hero-desc">
+        Manage employees, payroll &amp; HR operations with MongoDB database, WhatsApp staff chat &amp; email SMTP integration.
+      </p>
+    </div>
+    <div class="logo-badge">
+      <div class="logo-ring"><i class="fas fa-users"></i></div>
+      <div class="logo-text">HRMS<br>Smart HR Solution</div>
+    </div>
+    <div class="cloud-badge">
+      <div class="ring"><i class="fas fa-cloud"></i></div>
+      <span>WEB BASED</span>
+      <span>Access Anytime</span>
+    </div>
+  </div>
+
+  <!-- Laptop + Phone mockups (reference style) -->
+  <div class="devices-wrap">
+    <div class="laptop">
+      <div class="laptop-screen">
+        <div class="laptop-sidebar">
+          <div class="active">Dash</div>
+          <div>Staff</div>
+          <div>Leave</div>
+          <div>Payroll</div>
+          <div>Chat</div>
+        </div>
+        <div class="laptop-main">
+          <div class="stat-row">
+            <div class="stat-card c1"><b>128</b><span>Staff</span></div>
+            <div class="stat-card c2"><b>96</b><span>Present</span></div>
+            <div class="stat-card c3"><b>12</b><span>Leave</span></div>
+            <div class="stat-card c4"><b>08</b><span>Dept</span></div>
+          </div>
+          <div class="chart-row">
+            <div class="mini-chart">Attendance<div class="bars"><i style="height:60%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:90%"></i></div></div>
+            <div class="mini-chart">Recent Activity<br>Leave approved<br>Salary emailed</div>
+          </div>
+        </div>
+      </div>
+      <div class="laptop-base"></div>
+    </div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="stat-row">
+          <div class="stat-card c1"><b>128</b><span>Staff</span></div>
+          <div class="stat-card c3"><b>12</b><span>Leave</span></div>
+        </div>
+        <div class="phone-grid">
+          <div class="phone-btn"><i class="fas fa-fingerprint"></i>Attend</div>
+          <div class="phone-btn"><i class="fas fa-calendar"></i>Leave</div>
+          <div class="phone-btn"><i class="fas fa-rupee-sign"></i>Payroll</div>
+          <div class="phone-btn"><i class="fab fa-whatsapp"></i>Chat</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MongoDB + WhatsApp + Email -->
+  <div class="integ-strip">
+    <div class="integ-pill db"><i class="fas fa-database"></i> MongoDB Database</div>
+    <div class="integ-pill wa"><i class="fab fa-whatsapp"></i> WhatsApp Chat</div>
+    <div class="integ-pill em"><i class="fas fa-envelope"></i> Email SMTP</div>
+  </div>
+
+  <div class="sec-head">Key Features</div>
+  <div class="features-box">
+    <div class="feat-item"><div class="feat-icon c1"><i class="fas fa-users"></i></div><div class="feat-title">Employee Mgmt</div><div class="feat-sub">Profiles &amp; records</div></div>
+    <div class="feat-item"><div class="feat-icon c2"><i class="fas fa-fingerprint"></i></div><div class="feat-title">Attendance</div><div class="feat-sub">Track presence</div></div>
+    <div class="feat-item"><div class="feat-icon c3"><i class="fas fa-rupee-sign"></i></div><div class="feat-title">Payroll</div><div class="feat-sub">Auto salary calc</div></div>
+    <div class="feat-item"><div class="feat-icon c4"><i class="fas fa-calendar-check"></i></div><div class="feat-title">Leave Mgmt</div><div class="feat-sub">Apply &amp; approve</div></div>
+    <div class="feat-item"><div class="feat-icon c5"><i class="fas fa-table"></i></div><div class="feat-title">Timetables</div><div class="feat-sub">Digital schedules</div></div>
+    <div class="feat-item"><div class="feat-icon c6"><i class="fab fa-whatsapp"></i></div><div class="feat-title">Staff Chat</div><div class="feat-sub">WhatsApp-style</div></div>
+    <div class="feat-item"><div class="feat-icon c7"><i class="fas fa-envelope-open-text"></i></div><div class="feat-title">Email Slips</div><div class="feat-sub">SMTP delivery</div></div>
+    <div class="feat-item"><div class="feat-icon c8"><i class="fas fa-chart-bar"></i></div><div class="feat-title">Reports</div><div class="feat-sub">Analytics</div></div>
+    <div class="feat-item"><div class="feat-icon c9"><i class="fas fa-mobile-alt"></i></div><div class="feat-title">Mobile APK</div><div class="feat-sub">Any network</div></div>
+  </div>
+
+  <div class="sec-head">Perfect For</div>
+  <div class="apps-box">
+    <div class="app-item"><i class="fas fa-school"></i>Schools &amp; Colleges</div>
+    <div class="app-item"><i class="fas fa-building"></i>Offices &amp; Corporate</div>
+    <div class="app-item"><i class="fas fa-hospital"></i>Hospitals &amp; Clinics</div>
+    <div class="app-item"><i class="fas fa-industry"></i>Factories</div>
+    <div class="app-item"><i class="fas fa-hotel"></i>Hotels</div>
+    <div class="app-item"><i class="fas fa-store"></i>Retail</div>
+  </div>
+
+  <div class="sec-head green">Benefits</div>
+  <div class="benefits-box">
+    <div class="ben-item"><i class="fas fa-clock"></i>Save Time</div>
+    <div class="ben-item"><i class="fas fa-shield-alt"></i>Reduce Errors</div>
+    <div class="ben-item"><i class="fas fa-check-circle"></i>Compliance</div>
+    <div class="ben-item"><i class="fas fa-smile"></i>Happy Staff</div>
+    <div class="ben-item"><i class="fas fa-chart-line"></i>Grow Business</div>
+  </div>
+
+  <p class="conclusion-bar">
+    <strong>Conclusion:</strong> HRMS with MongoDB, WhatsApp chat &amp; email — one smart platform for HR, payroll &amp; communication.
+  </p>
+
+  <div class="footer">
+    <div class="foot-item db"><i class="fas fa-database"></i>MongoDB</div>
+    <div class="foot-item wa"><i class="fab fa-whatsapp"></i>WhatsApp</div>
+    <div class="foot-item em"><i class="fas fa-envelope"></i>Email SMTP</div>
+    <div class="foot-item"><i class="fas fa-cloud"></i>Web Based</div>
+  </div>
+  <div class="ratio-tag">Banner 2 × 3 · HRMS Project</div>
+
+</article>
+</body>
+</html>

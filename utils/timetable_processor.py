@@ -105,13 +105,22 @@ def clean_json_response(text):
         return json.loads(text)
     except:
         # Try to find JSON block manually if it's buried
+        # 1) Greedy JSON object search
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
+            candidate = match.group(0).strip()
             try:
-                return json.loads(match.group(0))
+                return json.loads(candidate)
             except:
                 pass
-        return {"error": "Invalid JSON response from AI", "raw": text}
+        # 2) First '{' to last '}' slice (handles leading/trailing chatter)
+        try:
+            start = text.index("{")
+            end = text.rindex("}")
+            candidate = text[start : end + 1].strip()
+            return json.loads(candidate)
+        except:
+            return {"error": "Invalid JSON response from AI", "raw": text}
 
 def extract_from_image(image_bytes: bytes, faculty_hint: str = None, faculty_list: str = None) -> Dict:
     """
@@ -356,6 +365,13 @@ Return a clean, fully expanded, structured timetable JSON where:
 """
     if faculty_hint:
         prompt += f"\n\nFACULTY NAME HINT: {faculty_hint}"
+    if faculty_list:
+        prompt += (
+            "\n\nFACULTY REFERENCE LIST (use ONLY to fill faculty_id when possible):\n"
+            f"{faculty_list}\n"
+            "\nIf the image shows only a partial name, choose the best matching faculty_id from this list.\n"
+            "If you cannot determine, set faculty_id to \"unknown\".\n"
+        )
 
     max_retries = 3
     retry_delay = 5  # seconds
@@ -386,8 +402,19 @@ Return a clean, fully expanded, structured timetable JSON where:
                     f"Retry {attempt} after {delay}s because of {info.kind}."
                 ),
             )
-            
-            return clean_json_response(response.text)
+            parsed = clean_json_response(response.text)
+            if isinstance(parsed, dict) and parsed.get("error") == "Invalid JSON response from AI":
+                # Strengthen the prompt and retry if model didn't respect JSON-only output.
+                log_event("AI returned invalid JSON; retrying with stricter output rules.")
+                prompt += (
+                    "\n\nIMPORTANT: Your response MUST be a single valid JSON object."
+                    "\n- Do NOT wrap in ```"
+                    "\n- Do NOT include any explanations"
+                    "\n- Output must start with { and end with }"
+                )
+                time.sleep(1)
+                continue
+            return parsed
             
         except Exception as e:
             error_str = str(e)
@@ -634,9 +661,85 @@ def match_and_save(data: Dict, db, socketio=None):
         clean_norm_list = re.sub(r'[^a-zA-Z\s]', ' ', norm_name).lower().split()
         clean_norm = set(t for t in clean_norm_list if len(t) > 1) 
         full_norm_no_space = "".join(clean_norm_list).lower()
+        is_single_token_name = len(clean_norm_list) == 1
         
         # Get all lecturers
         all_lects = list(db.users.find({"role": "lecturer"}))
+
+        if is_single_token_name:
+            token = clean_norm_list[0]
+            token_candidates = []
+            for l in all_lects:
+                db_name = l.get("name", "").lower()
+                # Strip titles so "Ms. Megha" becomes just ["megha"]
+                db_name = re.sub(r"\b(mr|mrs|ms|miss|dr|prof|professor)\.?\b", " ", db_name, flags=re.IGNORECASE).strip()
+                db_clean_list = re.sub(r'[^a-zA-Z\s]', ' ', db_name).lower().split()
+                if token in db_clean_list:
+                    token_candidates.append(l)
+            if len(token_candidates) == 1:
+                user_doc = token_candidates[0]
+                log_event(
+                    f"Python matched unique single-token name: {faculty_name} -> {user_doc['name']}",
+                    socketio=socketio
+                )
+            elif len(token_candidates) > 1:
+                # Prefer the candidate whose DB name is exactly the single token (no surname).
+                no_surname = []
+                for l in token_candidates:
+                    db_name = l.get("name", "").lower()
+                    db_name = re.sub(r"\b(mr|mrs|ms|miss|dr|prof|professor)\.?\b", " ", db_name, flags=re.IGNORECASE).strip()
+                    db_clean_list = re.sub(r'[^a-zA-Z\s]', ' ', db_name).lower().split()
+                    if len(db_clean_list) == 1 and db_clean_list[0] == token:
+                        no_surname.append(l)
+                if len(no_surname) == 1:
+                    user_doc = no_surname[0]
+                    log_event(
+                        f"Python matched single-token (preferred no-surname): {faculty_name} -> {user_doc['name']}",
+                        socketio=socketio
+                    )
+                else:
+                    # If still ambiguous, try department tie-break.
+                    target_dept = (dept_name or "").lower()
+                    dept_hits = []
+                    if target_dept:
+                        for l in token_candidates:
+                            l_dept = (l.get("department") or "").lower()
+                            if target_dept in l_dept:
+                                dept_hits.append(l)
+                    if len(dept_hits) == 1:
+                        user_doc = dept_hits[0]
+                        log_event(
+                            f"Python matched single-token (dept tie-break): {faculty_name} -> {user_doc['name']}",
+                            socketio=socketio
+                        )
+                    else:
+                        # Generic-surname penalty tie-break:
+                        scored = []
+                        for l in token_candidates:
+                            db_name = l.get("name", "").lower()
+                            db_name = re.sub(r"\b(mr|mrs|ms|miss|dr|prof|professor)\.?\b", " ", db_name, flags=re.IGNORECASE).strip()
+                            parts = re.sub(r'[^a-zA-Z\s]', ' ', db_name).lower().split()
+                            extra = [p for p in parts[1:] if p and p != token]
+                            generic_count = sum(1 for p in extra if p in GENERIC_TOKENS)
+                            non_generic_count = sum(1 for p in extra if p and p not in GENERIC_TOKENS)
+                            scored.append(((generic_count, -non_generic_count, len(extra)), l))
+                        scored.sort(key=lambda x: x[0])
+                        best_score = scored[0][0] if scored else None
+                        best = [l for (s, l) in scored if s == best_score]
+                        if len(best) == 1:
+                            user_doc = best[0]
+                            log_event(
+                                f"Python matched single-token (generic penalty): {faculty_name} -> {user_doc['name']}",
+                                socketio=socketio
+                            )
+                        else:
+                            candidate_names = [l.get("name", "") for l in token_candidates]
+                            log_event(
+                                f"Ambiguous single-token name '{faculty_name}' ({len(token_candidates)} candidates) - skipped auto-match. Candidates: {candidate_names}",
+                                socketio=socketio,
+                                status="warning"
+                            )
+                            all_lects = []
         
         best_match = None
         max_overlap = 0

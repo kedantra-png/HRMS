@@ -1,0 +1,13 @@
+{
+  "appId": "com.bbhegdecollege.hrms",
+  "appName": "BB Hegde HRMS",
+  "webDir": "www",
+  "server": {
+    "url": "https://YOUR_PUBLIC_HRMS_URL",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

@@ -1,29 +1,552 @@
 {% extends "base.html" %}
 
-{% block title %}Lecturer Dashboard - HRMS{% endblock %}
+{% block title %}Faculty Dashboard - HRMS{% endblock %}
+{% block body_class %}page-faculty-dashboard{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <style>
+        .cropper-view-box, .cropper-face { border-radius: 50%; }
+        
+        @keyframes bell-ring {
+            0% { transform: rotate(0); }
+            15% { transform: rotate(15deg); }
+            30% { transform: rotate(-15deg); }
+            45% { transform: rotate(10deg); }
+            60% { transform: rotate(-10deg); }
+            75% { transform: rotate(5deg); }
+            85% { transform: rotate(-5deg); }
+            100% { transform: rotate(0); }
+        }
+        .animate-ring { animation: bell-ring 1s ease-in-out infinite; }
+
+        @keyframes flow-line {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .animate-flow-line {
+            background: linear-gradient(90deg, #e2e8f0 0%, #6366f1 50%, #e2e8f0 100%);
+            background-size: 200% 100%;
+            animation: flow-line 4s linear infinite;
+        }
+        
+        @keyframes profile-light-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes profile-rainbow-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes profile-dot-bounce {
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+            40% { transform: translateY(-3px); opacity: 1; }
+        }
+        @keyframes profile-light-flicker {
+            0%, 100% { opacity: 0.22; }
+            50% { opacity: 0.34; }
+        }
+        .profile-avatar-wrap {
+            width: 9.5rem;
+            height: 9.5rem;
+            isolation: isolate;
+        }
+        /* Rotating rainbow ring around profile (running circle) */
+        .profile-rainbow-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .profile-rainbow-ring::before {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                #ef4444 0deg,
+                #f97316 52deg,
+                #eab308 104deg,
+                #22c55e 156deg,
+                #06b6d4 208deg,
+                #3b82f6 260deg,
+                #a855f7 304deg,
+                #ec4899 332deg,
+                #ef4444 360deg
+            );
+            animation: profile-rainbow-spin 2.4s linear infinite;
+            -webkit-mask: radial-gradient(
+                farthest-side,
+                transparent calc(100% - 4.5px),
+                #000 calc(100% - 3px)
+            );
+            mask: radial-gradient(
+                farthest-side,
+                transparent calc(100% - 4.5px),
+                #000 calc(100% - 3px)
+            );
+            filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.45));
+        }
+        @media (min-width: 640px) {
+            .profile-avatar-wrap {
+                width: 10.5rem;
+                height: 10.5rem;
+            }
+        }
+        /* Subtle rotating rim light — clipped behind profile only */
+        .profile-light-backdrop {
+            position: absolute;
+            inset: 9px;
+            border-radius: 50%;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        @media (min-width: 640px) {
+            .profile-light-backdrop {
+                inset: 10px;
+            }
+        }
+        .profile-light-beam {
+            position: absolute;
+            inset: -10%;
+            border-radius: 50%;
+            transform-origin: center center;
+            mix-blend-mode: screen;
+            background: conic-gradient(
+                from 0deg,
+                rgba(56, 189, 248, 0) 0deg,
+                rgba(99, 102, 241, 0.95) 22deg,
+                rgba(168, 85, 247, 0.95) 60deg,
+                rgba(34, 211, 238, 0.95) 95deg,
+                rgba(236, 72, 153, 0.9) 130deg,
+                rgba(56, 189, 248, 0) 165deg,
+                rgba(56, 189, 248, 0) 360deg
+            );
+            filter: blur(8px);
+            opacity: 0.52;
+            animation: profile-light-spin 2.8s linear infinite, profile-light-flicker 1.7s ease-in-out infinite;
+        }
+        .profile-light-beam--2 {
+            inset: -6%;
+            mix-blend-mode: screen;
+            filter: blur(6px);
+            opacity: 0.32;
+            animation: profile-light-spin 4.8s linear infinite reverse, profile-light-flicker 2.2s ease-in-out infinite;
+            background: conic-gradient(
+                from 45deg,
+                rgba(99, 102, 241, 0) 0deg,
+                rgba(167, 139, 250, 0.85) 35deg,
+                rgba(56, 189, 248, 0.85) 85deg,
+                rgba(236, 72, 153, 0.8) 140deg,
+                rgba(99, 102, 241, 0) 200deg,
+                rgba(99, 102, 241, 0) 360deg
+            );
+        }
+        .profile-loader {
+            position: absolute;
+            inset: 9px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 8px 24px rgba(99, 102, 241, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            z-index: 2;
+            transition: opacity 0.35s ease, visibility 0.35s ease;
+        }
+        .profile-loader.is-done {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        .profile-loader-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            animation: profile-dot-bounce 1.1s ease-in-out infinite;
+        }
+        .profile-loader-dot:nth-child(2) { animation-delay: 0.16s; }
+        .profile-loader-dot:nth-child(3) { animation-delay: 0.32s; }
+        #profile-container {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 3;
+            box-shadow:
+                0 0 0 3px #fff,
+                0 2px 12px rgba(15, 23, 42, 0.1);
+        }
+        #profile-container.is-ready {
+            opacity: 1;
+        }
+        .profile-avatar-wrap.is-loaded .profile-light-beam {
+            filter: blur(6px);
+            opacity: 0.34;
+        }
+        .profile-avatar-wrap.is-loaded .profile-light-beam--2 {
+            opacity: 0.22;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .profile-light-beam,
+            .profile-light-beam--2,
+            .profile-rainbow-ring::before,
+            .profile-loader-dot {
+                animation: none;
+            }
+        }
+
+        /* Faculty dashboard mobile: default FAB position (skip when user dragged) */
+        @media (max-width: 767px) {
+            body.page-faculty-dashboard .staff-chat-launcher:not([data-fab-positioned]) {
+                bottom: 1.25rem;
+                left: 1rem;
+            }
+            body.page-faculty-dashboard .staff-chat-launcher {
+                width: 52px;
+                height: 52px;
+                font-size: 24px;
+            }
+            body.page-faculty-dashboard .hrms-chatbot:not([data-fab-positioned]) {
+                bottom: 1.25rem;
+                right: 1rem;
+            }
+            body.page-faculty-dashboard .chatbot-bubble {
+                width: 52px;
+                height: 52px;
+                font-size: 22px;
+            }
+        }
+
+        .profile-card-body {
+            padding: 0 1.25rem 1rem;
+            margin-top: -3.5rem;
+        }
+        @media (min-width: 640px) {
+            .profile-card-body {
+                margin-top: -4rem;
+            }
+        }
+        .profile-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 0.5rem;
+            row-gap: 0;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #f1f5f9;
+        }
+        .profile-stats-grid .stat-leaves,
+        .profile-stats-grid .stat-attendance {
+            padding-bottom: 0.35rem;
+        }
+        .profile-stats-grid .stat-attendance {
+            border-left: 1px solid #f1f5f9;
+        }
+        .profile-stats-grid .profile-stat-delay {
+            grid-column: 1 / -1;
+            padding-top: 0.5rem;
+            margin-top: 0;
+            border-top: 1px solid #f1f5f9;
+            min-width: 0;
+        }
+        .profile-stat-delay .stat-value {
+            white-space: nowrap;
+        }
+        .profile-stat-delay p + p {
+            margin-top: 0.2rem;
+        }
+        @media (min-width: 640px) {
+            .profile-stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                margin-top: 0.75rem;
+                padding-top: 0.75rem;
+            }
+            .profile-stats-grid .stat-leaves,
+            .profile-stats-grid .stat-attendance {
+                padding-bottom: 0;
+            }
+            .profile-stats-grid .stat-attendance {
+                border-left: none;
+                border-right: 1px solid #f1f5f9;
+            }
+            .profile-stats-grid .profile-stat-delay {
+                grid-column: auto;
+                padding-top: 0;
+                margin-top: 0;
+                border-top: none;
+            }
+        }
+
+        /* Faculty dashboard — mobile quick actions (unified indigo palette) */
+        @media (max-width: 767px) {
+            .faculty-mobile-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 0.625rem;
+                padding: 0.875rem;
+                background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+                border: 1px solid #e2e8f0;
+                border-radius: 1.25rem;
+            }
+            .faculty-mobile-action {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem 1.125rem;
+                min-height: 4.25rem;
+                background: #fff;
+                border: 1px solid #e8eaf6;
+                border-left: 4px solid #4f46e5;
+                border-radius: 1rem;
+                box-shadow: 0 1px 3px rgba(79, 70, 229, 0.06);
+                text-decoration: none;
+                transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .faculty-mobile-action:active {
+                transform: scale(0.985);
+                background: #f5f3ff;
+                border-color: #c7d2fe;
+                box-shadow: 0 1px 2px rgba(79, 70, 229, 0.08);
+            }
+            .faculty-mobile-action__icon {
+                flex-shrink: 0;
+                width: 3.25rem;
+                height: 3.25rem;
+                border-radius: 0.875rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+                background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%);
+                color: #4f46e5;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            }
+            .faculty-mobile-action__text {
+                flex: 1;
+                min-width: 0;
+                text-align: left;
+            }
+            .faculty-mobile-action__label {
+                display: block;
+                font-size: 0.6875rem;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                line-height: 1.2;
+                color: #6366f1;
+            }
+            .faculty-mobile-action__title {
+                display: block;
+                font-size: 1.0625rem;
+                font-weight: 700;
+                color: #1e293b;
+                line-height: 1.3;
+                margin-top: 0.125rem;
+            }
+            .faculty-mobile-action__arrow {
+                flex-shrink: 0;
+                font-size: 0.8125rem;
+                color: #a5b4fc;
+            }
+            .faculty-mobile-action__badge {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+                min-width: 1.25rem;
+                height: 1.25rem;
+                padding: 0 0.35rem;
+                background: #e11d48;
+                color: #fff;
+                font-size: 0.625rem;
+                font-weight: 800;
+                border-radius: 9999px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid #fff;
+            }
+            .faculty-mobile-action--has-badge {
+                position: relative;
+            }
+        }
+
+        /* Faculty dashboard — desktop quick actions (same unified indigo palette) */
+        @media (min-width: 768px) {
+            .faculty-desktop-actions {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: stretch;
+                gap: 1rem;
+                padding: 1.25rem;
+                background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+                border: 1px solid #e2e8f0;
+                border-radius: 1.25rem;
+            }
+            .faculty-desktop-action {
+                display: inline-flex;
+                align-items: center;
+                gap: 1rem;
+                flex: 1 1 calc(33.333% - 1rem);
+                min-width: 12rem;
+                min-height: 4.5rem;
+                padding: 1.125rem 1.5rem;
+                background: #fff;
+                border: 1px solid #e8eaf6;
+                border-left: 4px solid #4f46e5;
+                border-radius: 1rem;
+                box-shadow: 0 1px 3px rgba(79, 70, 229, 0.06);
+                text-decoration: none;
+                transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+            }
+            .faculty-desktop-action:hover {
+                background: #f5f3ff;
+                border-color: #c7d2fe;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 14px rgba(79, 70, 229, 0.12);
+            }
+            .faculty-desktop-action__icon {
+                flex-shrink: 0;
+                width: 3.25rem;
+                height: 3.25rem;
+                border-radius: 0.875rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.35rem;
+                background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%);
+                color: #4f46e5;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            }
+            .faculty-desktop-action__label {
+                display: block;
+                font-size: 0.6875rem;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                line-height: 1.2;
+                color: #6366f1;
+            }
+            .faculty-desktop-action__title {
+                display: block;
+                font-size: 1.0625rem;
+                font-weight: 700;
+                color: #1e293b;
+                line-height: 1.3;
+                margin-top: 0.125rem;
+            }
+            .faculty-desktop-action--has-badge {
+                position: relative;
+            }
+            .faculty-desktop-action__badge {
+                position: absolute;
+                top: -0.35rem;
+                right: -0.35rem;
+                min-width: 1.35rem;
+                height: 1.35rem;
+                padding: 0 0.35rem;
+                background: #e11d48;
+                color: #fff;
+                font-size: 0.65rem;
+                font-weight: 800;
+                border-radius: 9999px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid #fff;
+                box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35);
+            }
+        }
+    </style>
+{% endblock %}
 
 {% block content %}
+<!-- Notifications Side Drawer -->
+<div id="notif-drawer" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 opacity-0" id="notif-overlay" onclick="toggleNotifications()"></div>
+    <div class="absolute right-0 top-0 bottom-0 w-full sm:max-w-[50%] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full border-l border-slate-100" id="notif-drawer-content">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-900/20">
+                    <i class="fas fa-bullhorn text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black tracking-tight">Institutional Updates</h3>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Broadcast Messages</p>
+                </div>
+            </div>
+            <button onclick="toggleNotifications()" class="w-10 h-10 rounded-2xl bg-white/10 hover:bg-rose-600 text-white flex items-center justify-center transition-all">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50/50" id="notif-list">
+            <!-- Notifications will be injected here -->
+            <div class="text-center py-20">
+                <div class="w-20 h-20 bg-white rounded-3xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-bell-slash text-3xl text-slate-200"></i>
+                </div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No new broadcasts</p>
+                <p class="text-xs text-slate-300 mt-2">Updates from administration will appear here</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Image Viewer Modal -->
+<div id="image-viewer" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 sm:p-8">
+    <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-md" onclick="closeImageViewer()"></div>
+    <div class="relative max-w-5xl w-full max-h-full flex flex-col items-center gap-6 transform transition-all duration-300 scale-90 opacity-0" id="viewer-content">
+        <button onclick="closeImageViewer()" class="absolute -top-12 right-0 text-white/50 hover:text-white transition-colors">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <img id="viewer-img" src="" class="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/10">
+        <div class="flex items-center gap-4">
+            <a id="viewer-download" href="" download class="px-8 py-3 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-xl flex items-center gap-2">
+                <i class="fas fa-download"></i>
+                Download Image
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="mb-8 -mx-4 sm:-mx-6 lg:-mx-8">
     <div
-        class="w-full bg-white border-b border-slate-200 px-4 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
-        <div class="flex flex-col items-center sm:flex-row sm:items-center gap-3 sm:gap-5">
+        class="relative w-full bg-white border-b border-slate-200 px-4 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
+        <div class="flex flex-col items-center sm:flex-row sm:items-center gap-1 sm:gap-5">
             <div class="flex-shrink-0">
                 <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="College Logo"
                     class="h-20 w-20 sm:h-24 sm:w-24 object-contain">
             </div>
             <div class="text-center sm:text-left">
-                <h1
-                    class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug underline decoration-slate-800 decoration-2 underline-offset-4">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug">
                     Dr. B. B. Hegde First Grade College, Kundapura
                 </h1>
+                <div class="h-px animate-flow-line my-1.5 w-full"></div>
                 <p class="text-xs sm:text-sm text-slate-500 mt-1">
                     A Unit of Coondapur Education Society (R)
                 </p>
             </div>
         </div>
-        <div class="w-full sm:w-auto flex justify-center sm:justify-end">
+        <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-6 sm:gap-6">
+            <button onclick="toggleNotifications()" 
+                class="absolute right-4 top-6 sm:relative sm:right-0 sm:top-0 w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all flex items-center justify-center group">
+                <i id="notif-bell-icon" class="fas fa-bell text-lg"></i>
+                <span id="notif-badge" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
+                <span class="absolute -bottom-10 right-0 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Updates</span>
+            </button>
+            <button onclick="toggleProfileModal()" 
+                class="flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-bold transition-all active:scale-95">
+                <i class="fas fa-user-circle text-xl mr-2"></i>
+                Profile
+            </button>
             <a href="{{ url_for('logout') }}"
-                class="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm transition-colors duration-150">
+                class="flex items-center text-red-600 hover:text-red-700 text-sm font-bold transition-colors">
                 <i class="fas fa-sign-out-alt mr-2"></i>
                 Logout
             </a>
@@ -31,46 +554,74 @@
     </div>
 </div>
 
-<div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div class="mb-10 space-y-8">
     <div class="text-center md:text-left">
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Hello, {{ current_user.name }}</h1>
-        <p class="text-slate-500 mt-1">Welcome to your personal HR portal.</p>
+        <h1 class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
+            Hello, <span class="text-indigo-600">{{ current_user.name }}</span>
+        </h1>
+        <p class="text-slate-500 mt-2 text-sm sm:text-lg font-medium max-w-2xl">
+            Welcome back to your HR portal. Manage your {% if not current_user.staff_id.startswith('BBHCFN') %}timetable, {% endif %}attendance, and leave requests from your personalized command center.
+        </p>
     </div>
-    <!-- Desktop / tablet buttons (top-right) -->
-    <div class="mt-2 md:mt-0 flex flex-col sm:flex-row flex-wrap gap-3 w-full md:w-auto hidden md:flex">
-        <a href="{{ url_for('lecturer_timetable') }}"
-            class="w-full md:w-auto justify-center md:justify-start bg-violet-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-violet-700 shadow-lg shadow-violet-100 transition-all flex items-center text-center">
-            <i class="fas fa-table mr-2"></i> My Timetable
+
+
+
+    <!-- Desktop quick actions (unified indigo palette) -->
+    <nav class="hidden md:flex faculty-desktop-actions" aria-label="Faculty quick actions">
+        {% if not current_user.staff_id.startswith('BBHCFN') %}
+        <a href="{{ url_for('lecturer_timetable') }}" class="faculty-desktop-action">
+            <span class="faculty-desktop-action__icon" aria-hidden="true"><i class="fas fa-table"></i></span>
+            <span class="text-left">
+                <span class="faculty-desktop-action__label">Schedule</span>
+                <span class="faculty-desktop-action__title">My Timetable</span>
+            </span>
         </a>
-        <a href="{{ url_for('lecturer_attendance') }}"
-            class="w-full md:w-auto justify-center md:justify-start bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all flex items-center text-center">
-            <i class="fas fa-user-check mr-2"></i> Attendance
+        {% endif %}
+
+        <a href="{{ url_for('lecturer_attendance') }}" class="faculty-desktop-action">
+            <span class="faculty-desktop-action__icon" aria-hidden="true"><i class="fas fa-user-check"></i></span>
+            <span class="text-left">
+                <span class="faculty-desktop-action__label">Presence</span>
+                <span class="faculty-desktop-action__title">Attendance</span>
+            </span>
         </a>
-        <a href="{{ url_for('my_class_assignments') }}"
-            class="w-full md:w-auto justify-center md:justify-start bg-amber-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-700 shadow-lg shadow-amber-100 transition-all flex items-center text-center relative">
-            <i class="fas fa-tasks mr-2"></i> My Assignments
-            <span id="assignment-badge" class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-xs rounded-full flex items-center justify-center hidden">0</span>
+
+        {% if not current_user.staff_id.startswith('BBHCFN') %}
+        <a href="{{ url_for('my_class_assignments') }}" class="faculty-desktop-action faculty-desktop-action--has-badge">
+            <span class="faculty-desktop-action__icon" aria-hidden="true"><i class="fas fa-tasks"></i></span>
+            <span class="text-left">
+                <span class="faculty-desktop-action__label">Tasks</span>
+                <span class="faculty-desktop-action__title">My Assignments</span>
+            </span>
+            <span id="assignment-badge" class="faculty-desktop-action__badge {% if not notif_count or notif_count == 0 %}hidden{% endif %}">{{ notif_count }}</span>
         </a>
-        <div class="relative">
-            <button type="button" id="leaveMenuBtnDesktop"
-                class="w-full md:w-auto justify-center md:justify-start bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-800 shadow-lg shadow-indigo-100 transition-all flex items-center text-center">
-                <i class="fas fa-plus-circle mr-2"></i> Apply for Leave <i
-                    class="fas fa-chevron-down ml-2 text-sm opacity-80"></i>
-            </button>
-            <div id="leaveMenuDesktop"
-                class="hidden absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 z-10 overflow-hidden">
-                <a href="{{ url_for('apply_leave', mode='full') }}"
-                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 font-semibold border-b border-slate-50 transition-colors">
-                    <i class="fas fa-calendar-day mr-2 text-indigo-500"></i> Multi-Day / Full Leave
-                </a>
-                <a href="{{ url_for('apply_leave', mode='time') }}"
-                    class="block px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 font-semibold transition-colors">
-                    <i class="fas fa-clock mr-2 text-indigo-500"></i> Current Day Leave
-                </a>
-        </div>
-        </div>
-        </div>
-    </div>
+        {% endif %}
+
+        <a href="{{ url_for('apply_leave', mode='full') }}" class="faculty-desktop-action">
+            <span class="faculty-desktop-action__icon" aria-hidden="true"><i class="fas fa-calendar-plus"></i></span>
+            <span class="text-left">
+                <span class="faculty-desktop-action__label">Request</span>
+                <span class="faculty-desktop-action__title">Apply Leave</span>
+            </span>
+        </a>
+
+        <a href="{{ url_for('apply_leave', mode='time') }}" class="faculty-desktop-action">
+            <span class="faculty-desktop-action__icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
+            <span class="text-left">
+                <span class="faculty-desktop-action__label">Short Term</span>
+                <span class="faculty-desktop-action__title">Permission Leave</span>
+            </span>
+        </a>
+
+        <a href="{{ url_for('view_salary') }}" class="faculty-desktop-action">
+            <span class="faculty-desktop-action__icon" aria-hidden="true"><i class="fas fa-file-invoice-dollar"></i></span>
+            <span class="text-left">
+                <span class="faculty-desktop-action__label">Payroll</span>
+                <span class="faculty-desktop-action__title">My Salary</span>
+            </span>
+        </a>
+    </nav>
+</div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <!-- Main Column -->
@@ -86,10 +637,6 @@
                     {% for leave in leaves %}
                     <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
                         <div class="flex items-center space-x-4">
-                            <div
-                                class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-indigo-600 shadow-sm">
-                                <i class="fas fa-calendar-alt"></i>
-                            </div>
                             <div>
                                 <p class="font-bold text-slate-700">{{ leave.type }}</p>
                                 <p class="text-xs text-slate-500">
@@ -98,10 +645,19 @@
                                     <span class="font-bold text-indigo-600 ml-1 uppercase">({{ leave.session }})</span>
                                     {% endif %}
                                 </p>
-                                <p class="text-[11px] text-slate-400 mt-1 truncate max-w-xs">{{ leave.reason }}</p>
+                                <p class="text-[11px] text-slate-400 mt-1">
+                                    {{ leave.reason.split()[:3]|join(' ') }}{% if leave.reason.split()|length > 3 %}...{% endif %}
+                                </p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-3" id="actions-{{ leave._id|string }}">
+                            {% if leave.status == 'Approved' and not current_user.staff_id.startswith('BBHCFN') %}
+                            <a href="{{ url_for('admin_class_allocation_sheet', leave_id=leave._id|string) }}" target="_blank"
+                                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-all flex items-center gap-2 shadow-sm shadow-indigo-100/50">
+                                <i class="fas fa-file-invoice"></i> View Sheet
+                            </a>
+                            {% endif %}
+                            
                             <span id="status-badge-{{ leave._id|string }}" class="px-3 py-1 rounded-full text-[11px] font-bold uppercase 
                                 {% if leave.status == 'Approved' %}bg-green-100 text-green-700
                                 {% elif leave.status == 'Rejected' %}bg-red-100 text-red-700
@@ -132,116 +688,178 @@
             </div>
         </div>
 
-        <!-- My Timetable Quick Link -->
-        <div class="bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-slate-800">My Timetable</h3>
-                <a href="{{ url_for('lecturer_timetable') }}"
-                    class="text-sm font-semibold text-violet-600 hover:text-violet-800 flex items-center">
-                    View full timetable <i class="fas fa-arrow-right ml-1"></i>
-                </a>
-            </div>
-
+        {% if not current_user.staff_id.startswith('BBHCFN') %}
+        <!-- External faculty portals -->
+        <div class="bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 p-6 space-y-3">
+            <a href="http://apps.bbhegdecollege.com:8000/lecturer/login"
+                target="_blank" rel="noopener noreferrer"
+                class="group flex items-center justify-between w-full px-5 py-4 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100/80 text-violet-800 font-bold shadow-sm hover:shadow-md transition-all duration-200">
+                <span class="flex items-center gap-3">
+                    <span class="w-11 h-11 rounded-xl bg-white/80 border border-violet-100 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform shadow-sm">
+                        <i class="fas fa-table text-lg"></i>
+                    </span>
+                    <span class="text-left">
+                        <span class="block text-sm sm:text-base leading-tight">Moulya Faculty Login</span>
+                        <span class="block text-[10px] font-semibold text-violet-500/90 uppercase tracking-wider mt-0.5">Academic timetable portal</span>
+                    </span>
+                </span>
+                <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-white/70 text-violet-700 text-xs font-bold border border-violet-100 group-hover:bg-white transition-colors">
+                    Open <i class="fas fa-arrow-right ml-1.5"></i>
+                </span>
+            </a>
+            <a href="http://apps.bbhegdecollege.com:5001/"
+                target="_blank" rel="noopener noreferrer"
+                class="group flex items-center justify-between w-full px-5 py-4 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-100/80 text-sky-900 font-bold shadow-sm hover:shadow-md transition-all duration-200">
+                <span class="flex items-center gap-3">
+                    <span class="w-11 h-11 rounded-xl bg-white/80 border border-sky-100 flex items-center justify-center text-sky-600 group-hover:scale-105 transition-transform shadow-sm">
+                        <i class="fas fa-chart-line text-lg"></i>
+                    </span>
+                    <span class="text-left">
+                        <span class="block text-sm sm:text-base leading-tight">Sem Result Faculty View</span>
+                        <span class="block text-[10px] font-semibold text-sky-600/90 uppercase tracking-wider mt-0.5">Semester result analyzer</span>
+                    </span>
+                </span>
+                <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-white/70 text-sky-800 text-xs font-bold border border-sky-100 group-hover:bg-white transition-colors">
+                    Open <i class="fas fa-arrow-right ml-1.5"></i>
+                </span>
+            </a>
         </div>
+        {% endif %}
     </div>
 
     <!-- Sidebar -->
     <div class="space-y-8 order-1 lg:order-2">
         <!-- Profile Card -->
         <div class="bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 overflow-hidden">
-            <div class="h-20 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
-            <div class="px-6 pb-6 -mt-10 text-center">
-                <div class="inline-block p-1 bg-white rounded-full mb-4">
-                    <img src="https://ui-avatars.com/api/?name={{ current_user.name }}&background=6366f1&color=fff"
-                        class="w-20 h-20 rounded-full border-4 border-white shadow-xl">
-                </div>
-                <h3 class="font-bold text-slate-800 text-lg">{{ current_user.name }}</h3>
-                <p class="text-sm text-slate-500">Assistant Professor</p>
-
-                <div class="mt-6 flex justify-around border-t pt-6">
-                    <div>
-                        <p id="leaves-left-count" class="text-lg font-bold text-slate-800">{{ leaves_left }}</p>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Leaves Left</p>
+            <div class="h-20 sm:h-24 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+            <div class="profile-card-body text-center">
+                <div class="profile-avatar-wrap inline-block relative mb-2 group mx-auto" id="profile-avatar-wrap">
+                    <div class="profile-rainbow-ring" aria-hidden="true"></div>
+                    <div class="profile-light-backdrop" aria-hidden="true">
+                        <span class="profile-light-beam profile-light-beam--1"></span>
+                        <span class="profile-light-beam profile-light-beam--2"></span>
                     </div>
-                    <div class="border-x px-6">
-                        <p class="text-lg font-bold text-slate-800">98%</p>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Attendance</p>
+                    <div class="profile-loader" id="profile-loader" aria-hidden="true">
+                        <span class="profile-loader-dot"></span>
+                        <span class="profile-loader-dot"></span>
+                        <span class="profile-loader-dot"></span>
+                    </div>
+                    <div id="profile-container" onclick="{% if not profile_locked %}document.getElementById('profile-upload').click(){% endif %}" 
+                         class="absolute inset-[9px] sm:inset-[10px] rounded-full border-4 border-white overflow-hidden {% if not profile_locked %}cursor-pointer{% endif %} bg-white transition-transform active:scale-95">
+                        <img id="profile-display" 
+                             src="{% if profile_pic %}{{ url_for('static', filename=profile_pic) }}?v={{ range(1, 10000)|random }}{% else %}https://ui-avatars.com/api/?name={{ current_user.name }}&background=6366f1&color=fff&size=256{% endif %}"
+                             class="w-full h-full object-cover"
+                             onload="onProfileImageReady()"
+                             onerror="onProfileImageReady()">
+                        
+                        {% if not profile_locked %}
+                        <div id="upload-overlay" class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i class="fas fa-camera text-white text-2xl"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if not profile_locked %}
+                    <input type="file" id="profile-upload" class="hidden" accept="image/*" onchange="initCropper(this)">
+                    <div id="upload-hint" class="absolute bottom-0 right-0 z-[4] w-9 h-9 bg-indigo-600 text-white rounded-full flex items-center justify-center border-4 border-white shadow-lg animate-bounce">
+                        <i class="fas fa-plus text-xs"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <h3 class="font-bold text-slate-800 text-lg leading-tight mt-1">{{ current_user.name }}</h3>
+                <p class="text-sm text-slate-500 leading-tight">Assistant Professor</p>
+
+                <div class="profile-stats-grid">
+                    <div class="stat-leaves text-center min-w-0">
+                        <p id="leaves-left-count" class="text-base sm:text-lg font-bold text-slate-800 leading-tight">{{ leaves_left }}</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase leading-tight mt-1">Leaves Left</p>
+                    </div>
+                    <div class="stat-attendance text-center min-w-0 px-1">
+                        <p class="text-base sm:text-lg font-bold text-slate-800 leading-tight">{{ attendance_percent }}%</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase leading-tight mt-1">Attendance</p>
+                    </div>
+                    <div class="profile-stat-delay text-center min-w-0">
+                        <p id="month-delay-count" class="stat-value text-base sm:text-lg font-bold text-amber-700 leading-none">{{ month_delay }}</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase leading-tight">Month Delay</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase leading-tight">{{ current_month_label }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Mobile buttons below profile card -->
-        <div class="md:hidden flex flex-col gap-3">
-            <a href="{{ url_for('lecturer_timetable') }}"
-                class="w-full justify-center bg-violet-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-violet-700 shadow-lg shadow-violet-100 transition-all flex items-center text-center">
-                <i class="fas fa-table mr-2"></i> My Timetable
+        <!-- Mobile quick actions (list tiles — same colors as desktop) -->
+        <nav class="md:hidden faculty-mobile-actions" aria-label="Faculty quick actions">
+            {% if not current_user.staff_id.startswith('BBHCFN') %}
+            <a href="{{ url_for('lecturer_timetable') }}" class="faculty-mobile-action">
+                <span class="faculty-mobile-action__icon" aria-hidden="true"><i class="fas fa-table"></i></span>
+                <span class="faculty-mobile-action__text">
+                    <span class="faculty-mobile-action__label">Schedule</span>
+                    <span class="faculty-mobile-action__title">My Timetable</span>
+                </span>
+                <i class="fas fa-chevron-right faculty-mobile-action__arrow" aria-hidden="true"></i>
             </a>
-            <a href="{{ url_for('lecturer_attendance') }}"
-                class="w-full justify-center bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all flex items-center text-center">
-                <i class="fas fa-user-check mr-2"></i> Attendance
+            {% endif %}
+            <a href="{{ url_for('lecturer_attendance') }}" class="faculty-mobile-action">
+                <span class="faculty-mobile-action__icon" aria-hidden="true"><i class="fas fa-user-check"></i></span>
+                <span class="faculty-mobile-action__text">
+                    <span class="faculty-mobile-action__label">Presence</span>
+                    <span class="faculty-mobile-action__title">Attendance</span>
+                </span>
+                <i class="fas fa-chevron-right faculty-mobile-action__arrow" aria-hidden="true"></i>
             </a>
+            {% if not current_user.staff_id.startswith('BBHCFN') %}
             <a href="{{ url_for('my_class_assignments') }}"
-                class="w-full justify-center bg-amber-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-700 shadow-lg shadow-amber-100 transition-all flex items-center text-center">
-                <i class="fas fa-tasks mr-2"></i> My Assignments
+                class="faculty-mobile-action faculty-mobile-action--has-badge">
+                <span class="faculty-mobile-action__icon" aria-hidden="true"><i class="fas fa-tasks"></i></span>
+                <span class="faculty-mobile-action__text">
+                    <span class="faculty-mobile-action__label">Tasks</span>
+                    <span class="faculty-mobile-action__title">My Assignments</span>
+                </span>
+                <i class="fas fa-chevron-right faculty-mobile-action__arrow" aria-hidden="true"></i>
+                <span id="assignment-badge-mobile" class="faculty-mobile-action__badge {% if not notif_count or notif_count == 0 %}hidden{% endif %}">{{ notif_count }}</span>
             </a>
-
-            <div class="relative">
-                <button type="button" id="leaveMenuBtnMobile"
-                    class="w-full justify-center bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-800 shadow-lg shadow-indigo-100 transition-all flex items-center text-center">
-                    <i class="fas fa-plus-circle mr-2"></i> Apply for Leave <i
-                        class="fas fa-chevron-down ml-2 text-sm opacity-80"></i>
-                </button>
-                <div id="leaveMenuMobile"
-                    class="hidden absolute right-0 top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-slate-100 z-10 overflow-hidden">
-                    <a href="{{ url_for('apply_leave', mode='full') }}"
-                        class="block px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 font-semibold border-b border-slate-50 transition-colors">
-                        <i class="fas fa-calendar-day mr-2 text-indigo-500"></i> Multi-Day / Full Leave
-                    </a>
-                    <a href="{{ url_for('apply_leave', mode='time') }}"
-                        class="block px-4 py-3 text-sm text-slate-700 hover:bg-indigo-50 font-semibold transition-colors">
-                        <i class="fas fa-clock mr-2 text-indigo-500"></i> Current Day Leave
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Salary Quick View (desktop / tablet) -->
-        <div class="hidden md:block bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-lg shadow-black/25 p-6 text-white">
-            <div class="flex items-center justify-between mb-6">
-                <i class="fas fa-wallet text-indigo-400 text-xl"></i>
-                <span class="text-[10px] font-bold bg-white/10 px-2 py-1 rounded-lg">LAST PAYSLIP</span>
-            </div>
-            <p class="text-sm text-slate-400 mb-1">January 2026 Earnings</p>
-            <h2 class="text-3xl font-extrabold">₹ 48,500.00</h2>
-            <div class="mt-6 pt-6 border-t border-white/10">
-                <button
-                    class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg text-sm font-bold transition-colors">
-                    <i class="fas fa-download mr-2"></i> Download Slip
-                </button>
-            </div>
-        </div>
+            {% endif %}
+            <a href="{{ url_for('apply_leave', mode='full') }}" class="faculty-mobile-action">
+                <span class="faculty-mobile-action__icon" aria-hidden="true"><i class="fas fa-calendar-plus"></i></span>
+                <span class="faculty-mobile-action__text">
+                    <span class="faculty-mobile-action__label">Request</span>
+                    <span class="faculty-mobile-action__title">Apply Leave</span>
+                </span>
+                <i class="fas fa-chevron-right faculty-mobile-action__arrow" aria-hidden="true"></i>
+            </a>
+            <a href="{{ url_for('apply_leave', mode='time') }}" class="faculty-mobile-action">
+                <span class="faculty-mobile-action__icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
+                <span class="faculty-mobile-action__text">
+                    <span class="faculty-mobile-action__label">Short Term</span>
+                    <span class="faculty-mobile-action__title">Permission Leave</span>
+                </span>
+                <i class="fas fa-chevron-right faculty-mobile-action__arrow" aria-hidden="true"></i>
+            </a>
+            <a href="{{ url_for('view_salary') }}" class="faculty-mobile-action">
+                <span class="faculty-mobile-action__icon" aria-hidden="true"><i class="fas fa-file-invoice-dollar"></i></span>
+                <span class="faculty-mobile-action__text">
+                    <span class="faculty-mobile-action__label">Payroll</span>
+                    <span class="faculty-mobile-action__title">My Salary</span>
+                </span>
+                <i class="fas fa-chevron-right faculty-mobile-action__arrow" aria-hidden="true"></i>
+            </a>
+        </nav>
     </div>
 </div>
 
-<!-- Salary Quick View (mobile bottom) -->
-<div class="mt-8 md:hidden">
-    <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-lg shadow-black/25 p-6 text-white">
-        <div class="flex items-center justify-between mb-6">
-            <i class="fas fa-wallet text-indigo-400 text-xl"></i>
-            <span class="text-[10px] font-bold bg-white/10 px-2 py-1 rounded-lg">LAST PAYSLIP</span>
-        </div>
-        <p class="text-sm text-slate-400 mb-1">January 2026 Earnings</p>
-        <h2 class="text-3xl font-extrabold">₹ 48,500.00</h2>
-        <div class="mt-6 pt-6 border-t border-white/10">
-            <button
-                class="w-full bg-white/10 hover:bg-white/20 py-2 rounded-lg text-sm font-bold transition-colors">
-                <i class="fas fa-download mr-2"></i> Download Slip
-            </button>
-        </div>
-    </div>
-</div>
 <script>
+    function onProfileImageReady() {
+        const loader = document.getElementById('profile-loader');
+        const container = document.getElementById('profile-container');
+        const wrap = document.getElementById('profile-avatar-wrap');
+        if (loader) loader.classList.add('is-done');
+        if (container) container.classList.add('is-ready');
+        if (wrap) wrap.classList.add('is-loaded');
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const img = document.getElementById('profile-display');
+        if (img && img.complete) onProfileImageReady();
+    });
+
     async function cancelLeave(id) {
         const confirmed = await window.Confirm('Cancel Request?', 'Are you sure you want to cancel this leave request?', 'times-circle', 'Cancel');
         if (!confirmed) return;
@@ -262,36 +880,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const currentUserId = "{{ current_user.id }}";
-
-        function setupLeaveMenu(btnId, menuId) {
-            const btn = document.getElementById(btnId);
-            const menu = document.getElementById(menuId);
-            if (!btn || !menu) return;
-
-            function close() { menu.classList.add('hidden'); }
-            function toggle() { menu.classList.toggle('hidden'); }
-
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                // close the other menu if open
-                const otherMenuId = menuId === 'leaveMenuDesktop' ? 'leaveMenuMobile' : 'leaveMenuDesktop';
-                const otherMenu = document.getElementById(otherMenuId);
-                if (otherMenu) otherMenu.classList.add('hidden');
-                toggle();
-            });
-
-            document.addEventListener('click', function (e) {
-                if (!menu.contains(e.target) && !btn.contains(e.target)) close();
-            });
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape') close();
-            });
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('show_profile') === 'true') {
+            toggleProfileModal();
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        setupLeaveMenu('leaveMenuBtnDesktop', 'leaveMenuDesktop');
-        setupLeaveMenu('leaveMenuBtnMobile', 'leaveMenuMobile');
+        const currentUserId = "{{ current_user.id }}";
+
+
 
         socket.on('leave_status_update', function (data) {
             if (data.lecturer_id === currentUserId) {
@@ -301,6 +898,17 @@
                     badge.className = 'px-3 py-1 rounded-full text-[11px] font-bold uppercase';
                     if (data.status === 'Approved') {
                         badge.classList.add('bg-green-100', 'text-green-700');
+                        
+                        // Dynamically add "View Sheet" button if it doesn't exist
+                        const actionContainer = document.getElementById('actions-' + data.id);
+                        if (actionContainer && !actionContainer.querySelector('a[href*="class-allocation-sheet"]')) {
+                            const viewBtn = document.createElement('a');
+                            viewBtn.href = `/admin/leave/${data.id}/class-allocation-sheet`;
+                            viewBtn.target = '_blank';
+                            viewBtn.className = 'text-[11px] font-bold text-indigo-600 hover:text-indigo-800 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-all flex items-center gap-2 shadow-sm shadow-indigo-100/50';
+                            viewBtn.innerHTML = '<i class="fas fa-file-invoice"></i> View Sheet';
+                            actionContainer.prepend(viewBtn);
+                        }
                     } else if (data.status === 'Rejected') {
                         badge.classList.add('bg-red-100', 'text-red-700');
                     }
@@ -334,14 +942,17 @@
                 .then(data => {
                     if (data.success) {
                         const badge = document.getElementById('assignment-badge');
-                        if (badge) {
-                            if (data.count > 0) {
-                                badge.textContent = data.count;
-                                badge.classList.remove('hidden');
-                            } else {
-                                badge.classList.add('hidden');
+                        const badgeMobile = document.getElementById('assignment-badge-mobile');
+                        [badge, badgeMobile].forEach(b => {
+                            if (b) {
+                                if (data.count > 0) {
+                                    b.textContent = data.count;
+                                    b.classList.remove('hidden');
+                                } else {
+                                    b.classList.add('hidden');
+                                }
                             }
-                        }
+                        });
                     }
                 })
                 .catch(error => console.error('Error fetching notifications:', error));
@@ -365,5 +976,486 @@
         updateNotificationBadge();
         setInterval(updateNotificationBadge, 30000);
     });
+
+    let cropper = null;
+    function initCropper(input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/90 z-[100] flex flex-col items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl overflow-hidden max-w-lg w-full">
+                    <div class="p-4 border-b flex justify-between items-center">
+                        <h3 class="font-black uppercase text-xs tracking-widest text-slate-500">Adjust Photo</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="aspect-square bg-slate-100 flex items-center justify-center overflow-hidden">
+                        <img id="cropper-target" src="${e.target.result}" class="max-w-full">
+                    </div>
+                    <div class="p-4 bg-slate-50 flex gap-3">
+                        <button id="save-crop" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-[10px] shadow-lg shadow-indigo-200">Set Photo</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const image = document.getElementById('cropper-target');
+            cropper = new Cropper(image, {
+                aspectRatio: 1,
+                viewMode: 1,
+                guides: false,
+                autoCropArea: 1,
+                movable: true,
+                zoomable: true,
+                rotatable: false,
+                scalable: false
+            });
+            
+            document.getElementById('save-crop').onclick = () => {
+                const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
+                canvas.toBlob((blob) => {
+                    uploadProfilePic(blob);
+                    modal.remove();
+                }, 'image/png');
+            };
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function uploadProfilePic(blob) {
+        const formData = new FormData();
+        formData.append('photo', blob, 'profile.png');
+        
+        const display = document.getElementById('profile-display');
+        display.classList.add('animate-pulse');
+        
+        try {
+            const resp = await fetch('/lecturer/upload-profile-pic', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await resp.json();
+            if (data.success) {
+                location.reload(); // Hard reload to lock UI and refresh image cache
+            }
+        } catch (e) {
+            console.error(e);
+            display.classList.remove('animate-pulse');
+        }
+    }
+
+    function toggleProfileModal() {
+        const modal = document.getElementById('profileModal');
+        const container = document.getElementById('profileModalContainer');
+        if (modal.classList.contains('hidden')) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                container.classList.remove('scale-95', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        } else {
+            container.classList.add('scale-95', 'opacity-0');
+            container.classList.remove('scale-100', 'opacity-100');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+    }
+</script>
+
+<!-- Faculty Profile Modal -->
+<div id="profileModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div class="bg-white w-full max-w-md lg:max-w-2xl rounded-[32px] shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0 duration-300 flex flex-col max-h-[85vh]" id="profileModalContainer">
+        <div class="p-6 lg:p-10 overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100 overflow-hidden border-2 border-white">
+                        {% if profile_pic %}
+                            <img src="{{ url_for('static', filename=profile_pic) }}?v={{ range(1, 10000)|random }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <i class="fas fa-user-circle text-2xl"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tight">Faculty Profile</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Official Records</p>
+                    </div>
+                </div>
+                <button onclick="toggleProfileModal()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors active:scale-90">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+                <!-- Staff ID -->
+                <div class="flex items-center gap-4 group p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+                    <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                        <i class="fas fa-id-card text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Staff ID</p>
+                        <p class="text-sm font-bold text-slate-800 tracking-tight">{{ current_user.staff_id }}</p>
+                    </div>
+                </div>
+                
+                <!-- Designation -->
+                <div class="flex items-center gap-4 group p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                        <i class="fas fa-briefcase text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Designation</p>
+                        <p class="text-sm font-bold text-slate-800 leading-snug">{{ current_user.designation or 'Faculty Member' }}</p>
+                    </div>
+                </div>
+
+                <!-- Department -->
+                <div class="flex items-center gap-4 group p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                        <i class="fas fa-university text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Department</p>
+                        <p class="text-sm font-bold text-slate-800 leading-snug">{{ current_user.department or 'General' }}</p>
+                    </div>
+                </div>
+
+                <!-- Category -->
+                <div class="flex items-center gap-4 group p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+                    <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                        <i class="fas fa-tags text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Category</p>
+                        <p class="text-sm font-bold text-slate-800 leading-snug">{{ current_user.category or 'Teaching Faculty' }}</p>
+                    </div>
+                </div>
+
+                <!-- Phone (Editable) -->
+                <div class="flex items-center gap-4 group lg:col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-100 relative overflow-hidden">
+                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                        <i class="fas fa-phone-alt text-sm"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Personal Phone Number</p>
+                        <div id="phone-view-mode" class="flex items-center justify-between gap-4">
+                            <p class="text-sm font-bold text-slate-800 leading-snug break-words">{{ current_user.phone or 'Not Provided' }}</p>
+                            <button onclick="togglePhoneEdit(true)" class="flex-shrink-0 px-3 py-1 bg-white border border-slate-200 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:border-emerald-600 transition-all">Edit</button>
+                        </div>
+                        <div id="phone-edit-mode" class="hidden flex items-center gap-2">
+                            <input type="tel" id="new-phone-input" value="{{ current_user.phone }}" placeholder="Phone..."
+                                   class="flex-1 bg-white border border-emerald-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                            <button onclick="saveNewPhone()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-100 active:scale-95 transition-all">Save</button>
+                            <button onclick="togglePhoneEdit(false)" class="text-slate-400 hover:text-slate-600 font-bold text-[9px] uppercase">X</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email (Editable) -->
+                <div class="flex items-center gap-4 group lg:col-span-2 bg-slate-50 p-4 rounded-2xl border border-slate-100 relative overflow-hidden">
+                    <div class="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
+                        <i class="fas fa-envelope text-sm"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">Official Email Address</p>
+                        <div id="email-view-mode" class="flex items-center justify-between gap-4">
+                            <p class="text-sm font-bold text-slate-800 leading-snug break-all">{{ current_user.email or 'N/A' }}</p>
+                            <button onclick="toggleEmailEdit(true)" class="flex-shrink-0 px-3 py-1 bg-white border border-slate-200 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:border-indigo-600 transition-all">Edit</button>
+                        </div>
+                        <div id="email-edit-mode" class="hidden flex items-center gap-2">
+                            <input type="email" id="new-email-input" value="{{ current_user.email }}" placeholder="Email..."
+                                   class="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                            <button onclick="saveNewEmail()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100 active:scale-95 transition-all">Save</button>
+                            <button onclick="toggleEmailEdit(false)" class="text-slate-400 hover:text-slate-600 font-bold text-[9px] uppercase">X</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Section -->
+                <div class="lg:col-span-2 pt-6 border-t border-slate-100">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-200">
+                            <div class="w-8 h-8 bg-slate-100 text-slate-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-user-lock text-xs"></i>
+                            </div>
+                            <div>
+                                <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Username</p>
+                                <p class="text-xs font-bold text-slate-800">{{ current_user.username }}</p>
+                            </div>
+                        </div>
+
+                        <div id="pw-trigger" class="flex items-center justify-between p-3 bg-indigo-50/30 rounded-xl border border-indigo-100">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-key text-indigo-400 text-xs"></i>
+                                <div>
+                                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Password</p>
+                                    <p class="text-xs font-bold text-slate-800 font-mono tracking-wider">{{ current_user.display_password or '********' }}</p>
+                                </div>
+                            </div>
+                            <button onclick="togglePasswordForm(true)" class="text-[9px] font-black text-indigo-600 uppercase tracking-widest hover:underline">Change</button>
+                        </div>
+                    </div>
+
+                    <!-- Password Form -->
+                    <div id="pw-form" class="hidden mt-4 p-5 bg-slate-900 rounded-2xl text-white">
+                        <div class="grid grid-cols-1 gap-3">
+                            <div class="relative">
+                                <input type="password" id="old-pw" placeholder="Old Password" class="w-full bg-white/10 border border-white/10 rounded-xl pl-3 pr-10 py-2.5 text-xs text-white outline-none focus:ring-1 focus:ring-indigo-500">
+                                <button type="button" onclick="togglePwVisibility('old-pw', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><i class="fas fa-eye text-xs"></i></button>
+                            </div>
+                            <div class="relative">
+                                <input type="password" id="new-pw" placeholder="New Password" class="w-full bg-white/10 border border-white/10 rounded-xl pl-3 pr-10 py-2.5 text-xs text-white outline-none focus:ring-1 focus:ring-indigo-500">
+                                <button type="button" onclick="togglePwVisibility('new-pw', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><i class="fas fa-eye text-xs"></i></button>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end gap-2">
+                            <button onclick="togglePasswordForm(false)" class="text-[9px] font-bold text-slate-400 uppercase mr-2">Cancel</button>
+                            <button onclick="saveNewPassword()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg shadow-indigo-900/50">Update</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-center">
+                <button onclick="toggleProfileModal()" class="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200">
+                    Close Details
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Image Viewer Functions
+    function openImageViewer(url) {
+        const viewer = document.getElementById('image-viewer');
+        const content = document.getElementById('viewer-content');
+        const img = document.getElementById('viewer-img');
+        const download = document.getElementById('viewer-download');
+
+        img.src = url;
+        download.href = url;
+        viewer.classList.remove('hidden');
+        
+        // Trigger animation
+        setTimeout(() => {
+            content.classList.remove('scale-90', 'opacity-0');
+        }, 10);
+    }
+
+    function closeImageViewer() {
+        const viewer = document.getElementById('image-viewer');
+        const content = document.getElementById('viewer-content');
+        
+        content.classList.add('scale-90', 'opacity-0');
+        setTimeout(() => {
+            viewer.classList.add('hidden');
+        }, 300);
+    }
+
+    // Notification System Functions
+    async function toggleNotifications() {
+        const drawer = document.getElementById('notif-drawer');
+        const content = document.getElementById('notif-drawer-content');
+        const overlay = document.getElementById('notif-overlay');
+        const badge = document.getElementById('notif-badge');
+
+        if (drawer.classList.contains('hidden')) {
+            drawer.classList.remove('hidden');
+            // Force reflow
+            void drawer.offsetWidth;
+            content.classList.remove('translate-x-full');
+            overlay.classList.remove('opacity-0');
+            badge.classList.add('hidden'); // Hide badge when opened
+            await loadNotifications();
+        } else {
+            content.classList.add('translate-x-full');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                drawer.classList.add('hidden');
+            }, 300);
+        }
+    }
+
+    async function loadNotifications() {
+        const list = document.getElementById('notif-list');
+        try {
+            const res = await fetch('/api/broadcasts');
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            const data = await res.json();
+            
+            if (data.length > 0) {
+                list.innerHTML = data.map(n => `
+                    <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${n.sender}</span>
+                            </div>
+                            <span class="text-[9px] font-bold text-slate-300 uppercase">${n.created_at}</span>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700 leading-relaxed break-words">${n.message}</p>
+                        ${n.image_url ? `
+                        <div class="mt-4 rounded-2xl overflow-hidden border border-slate-100 shadow-inner group relative bg-slate-100 cursor-zoom-in" onclick="openImageViewer('${n.image_url}')">
+                            <img src="${n.image_url}" alt="Broadcast" class="w-full h-auto max-h-[400px] object-contain hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none"></div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // Move socket listener to DOMContentLoaded later, but define it here if needed
+    // or just listen directly
+    socket.on('new_broadcast', function(data) {
+        const badge = document.getElementById('notif-badge');
+        const bell = document.getElementById('notif-bell-icon');
+        if (badge) badge.classList.remove('hidden');
+        if (bell) bell.classList.add('animate-ring');
+        // Optional: show a small toast or play a sound
+        console.log("New broadcast received:", data.message);
+    });
+    // Profile Management Functions
+    function toggleEmailEdit(show) {
+        document.getElementById('email-view-mode').classList.toggle('hidden', show);
+        document.getElementById('email-edit-mode').classList.toggle('hidden', !show);
+        if (show) {
+            const input = document.getElementById('new-email-input');
+            input.focus();
+            input.select();
+        }
+    }
+
+    function togglePhoneEdit(show) {
+        document.getElementById('phone-view-mode').classList.toggle('hidden', show);
+        document.getElementById('phone-edit-mode').classList.toggle('hidden', !show);
+        if (show) {
+            const input = document.getElementById('new-phone-input');
+            input.focus();
+            input.select();
+        }
+    }
+
+    async function saveNewPhone() {
+        const phoneInput = document.getElementById('new-phone-input');
+        const phone = phoneInput.value.trim();
+        
+        // 10-Digit Validation
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(phone)) {
+            window.Alert("Invalid Number", "Please enter a valid 10-digit mobile number.", "exclamation-circle");
+            phoneInput.focus();
+            phoneInput.classList.add('border-rose-500', 'ring-rose-200', 'focus:ring-rose-500');
+            return;
+        }
+
+        try {
+            const res = await fetch('/lecturer/update-phone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                await window.Alert("Update Successful", "Your personal phone number has been updated successfully.", "check-circle");
+                location.href = window.location.pathname + '?show_profile=true';
+            } else {
+                window.Alert("Update Failed", data.message, "exclamation-triangle");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function togglePwVisibility(id, btn) {
+        const input = document.getElementById(id);
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    async function saveNewEmail() {
+        const emailInput = document.getElementById('new-email-input');
+        const email = emailInput.value.trim();
+        
+        // Email Format Validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            window.Alert("Invalid Format", "Please enter a valid official email address (e.g., name@college.edu).", "exclamation-circle");
+            emailInput.focus();
+            emailInput.classList.add('border-rose-500', 'ring-rose-200');
+            return;
+        }
+
+        try {
+            const res = await fetch('/lecturer/update-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email })
+            });
+            const data = await res.json();
+            if (data.success) {
+                await window.Alert("Update Successful", "Your official email address has been updated successfully.", "check-circle");
+                location.href = window.location.pathname + '?show_profile=true';
+            } else {
+                window.Alert("Update Failed", data.message, "exclamation-triangle");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function togglePasswordForm(show) {
+        document.getElementById('pw-trigger').classList.toggle('hidden', show);
+        document.getElementById('pw-form').classList.toggle('hidden', !show);
+        if (show) document.getElementById('old-pw').focus();
+    }
+
+    async function saveNewPassword() {
+        const oldPw = document.getElementById('old-pw').value;
+        const newPw = document.getElementById('new-pw').value;
+
+        if (!oldPw || !newPw) {
+            window.Alert("Missing Info", "Both old and new passwords are required.", "info-circle");
+            return;
+        }
+
+        if (newPw.length < 6) {
+            window.Alert("Weak Password", "New password must be at least 6 characters long.", "shield-alt");
+            return;
+        }
+
+        try {
+            const res = await fetch('/lecturer/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ old_password: oldPw, new_password: newPw })
+            });
+            const data = await res.json();
+            if (data.success) {
+                await window.Alert("Password Updated", "Your account password has been changed successfully.", "lock");
+                location.href = window.location.pathname + '?show_profile=true';
+            } else {
+                window.Alert("Error", data.message, "exclamation-triangle");
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
 </script>
 {% endblock %}

@@ -12,8 +12,7 @@
                     class="h-20 w-20 sm:h-24 sm:w-24 object-contain">
             </div>
             <div class="text-center sm:text-left">
-                <h1
-                    class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug underline decoration-slate-800 decoration-2 underline-offset-4">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug">
                     Dr. B. B. Hegde First Grade College, Kundapura
                 </h1>
                 <p class="text-xs sm:text-sm text-slate-500 mt-1">
@@ -21,20 +20,22 @@
                 </p>
             </div>
         </div>
-        <div class="w-full sm:w-auto flex justify-center sm:justify-end gap-3">
+        <div class="w-full sm:w-auto flex justify-end gap-3">
             <a href="{{ url_for('lecturer_dashboard') }}"
                 class="inline-flex items-center px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold shadow-sm transition-colors duration-150">
                 <i class="fas fa-arrow-left mr-2"></i>
                 Back to Dashboard
             </a>
             <a href="{{ url_for('logout') }}"
-                class="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm transition-colors duration-150">
+                class="inline-flex items-center text-red-600 hover:text-red-700 text-sm font-bold transition-colors duration-150">
                 <i class="fas fa-sign-out-alt mr-2"></i>
                 Logout
             </a>
         </div>
     </div>
 </div>
+
+
 
 <div class="space-y-6">
     <!-- Filters and summary -->
@@ -76,15 +77,24 @@
 
         <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div
-                class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 flex items-center justify-between">
+                class="rounded-xl border px-4 py-3 flex items-center justify-between {% if today_records %}border-emerald-100 bg-emerald-50 text-emerald-900{% else %}border-rose-100 bg-rose-50 text-rose-900{% endif %}">
                 <div>
-                    <p class="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Today</p>
-                    <p class="text-lg font-extrabold text-emerald-900">
-                        {% if today_records %}Present{% else %}No Mark Yet{% endif %}
+                    <p class="text-xs font-semibold uppercase tracking-wide {% if today_records %}text-emerald-700{% else %}text-rose-700{% endif %}">Today Status</p>
+                    <p class="text-lg font-extrabold">
+                        {% if today_records %}
+                            {{ today_records[0].status }}
+                            {% if today_records[0].delay and today_records[0].delay != '00:00:00' and today_records[0].delay != 'Absent' %}
+                            <span class="text-xs block font-bold text-rose-600">
+                                (Delay: {{ today_records[0].delay }})
+                            </span>
+                            {% endif %}
+                        {% else %}
+                            Absent
+                        {% endif %}
                     </p>
                 </div>
-                <div class="text-emerald-500 text-2xl">
-                    <i class="fas fa-calendar-check"></i>
+                <div class="text-2xl {% if today_records %}text-emerald-500{% else %}text-rose-500{% endif %}">
+                    <i class="fas {% if today_records %}fa-calendar-check{% else %}fa-user-times{% endif %}"></i>
                 </div>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
@@ -122,7 +132,7 @@
                             Status</th>
                         <th
                             class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                            Notes</th>
+                            Delay (H:M:S)</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-50">
@@ -145,9 +155,10 @@
                                 {{ rec.status or 'N/A' }}
                             </span>
                         </td>
-                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-500 max-w-xs truncate"
-                            title="{{ rec.extra }}">
-                            {{ rec.extra or '-' }}
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 font-mono">
+                            <span class="{% if rec.delay != '00:00:00' %}text-rose-600 font-bold{% else %}text-slate-400{% endif %}">
+                                {{ rec.delay or '00:00:00' }}
+                            </span>
                         </td>
                     </tr>
                     {% endfor %}

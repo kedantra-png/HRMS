@@ -1,10 +1,349 @@
 {
+    "department": "DEPARTMENT OF COMPUTER APPLICATIONS",
     "faculty": "Mr. PRANAM R. BETRABET",
     "faculty_id": "BBHCF048",
-    "department": "DEPARTMENT OF COMPUTER APPLICATIONS",
     "mentor": "II BCA (A)",
-    "total_hours": "21Hrs",
     "timetable": {
+        "days": [
+            {
+                "day": "MONDAY",
+                "slots": {
+                    "IV": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "V": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "VI": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "VII": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    }
+                }
+            },
+            {
+                "day": "TUESDAY",
+                "slots": {
+                    "0": {
+                        "class": "II BCA",
+                        "is_lab": false,
+                        "section": "A",
+                        "span": 1,
+                        "subject": "Ad. Java"
+                    },
+                    "I": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "II": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "III": {
+                        "class": "II BCA",
+                        "is_lab": false,
+                        "section": "A",
+                        "span": 1,
+                        "subject": "Ad. Java"
+                    },
+                    "IV": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    },
+                    "V": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    },
+                    "VI": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    },
+                    "VII": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    }
+                }
+            },
+            {
+                "day": "WEDNESDAY",
+                "slots": {
+                    "0": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "I": {
+                        "class": "III BCA",
+                        "is_lab": false,
+                        "section": "A",
+                        "span": 1,
+                        "subject": "AI-ML"
+                    },
+                    "II": {
+                        "class": "II BCA",
+                        "is_lab": false,
+                        "section": "A",
+                        "span": 1,
+                        "subject": "Ad. Java"
+                    },
+                    "III": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "IV": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "V": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "VI": {
+                        "class": "II BCA",
+                        "is_lab": false,
+                        "section": "B",
+                        "span": 1,
+                        "subject": "IB"
+                    },
+                    "VII": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    }
+                }
+            },
+            {
+                "day": "THURSDAY",
+                "slots": {
+                    "0": {
+                        "class": "III BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "AI-ML LAB"
+                    },
+                    "I": {
+                        "class": "III BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "AI-ML LAB"
+                    },
+                    "II": {
+                        "class": "III BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "AI-ML LAB"
+                    },
+                    "III": {
+                        "class": "III BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "AI-ML LAB"
+                    },
+                    "IV": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "V": {
+                        "class": "II BCA",
+                        "is_lab": false,
+                        "section": "A",
+                        "span": 1,
+                        "subject": "Ad. Java"
+                    },
+                    "VI": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "VII": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    }
+                }
+            },
+            {
+                "day": "FRIDAY",
+                "slots": {
+                    "0": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    },
+                    "I": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    },
+                    "II": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    },
+                    "III": {
+                        "class": "II BCA",
+                        "is_lab": true,
+                        "section": "A",
+                        "span": 4,
+                        "subject": "Ad. Java Lab"
+                    },
+                    "IV": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "V": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "VI": {
+                        "class": "II BCA",
+                        "is_lab": false,
+                        "section": "B",
+                        "span": 1,
+                        "subject": "IB"
+                    },
+                    "VII": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    }
+                }
+            },
+            {
+                "day": "SATURDAY",
+                "slots": {
+                    "0": {
+                        "class": "III B.Com",
+                        "is_lab": true,
+                        "section": "E",
+                        "span": 2,
+                        "subject": "DS Lab"
+                    },
+                    "I": {
+                        "class": "III B.Com",
+                        "is_lab": true,
+                        "section": "E",
+                        "span": 2,
+                        "subject": "DS Lab"
+                    },
+                    "II": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "III": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "IV": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "V": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "VI": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    },
+                    "VII": {
+                        "class": null,
+                        "is_lab": false,
+                        "section": null,
+                        "span": 1,
+                        "subject": null
+                    }
+                }
+            }
+        ],
         "periods": [
             {
                 "period": "0",
@@ -28,7 +367,7 @@
             },
             {
                 "period": "V",
-                "time": "02:-2:50"
+                "time": "2.00-2.50"
             },
             {
                 "period": "VI",
@@ -38,374 +377,7 @@
                 "period": "VII",
                 "time": "3:50-4:40"
             }
-        ],
-        "days": [
-            {
-                "day": "MONDAY",
-                "slots": {
-                    "0": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "I": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "II": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "III": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "IV": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "V": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VI": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VII": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    }
-                }
-            },
-            {
-                "day": "TUESDAY",
-                "slots": {
-                    "0": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java",
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "I": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "II": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "III": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java",
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "IV": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "V": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "VI": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "VII": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    }
-                }
-            },
-            {
-                "day": "WEDNESDAY",
-                "slots": {
-                    "0": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "I": {
-                        "class": "III BCA",
-                        "section": "A",
-                        "subject": "AI-ML",
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "II": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java",
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "III": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "IV": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "V": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VI": {
-                        "class": "II BCA",
-                        "section": "B",
-                        "subject": "IB",
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VII": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    }
-                }
-            },
-            {
-                "day": "THURSDAY",
-                "slots": {
-                    "0": {
-                        "class": "III BCA",
-                        "section": "A",
-                        "subject": "AI-ML LAB",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "I": {
-                        "class": "III BCA",
-                        "section": "A",
-                        "subject": "AI-ML LAB",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "II": {
-                        "class": "III BCA",
-                        "section": "A",
-                        "subject": "AI-ML LAB",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "III": {
-                        "class": "III BCA",
-                        "section": "A",
-                        "subject": "AI-ML LAB",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "IV": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "V": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java",
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VI": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VII": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    }
-                }
-            },
-            {
-                "day": "FRIDAY",
-                "slots": {
-                    "0": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "I": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "II": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "III": {
-                        "class": "II BCA",
-                        "section": "A",
-                        "subject": "Ad. Java Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
-                    "IV": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "V": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VI": {
-                        "class": "II BCA",
-                        "section": "B",
-                        "subject": "IB",
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VII": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    }
-                }
-            },
-            {
-                "day": "SATURDAY",
-                "slots": {
-                    "0": {
-                        "class": "III B.Com",
-                        "section": "E",
-                        "subject": "DS Lab",
-                        "is_lab": true,
-                        "span": 2
-                    },
-                    "I": {
-                        "class": "III B.Com",
-                        "section": "E",
-                        "subject": "DS Lab",
-                        "is_lab": true,
-                        "span": 2
-                    },
-                    "II": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "III": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "IV": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "V": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VI": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    },
-                    "VII": {
-                        "class": null,
-                        "section": null,
-                        "subject": null,
-                        "is_lab": false,
-                        "span": 1
-                    }
-                }
-            }
         ]
-    }
+    },
+    "total_hours": "21Hrs"
 }

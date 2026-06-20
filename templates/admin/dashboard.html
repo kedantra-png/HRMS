@@ -2,28 +2,42 @@
 
 {% block title %}Admin Dashboard - HRMS{% endblock %}
 
+{% block head %}
+<style>
+    @keyframes flow-line {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    .animate-flow-line {
+        background: linear-gradient(90deg, #e2e8f0 0%, #6366f1 50%, #e2e8f0 100%);
+        background-size: 200% 100%;
+        animation: flow-line 4s linear infinite;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="mb-8 -mx-4 sm:-mx-6 lg:-mx-8">
     <div
         class="w-full bg-white border-b border-slate-200 px-4 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
-        <div class="flex flex-col items-center sm:flex-row sm:items-center sm:gap-5">
-            <div class="flex-shrink-0 mb-2 sm:mb-0">
+        <div class="flex flex-col items-center sm:flex-row sm:items-center gap-1 sm:gap-5">
+            <div class="flex-shrink-0 sm:mb-0">
                 <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="College Logo"
                     class="h-16 w-16 sm:h-20 sm:w-20 object-contain mx-auto">
             </div>
             <div class="text-center sm:text-left">
-                <h1
-                    class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug underline decoration-slate-800 decoration-2 underline-offset-4">
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug">
                     Dr. B. B. Hegde First Grade College, Kundapura
                 </h1>
+                <div class="h-px animate-flow-line my-1.5 w-full"></div>
                 <p class="text-xs sm:text-sm text-slate-500 mt-1">
                     A Unit of Coondapur Education Society (R)
                 </p>
             </div>
         </div>
-        <div class="w-full sm:w-auto flex justify-center sm:justify-end">
+        <div class="w-full sm:w-auto flex justify-end">
             <a href="{{ url_for('logout') }}"
-                class="inline-flex items-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-semibold shadow-sm transition-colors duration-150">
+                class="inline-flex items-center text-red-600 hover:text-red-700 text-sm font-bold transition-colors duration-150">
                 <i class="fas fa-sign-out-alt mr-2"></i>
                 Logout
             </a>
@@ -42,148 +56,378 @@
 
 <!-- Stats Grid -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="bg-white p-6 rounded-2xl shadow-lg shadow-black/15 border border-slate-100 flex items-center space-x-4">
-        <div class="p-4 bg-blue-50 text-blue-600 rounded-xl">
+    <div class="bg-blue-50 p-6 rounded-2xl shadow-lg shadow-black/15 border border-blue-100 flex items-center space-x-4">
+        <div class="p-4 bg-white text-blue-600 rounded-xl shadow-sm">
             <i class="fas fa-users-cog text-2xl"></i>
         </div>
         <div>
-            <p class="text-sm font-medium text-slate-500 uppercase">Total Lecturers</p>
-            <p class="text-2xl font-bold text-slate-800">{{ stats.staff_count }}</p>
+            <p class="text-sm font-medium text-blue-600/70 uppercase">Teaching Faculty</p>
+            <p class="text-2xl font-bold text-blue-900">{{ stats.teaching_faculty_count }}</p>
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-2xl shadow-lg shadow-black/15 border border-slate-100 flex items-center space-x-4">
-        <div class="p-4 bg-amber-50 text-amber-600 rounded-xl">
+    <div class="bg-amber-50 p-6 rounded-2xl shadow-lg shadow-black/15 border border-amber-100 flex items-center space-x-4">
+        <div class="p-4 bg-white text-amber-600 rounded-xl shadow-sm">
             <i class="fas fa-calendar-alt text-2xl"></i>
         </div>
         <div>
-            <p class="text-sm font-medium text-slate-500 uppercase">Pending Leaves</p>
-            <p id="pending-leaves-count" class="text-2xl font-bold text-slate-800">{{ stats.pending_leaves }}</p>
+            <p class="text-sm font-medium text-amber-600/70 uppercase">Pending Leaves</p>
+            <p id="pending-leaves-count" class="text-2xl font-bold text-amber-900">{{ stats.pending_leaves }}</p>
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-2xl shadow-lg shadow-black/15 border border-slate-100 flex items-center space-x-4">
-        <div class="p-4 bg-green-50 text-green-600 rounded-xl">
-            <i class="fas fa-clock text-2xl"></i>
+    <div class="bg-emerald-50 p-6 rounded-2xl shadow-lg shadow-black/15 border border-emerald-100 flex items-center space-x-4">
+        <div class="p-4 bg-white text-emerald-600 rounded-xl shadow-sm">
+            <i class="fas fa-user-tie text-2xl"></i>
         </div>
         <div>
-            <p class="text-sm font-medium text-slate-500 uppercase">Timetable Slots</p>
-            <p class="text-2xl font-bold text-slate-800">{{ stats.timetable_entries }}</p>
+            <p class="text-sm font-medium text-emerald-600/70 uppercase">Non Teaching Faculty</p>
+            <p class="text-2xl font-bold text-emerald-900">{{ stats.non_teaching_faculty_count }}</p>
         </div>
     </div>
+
+
 </div>
 
 <!-- Quick Actions -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
     <a id="action-add-staff" href="{{ url_for('manage_staff') }}"
-        class="p-4 bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-colors group">
+        class="p-4 bg-indigo-100 border border-indigo-200 rounded-xl hover:bg-indigo-200 shadow-sm transition-colors group">
         <i class="fas fa-user-plus text-indigo-600 mb-2"></i>
-        <h3 class="font-bold text-indigo-900">Add Lecturer</h3>
-        <p class="text-xs text-indigo-700">Onboard new lecturers</p>
+        <h3 class="font-bold text-indigo-900">Add Staff Faculties</h3>
+        <p class="text-xs text-indigo-800">Onboard new faculties</p>
     </a>
-    <a id="action-manage-salary" href="#"
-        class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors group">
+    <button type="button" id="action-manage-salary"
+        class="p-4 bg-emerald-100 border border-emerald-200 rounded-xl hover:bg-emerald-200 shadow-sm transition-colors group text-left w-full"
+        data-salary-url="{{ url_for('admin_salary_list') }}"
+        data-unlocked="{{ '1' if salary_unlocked else '0' }}">
         <i class="fas fa-money-check-alt text-emerald-600 mb-2"></i>
         <h3 class="font-bold text-emerald-900">Manage Salary</h3>
-        <p class="text-xs text-emerald-700">Approve disbursements</p>
-    </a>
+        <p class="text-xs text-emerald-800">Approve disbursements</p>
+    </button>
     <a href="{{ url_for('admin_leaves') }}"
-        class="p-4 bg-rose-50 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors group">
+        class="p-4 bg-rose-100 border border-rose-200 rounded-xl hover:bg-rose-200 shadow-sm transition-colors group">
         <i class="fas fa-calendar-check text-rose-600 mb-2"></i>
         <h3 class="font-bold text-rose-900">Leave Portal</h3>
-        <p class="text-xs text-rose-700">Review requests</p>
+        <p class="text-xs text-rose-800">Review requests</p>
     </a>
     <a id="action-timetabling" href="{{ url_for('admin_timetables') }}"
-        class="p-4 bg-violet-50 border border-violet-100 rounded-xl hover:bg-violet-100 transition-colors group">
+        class="p-4 bg-violet-100 border border-violet-200 rounded-xl hover:bg-violet-200 shadow-sm transition-colors group">
         <i class="fas fa-table text-violet-600 mb-2"></i>
         <h3 class="font-bold text-violet-900">Timetabling</h3>
-        <p class="text-xs text-violet-700">Schedule classes</p>
+        <p class="text-xs text-violet-800">Schedule classes</p>
     </a>
 
     <a id="action-generate-report" href="#"
-        class="p-4 bg-sky-50 border border-sky-100 rounded-xl hover:bg-sky-100 transition-colors group">
+        class="p-4 bg-sky-100 border border-sky-200 rounded-xl hover:bg-sky-200 shadow-sm transition-colors group">
         <i class="fas fa-file-export text-sky-600 mb-2"></i>
         <h3 class="font-bold text-sky-900">Generate Report</h3>
-        <p class="text-xs text-sky-700">Export summary reports</p>
+        <p class="text-xs text-sky-800">Export summary reports</p>
+    </a>
+
+    <a href="{{ url_for('admin_permissions') }}"
+        class="p-4 bg-amber-100 border border-amber-200 rounded-xl hover:bg-amber-200 shadow-sm transition-colors group">
+        <i class="fas fa-clock text-amber-600 mb-2"></i>
+        <h3 class="font-bold text-amber-900">Permission Manager</h3>
+        <p class="text-xs text-amber-800">Track short permissions</p>
     </a>
 
     <a id="action-view-all-staff-records" href="{{ url_for('manage_staff') }}"
-        class="p-4 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors group">
-        <i class="fas fa-clipboard-list text-amber-600 mb-2"></i>
-        <h3 class="font-bold text-amber-900">View All Staff Records</h3>
-        <p class="text-xs text-amber-700">Browse lecturer details</p>
+        class="p-4 bg-slate-100 border border-slate-200 rounded-xl hover:bg-slate-200 shadow-sm transition-colors group">
+        <i class="fas fa-clipboard-list text-slate-600 mb-2"></i>
+        <h3 class="font-bold text-slate-900">View All Staff Records</h3>
+        <p class="text-xs text-slate-800">Browse faculty details</p>
+    </a>
+
+    <a id="action-attendance-faculty" href="{{ url_for('admin_faculty_attendance') }}"
+        class="p-4 bg-emerald-100 border border-emerald-200 rounded-xl hover:bg-emerald-200 shadow-sm transition-colors group">
+        <i class="fas fa-user-check text-emerald-600 mb-2"></i>
+        <h3 class="font-bold text-emerald-900">Attendance Faculty</h3>
+        <p class="text-xs text-emerald-800">Track all faculty presence</p>
+    </a>
+
+    <a href="{{ url_for('staff_chat_page') }}"
+        class="p-4 bg-[#dcf8c6] border border-[#25d366]/30 rounded-xl hover:bg-[#c8f0b8] shadow-sm transition-colors group">
+        <i class="fab fa-whatsapp text-[#128c7e] mb-2 text-xl"></i>
+        <h3 class="font-bold text-[#075e54]">Staff Chat</h3>
+        <p class="text-xs text-[#128c7e]">Message faculty &amp; management</p>
     </a>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    <!-- Recent Activity -->
-    <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 overflow-hidden">
-        <div class="p-6 border-b border-slate-50 flex justify-between items-center gap-3">
-            <h3 class="font-bold text-slate-800">Recent Leave Requests</h3>
-            <div class="flex items-center gap-2">
-                <div class="hidden sm:block">
-                    <div class="relative">
-                        <input id="recent-leaves-search" type="text" placeholder="Search"
-                            class="w-40 px-3 pr-8 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-                        <button type="button" onclick="applyRecentLeavesSearch()"
-                            class="absolute inset-y-0 right-0 px-2 flex items-center text-slate-400 hover:text-indigo-600">
-                            <i class="fas fa-search text-xs"></i>
+<!-- Salary sender email (Gmail app password) — no salary unlock required -->
+<div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-indigo-100 overflow-hidden mb-8" id="dashboard-sender-email">
+    <button type="button" id="toggle-sender-panel"
+        class="w-full px-6 py-4 flex items-center justify-between gap-3 text-left hover:bg-indigo-50/50 transition-colors">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-900">Salary slip sender email</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Gmail + App Password used to email salary slips to faculty</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            {% if smtp_configured %}
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">Configured</span>
+            {% else %}
+            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">Not set</span>
+            {% endif %}
+            <i id="sender-panel-chevron" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
+        </div>
+    </button>
+    <div id="sender-panel-body" class="hidden border-t border-slate-100 px-6 pb-6 pt-2">
+        {% if smtp_configured %}
+        <p class="text-xs font-bold text-emerald-700 mb-3"><i class="fas fa-check-circle"></i> {{ smtp_status }}</p>
+        {% endif %}
+        {% if payroll_smtp.source == 'ui' %}
+        <p class="text-[11px] font-bold text-indigo-600 mb-3"><i class="fas fa-database"></i> Saved on dashboard (overrides .env)</p>
+        {% elif payroll_smtp.source == 'env' %}
+        <p class="text-[11px] font-bold text-amber-700 mb-3"><i class="fas fa-file-code"></i> Using .env — save below to change from the website</p>
+        {% endif %}
+        <form id="dashboard-smtp-form" method="post" action="{{ url_for('admin_dashboard_sender_email') }}" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="dash_smtp_user" class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Sender Gmail</label>
+                    <input type="email" id="dash_smtp_user" name="smtp_user" required
+                        class="mt-1 w-full px-4 py-3 rounded-xl border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500"
+                        value="{{ payroll_smtp.smtp_user }}" autocomplete="username">
+                </div>
+                <div>
+                    <label for="dash_smtp_password" class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Gmail App Password</label>
+                    <div class="relative mt-1">
+                        <input type="password" id="dash_smtp_password" name="smtp_password"
+                            class="w-full px-4 py-3 pr-12 rounded-xl border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500"
+                            placeholder="{% if payroll_smtp.password_saved_in_ui %}Leave blank to keep saved password{% elif payroll_smtp.has_password %}Leave blank to use .env password{% else %}16-character app password{% endif %}"
+                            autocomplete="new-password">
+                        <button type="button" id="dash-toggle-smtp-pw" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600" title="Show password">
+                            <i class="fas fa-eye"></i>
                         </button>
                     </div>
                 </div>
-                <a href="{{ url_for('admin_leaves') }}"
-                    class="text-xs font-bold text-indigo-600 hover:underline px-3 py-1 bg-indigo-50 rounded-lg">View
-                    All</a>
             </div>
+            <p class="text-[11px] text-slate-500">Use a <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" class="text-indigo-600 font-bold underline">Google App Password</a>, not your normal Gmail password. Port <strong>{{ payroll_smtp.smtp_port }}</strong> (SSL).</p>
+            <div id="dash-smtp-test-result" class="hidden rounded-xl px-4 py-3 text-sm font-bold"></div>
+            <div class="flex flex-wrap gap-3">
+                <button type="button" id="dash-btn-test-smtp"
+                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm border border-slate-200">
+                    <i class="fas fa-plug mr-1"></i> Test connection
+                </button>
+                <button type="submit"
+                    class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md">
+                    <i class="fas fa-save mr-1"></i> Save sender login
+                </button>
+                {% if payroll_smtp.source == 'ui' %}
+                <button type="button" id="dash-reset-env-btn"
+                    class="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-sm border border-amber-200">
+                    <i class="fas fa-undo mr-1"></i> Use .env sender
+                </button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Recent Leave Requests (after dashboard cards) -->
+<div class="bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 overflow-hidden mb-8">
+    <div class="p-6 border-b border-slate-50 flex justify-between items-center gap-3">
+        <h3 class="font-bold text-slate-800">Recent Leave Requests</h3>
+        <div class="flex items-center gap-2">
+            <div class="hidden sm:block">
+                <div class="relative">
+                    <input id="recent-leaves-search" type="text" placeholder="Search"
+                        class="w-40 px-3 pr-8 py-1.5 rounded-lg border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                    <button type="button" onclick="applyRecentLeavesSearch()"
+                        class="absolute inset-y-0 right-0 px-2 flex items-center text-slate-400 hover:text-indigo-600">
+                        <i class="fas fa-search text-xs"></i>
+                    </button>
+                </div>
+            </div>
+            <a href="{{ url_for('admin_leaves') }}"
+                class="text-xs font-bold text-indigo-600 hover:underline px-3 py-1 bg-indigo-50 rounded-lg">View
+                All</a>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                <tr>
+                    <th class="px-6 py-4">Faculty</th>
+                    <th class="px-6 py-4">Type</th>
+                    <th class="px-6 py-4">Dates</th>
+                    <th class="px-6 py-4">Status</th>
+                    <th class="px-6 py-4">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-50" id="recent-leaves-body">
+                {% if recent_leaves %}
+                {% for leave in recent_leaves %}
+                <tr>
+                    <td class="px-6 py-4 font-medium text-slate-700 underline">{{ leave.lecturer_name }}</td>
+                    <td class="px-6 py-4 text-sm text-slate-500">{{ leave.type }}</td>
+                    <td class="px-6 py-4 text-sm text-slate-500">
+                        {{ leave.from_date }} - {{ leave.to_date }}
+                        {% if leave.half_day %}
+                        <span class="block text-[10px] font-bold text-indigo-600 uppercase">Half Day ({{ leave.session }})</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span
+                            class="px-2 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
+                            {{ leave.status }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                            <a href="{{ url_for('admin_class_allocation_sheet', leave_id=leave._id|string) }}"
+                               class="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition-colors inline-flex items-center">
+                                <i class="fas fa-tasks mr-1"></i> Sheet
+                            </a>
+                            <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Approved', this, '{{ leave.mode }}')"
+                                class="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors">
+                                Approve
+                            </button>
+                            <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Rejected', this, '{{ leave.mode }}')"
+                                class="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700 transition-colors">
+                                Reject
+                            </button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td class="px-6 py-6 text-sm text-slate-500" colspan="5">No pending leave requests.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+    <!-- Broadcast Notification Section -->
+    <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 overflow-hidden mb-8">
+        <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-900 text-white">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-900/20">
+                    <i class="fas fa-bullhorn text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold tracking-tight">Broadcast Global Notification</h3>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Institutional Updates</p>
+                </div>
+            </div>
+            <span class="hidden sm:block text-[10px] font-black uppercase tracking-widest bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">Real-time Delivery</span>
+        </div>
+        <div class="p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Broadcast Message</label>
+                    <textarea id="broadcast-message" rows="4" 
+                        placeholder="Type your announcement to all faculty members..."
+                        class="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-200 text-sm font-medium focus:ring-2 focus:ring-indigo-600 transition-all outline-none resize-none"></textarea>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-4 items-end">
+                    <div class="flex-1 w-full">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Attach Image (Optional)</label>
+                        <div class="relative">
+                            <input type="file" id="broadcast-image" accept="image/*" onchange="previewBroadcastImage(this)"
+                                class="hidden">
+                            <label for="broadcast-image" class="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-slate-500 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer group">
+                                <i class="fas fa-cloud-upload-alt text-lg group-hover:text-indigo-600"></i>
+                                <span class="text-xs font-bold" id="file-label">Choose an image file...</span>
+                            </label>
+                        </div>
+                    </div>
+                    <button onclick="sendBroadcast()" id="broadcast-btn"
+                        class="w-full sm:w-auto px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                        Send Broadcast
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-slate-50/50 rounded-3xl p-4 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center min-h-[220px] relative overflow-hidden group">
+                <div id="image-preview-container" class="hidden w-full h-full absolute inset-0 z-10 bg-slate-900/10">
+                    <img id="image-preview" src="" alt="Preview" class="w-full h-full object-contain">
+                    <button onclick="clearBroadcastImage()" class="absolute top-4 right-4 w-8 h-8 bg-black/40 hover:bg-rose-600 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-all">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+                <div id="preview-placeholder" class="group-hover:scale-110 transition-transform duration-500">
+                    <div class="w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center mx-auto mb-4">
+                        <i class="far fa-images text-2xl text-slate-300"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Live Preview Area</p>
+                    <p class="text-[9px] text-slate-300 mt-1">Image will be visible to all faculty</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Broadcast History List -->
+    <div class="lg:col-span-3 bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 overflow-hidden mb-8">
+        <div class="p-6 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-history text-slate-400"></i>
+                <h3 class="font-bold text-slate-800 tracking-tight">Recent Broadcast History</h3>
+            </div>
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Last 5 Announcements</span>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left">
-                <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                <thead class="bg-slate-50/80 text-slate-500 text-[10px] font-black uppercase tracking-widest">
                     <tr>
-                        <th class="px-6 py-4">Lecturer</th>
-                        <th class="px-6 py-4">Type</th>
-                        <th class="px-6 py-4">Dates</th>
-                        <th class="px-6 py-4">Status</th>
-                        <th class="px-6 py-4">Action</th>
+                        <th class="px-8 py-5">Sender</th>
+                        <th class="px-8 py-5">Content Preview</th>
+                        <th class="px-8 py-5">Broadcast Time</th>
+                        <th class="px-8 py-5 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-50" id="recent-leaves-body">
-                    {% if recent_leaves %}
-                    {% for leave in recent_leaves %}
-                    <tr>
-                        <td class="px-6 py-4 font-medium text-slate-700 underline">{{ leave.lecturer_name }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-500">{{ leave.type }}</td>
-                        <td class="px-6 py-4 text-sm text-slate-500">
-                            {{ leave.from_date }} - {{ leave.to_date }}
-                            {% if leave.half_day %}
-                            <span class="block text-[10px] font-bold text-indigo-600 uppercase">Half Day ({{ leave.session }})</span>
-                            {% endif %}
+                <tbody class="divide-y divide-slate-100">
+                    {% if broadcasts %}
+                    {% for b in broadcasts %}
+                    <tr id="broadcast-row-{{ b._id }}" class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-8 py-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 text-xs font-bold border border-indigo-100">
+                                    {{ b.sender[0] }}
+                                </div>
+                                <span class="text-sm font-bold text-slate-700">{{ b.sender }}</span>
+                            </div>
                         </td>
-                        <td class="px-6 py-4">
-                            <span
-                                class="px-2 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
-                                {{ leave.status }}
-                            </span>
+                        <td class="px-8 py-6">
+                            <div class="max-w-md flex items-center gap-4">
+                                {% if b.image_url %}
+                                <div class="flex-shrink-0 w-12 h-12 rounded-xl border border-slate-200 overflow-hidden shadow-sm bg-slate-100">
+                                    <img src="{{ b.image_url }}" class="w-full h-full object-contain">
+                                </div>
+                                {% endif %}
+                                <p class="text-sm text-slate-500 font-medium line-clamp-1">{{ b.message }}</p>
+                            </div>
                         </td>
-                        <td class="px-6 py-4">
-                                <a href="{{ url_for('admin_class_allocation_sheet', leave_id=leave._id|string) }}"
-                                   class="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition-colors inline-flex items-center">
-                                    <i class="fas fa-tasks mr-1"></i> Sheet
-                                </a>
-                                <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Approved', this)"
-                                    class="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors">
-                                    Approve
-                                </button>
-                                <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Rejected', this)"
-                                    class="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700 transition-colors">
-                                    Reject
-                                </button>
+                        <td class="px-8 py-6">
+                            <div class="flex flex-col">
+                                <span class="text-xs font-bold text-slate-700">{{ b.created_at_fmt }}</span>
+                                <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-1">Institutional</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <button onclick="deleteBroadcast('{{ b._id }}')" 
+                                class="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white transition-all shadow-sm shadow-rose-100 flex items-center justify-center">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td class="px-6 py-6 text-sm text-slate-500" colspan="5">No pending leave requests.</td>
+                        <td colspan="4" class="px-8 py-16 text-center">
+                            <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-bullhorn text-2xl text-slate-200"></i>
+                            </div>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">No broadcast history</p>
+                        </td>
                     </tr>
                     {% endif %}
                 </tbody>
@@ -191,34 +435,108 @@
         </div>
     </div>
 
-    <!-- AI Insights Card (Future Concept) -->
-    <div class="bg-indigo-900 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden">
-        <div class="relative z-10">
-            <div class="flex items-center space-x-2 mb-4">
-                <span class="p-2 bg-white/20 rounded-lg"><i class="fas fa-brain"></i></span>
-                <h3 class="font-bold uppercase text-xs tracking-widest text-indigo-300">AI Insights (Experimental)</h3>
-            </div>
-            <p class="text-lg font-semibold mb-1 leading-tight">Leave Prediction Model</p>
-            <p class="text-xs text-indigo-300 mb-4 flex items-center gap-1">
-                <i class="fas fa-bolt text-amber-400"></i> Powered by Gemini AI
-            </p>
-            <div class="bg-white/10 p-4 rounded-xl border border-white/10 mb-6">
-                <p class="text-sm text-indigo-100 mb-2">Predicted Leave Volume for March:</p>
-                <div class="flex items-end space-x-1 h-12">
-                    <div class="w-1/4 bg-indigo-400 rounded-t h-[40%]"></div>
-                    <div class="w-1/4 bg-indigo-300 rounded-t h-[60%]"></div>
-                    <div class="w-1/4 bg-white rounded-t h-[90%] shake"></div>
-                    <div class="w-1/4 bg-indigo-500 rounded-t h-[50%]"></div>
-                </div>
-            </div>
-            <p class="text-xs text-indigo-300 italic">"Higher probability of leave requests detected for next week due
-                to semester breaks."</p>
-        </div>
-        <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-600 rounded-full blur-3xl opacity-50"></div>
-    </div>
-</div>
-
 <script>
+    function previewBroadcastImage(input) {
+        const preview = document.getElementById('image-preview');
+        const container = document.getElementById('image-preview-container');
+        const placeholder = document.getElementById('preview-placeholder');
+        const label = document.getElementById('file-label');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                container.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                label.innerText = input.files[0].name;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function clearBroadcastImage() {
+        document.getElementById('broadcast-image').value = '';
+        document.getElementById('image-preview-container').classList.add('hidden');
+        document.getElementById('preview-placeholder').classList.remove('hidden');
+        document.getElementById('file-label').innerText = 'Choose an image file...';
+    }
+
+    async function sendBroadcast() {
+        const message = document.getElementById('broadcast-message').value.trim();
+        const imageFile = document.getElementById('broadcast-image').files[0];
+        const btn = document.getElementById('broadcast-btn');
+
+        if (!message) {
+            window.Alert("Required", "Please type a message to broadcast.", "info-circle");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('message', message);
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+
+        // Visual feedback
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Broadcasting...';
+
+        try {
+            const res = await fetch('/admin/broadcast', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("Server Error:", res.status, errorText);
+                window.Alert("Server Error", `The server returned a ${res.status} error. Please ensure the server has been restarted to apply new changes.`, "exclamation-triangle");
+                return;
+            }
+
+            const data = await res.json();
+            
+            if (data.success) {
+                await window.Alert("Broadcast Sent", "The message has been delivered to all faculty members.", "check-circle");
+                location.reload();
+            } else {
+                window.Alert("Broadcast Failed", data.message, "exclamation-triangle");
+            }
+        } catch (e) {
+            console.error("Fetch Error:", e);
+            window.Alert("System Error", "Could not connect to the server. Please check if the terminal is running and restart it.", "exclamation-circle");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+
+    async function deleteBroadcast(id) {
+        const confirmed = await window.Confirm(
+            "Delete Broadcast?",
+            "Are you sure you want to remove this announcement? It will be deleted from all faculty feeds.",
+            "trash-alt",
+            "Delete"
+        );
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`/admin/broadcast/delete/${id}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                const row = document.getElementById(`broadcast-row-${id}`);
+                if (row) {
+                    row.classList.add('opacity-0', 'scale-95');
+                    setTimeout(() => row.remove(), 300);
+                }
+                window.Alert("Deleted", "The broadcast has been removed.", "check-circle");
+            }
+        } catch (e) {
+            console.error(e);
+            window.Alert("Error", "Could not delete broadcast. Please try again.", "exclamation-circle");
+        }
+    }
     let recentLeavesCache = [];
 
     function renderRecentLeaves(list) {
@@ -233,8 +551,14 @@
         tbody.innerHTML = list.map(item => `
             <tr>
                 <td class="px-6 py-4 font-medium text-slate-700 underline">${item.lecturer_name}</td>
-                <td class="px-6 py-4 text-sm text-slate-500">${item.type}</td>
-                <td class="px-6 py-4 text-sm text-slate-500">${item.from_date} - ${item.to_date}${item.half_day ? `<br><span class="text-[10px] font-bold text-indigo-600 uppercase">Half Day (${item.session})</span>` : ''}</td>
+                <td class="px-6 py-4 text-sm text-slate-500">
+                    <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase ${item.mode === 'time' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}">
+                        ${item.type || (item.mode === 'time' ? 'Permission' : 'Leave')}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-sm text-slate-500">
+                    ${item.from_date} ${item.to_date ? '- ' + item.to_date : ''}
+                </td>
                 <td class="px-6 py-4">
                     <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
                         ${item.status}
@@ -246,11 +570,11 @@
                            class="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 transition-colors inline-flex items-center">
                             <i class="fas fa-tasks mr-1"></i> Sheet
                         </a>
-                        <button type="button" onclick="reviewLeave('${item.id}', 'Approved', this)"
+                        <button type="button" onclick="reviewLeave('${item.id}', 'Approved', this, '${item.mode}')"
                             class="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors">
                             Approve
                         </button>
-                        <button type="button" onclick="reviewLeave('${item.id}', 'Rejected', this)"
+                        <button type="button" onclick="reviewLeave('${item.id}', 'Rejected', this, '${item.mode}')"
                             class="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700 transition-colors">
                             Reject
                         </button>
@@ -260,9 +584,9 @@
         `).join('');
     }
 
-    async function reviewLeave(id, status, btn) {
+    async function reviewLeave(id, status, btn, mode = 'full') {
         const confirmed = await window.Confirm(
-            `${status} Leave?`,
+            `${status} Request?`,
             `Are you sure you want to mark this request as ${status.toLowerCase()}?`,
             status === 'Approved' ? 'check-circle' : 'times-circle',
             status === 'Approved' ? 'Approve' : 'Reject'
@@ -275,7 +599,8 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
         try {
-            const res = await fetch(`/admin/leave/api/${id}/${status}`, { method: 'POST' });
+            const url = (mode === 'time') ? `/admin/permission/api/${id}/${status}` : `/admin/leave/api/${id}/${status}`;
+            const res = await fetch(url, { method: 'POST' });
             if (res.ok) {
                 // Success - locally update cache
                 recentLeavesCache = recentLeavesCache.filter(item => item.id !== id);
@@ -315,7 +640,84 @@
         renderRecentLeaves(filtered);
     }
 
+    function openSalaryUnlockModal() {
+        const modal = document.getElementById('salary-unlock-modal');
+        const err = document.getElementById('salary-unlock-error');
+        const input = document.getElementById('salary-unlock-password');
+        if (!modal) return;
+        if (err) { err.classList.add('hidden'); err.textContent = ''; }
+        if (input) input.value = '';
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => input && input.focus(), 100);
+    }
+
+    function closeSalaryUnlockModal() {
+        const modal = document.getElementById('salary-unlock-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    async function submitSalaryUnlockPassword(e) {
+        e.preventDefault();
+        const input = document.getElementById('salary-unlock-password');
+        const err = document.getElementById('salary-unlock-error');
+        const btn = document.getElementById('salary-unlock-submit');
+        const password = (input && input.value) || '';
+        if (!password.trim()) return;
+
+        if (btn) btn.disabled = true;
+        try {
+            const fd = new FormData();
+            fd.append('password', password);
+            const res = await fetch('{{ url_for("admin_salary_unlock") }}', {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok && data.redirect) {
+                window.location.href = data.redirect;
+                return;
+            }
+            if (err) {
+                err.textContent = data.message || 'Incorrect password. Try again.';
+                err.classList.remove('hidden');
+            }
+        } catch (ex) {
+            if (err) {
+                err.textContent = 'Could not verify password. Try again.';
+                err.classList.remove('hidden');
+            }
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
+        const salaryCard = document.getElementById('action-manage-salary');
+        if (salaryCard) {
+            salaryCard.addEventListener('click', function () {
+                const unlocked = salaryCard.getAttribute('data-unlocked') === '1';
+                const url = salaryCard.getAttribute('data-salary-url');
+                if (unlocked && url) {
+                    window.location.href = url;
+                } else {
+                    openSalaryUnlockModal();
+                }
+            });
+        }
+
+        const salaryForm = document.getElementById('salary-unlock-form');
+        if (salaryForm) {
+            salaryForm.addEventListener('submit', submitSalaryUnlockPassword);
+        }
+
+        document.getElementById('salary-unlock-overlay')?.addEventListener('click', closeSalaryUnlockModal);
+        document.getElementById('salary-unlock-cancel')?.addEventListener('click', closeSalaryUnlockModal);
+
         recentLeavesCache = JSON.parse('{{ recent_leaves_serialized|default([])|tojson|safe }}');
 
         socket.on('leave_status_update', function (data) {
@@ -366,5 +768,129 @@
             }
         });
     });
+
+    // Sender email panel (dashboard)
+    const senderPanelBody = document.getElementById('sender-panel-body');
+    const toggleSenderPanel = document.getElementById('toggle-sender-panel');
+    const senderChevron = document.getElementById('sender-panel-chevron');
+    if (toggleSenderPanel && senderPanelBody) {
+        const open = {{ 'true' if smtp_notice or not smtp_configured else 'false' }};
+        if (open) {
+            senderPanelBody.classList.remove('hidden');
+            if (senderChevron) senderChevron.classList.add('rotate-180');
+        }
+        toggleSenderPanel.addEventListener('click', () => {
+            senderPanelBody.classList.toggle('hidden');
+            if (senderChevron) senderChevron.classList.toggle('rotate-180');
+        });
+    }
+    const dashSmtpPw = document.getElementById('dash_smtp_password');
+    const dashTogglePw = document.getElementById('dash-toggle-smtp-pw');
+    if (dashTogglePw && dashSmtpPw) {
+        dashTogglePw.addEventListener('click', () => {
+            const hidden = dashSmtpPw.type === 'password';
+            dashSmtpPw.type = hidden ? 'text' : 'password';
+            dashTogglePw.innerHTML = hidden ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+        });
+    }
+    const dashSmtpForm = document.getElementById('dashboard-smtp-form');
+    const dashTestBtn = document.getElementById('dash-btn-test-smtp');
+    const dashTestResult = document.getElementById('dash-smtp-test-result');
+    if (dashTestBtn && dashSmtpForm && dashTestResult) {
+        dashTestBtn.addEventListener('click', async () => {
+            const user = document.getElementById('dash_smtp_user')?.value?.trim();
+            if (!user) {
+                dashTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-rose-50 text-rose-800 border border-rose-200';
+                dashTestResult.textContent = 'Enter sender Gmail address first.';
+                dashTestResult.classList.remove('hidden');
+                return;
+            }
+            dashTestBtn.disabled = true;
+            dashTestBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Testing…';
+            dashTestResult.classList.remove('hidden');
+            dashTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-slate-100 text-slate-600 border border-slate-200';
+            dashTestResult.textContent = 'Connecting to Gmail…';
+            try {
+                const fd = new FormData(dashSmtpForm);
+                const res = await fetch('{{ url_for("admin_dashboard_sender_email_test") }}', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await res.json();
+                dashTestResult.className = data.ok
+                    ? 'rounded-xl px-4 py-3 text-sm font-bold bg-emerald-50 text-emerald-800 border border-emerald-200'
+                    : 'rounded-xl px-4 py-3 text-sm font-bold bg-rose-50 text-rose-800 border border-rose-200';
+                dashTestResult.textContent = data.message || (data.ok ? 'OK' : 'Test failed');
+            } catch (err) {
+                dashTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-rose-50 text-rose-800 border border-rose-200';
+                dashTestResult.textContent = 'Could not run test. Refresh and try again.';
+            }
+            dashTestBtn.disabled = false;
+            dashTestBtn.innerHTML = '<i class="fas fa-plug mr-1"></i> Test connection';
+        });
+    }
+    const dashResetBtn = document.getElementById('dash-reset-env-btn');
+    if (dashResetBtn) {
+        dashResetBtn.addEventListener('click', async () => {
+            const ok = await window.Confirm('Use .env sender?', 'This removes the Gmail login saved on the dashboard. HRMS will use SMTP_USER and SMTP_PASSWORD from .env.', 'undo', 'Use .env');
+            if (!ok) return;
+            const fd = new FormData();
+            fd.append('csrf_token', document.querySelector('#dashboard-smtp-form input[name=csrf_token]')?.value || '');
+            await fetch('{{ url_for("admin_dashboard_sender_email_reset_env") }}', { method: 'POST', body: fd });
+            window.location.href = '{{ url_for("admin_dashboard") }}?smtp_notice=reset_env';
+        });
+    }
+    {% if smtp_notice %}
+    (function showSmtpNotice() {
+        const notices = {
+            saved: { title: 'Sender saved', msg: 'Salary slips will be sent from {{ (request.args.get("smtp_user") or payroll_smtp.smtp_user)|e }}.', icon: 'check-circle' },
+            reset_env: { title: 'Using .env', msg: 'Cleared dashboard sender login. Using SMTP from .env file.', icon: 'undo' },
+            invalid_email: { title: 'Invalid email', msg: 'Enter a valid sender Gmail address.', icon: 'exclamation-triangle' },
+            password_required: { title: 'Password required', msg: 'Gmail App Password is required for first-time setup.', icon: 'lock' },
+            password_required_change: { title: 'Password required', msg: 'Enter App Password when changing the sender email.', icon: 'lock' },
+            bad_app_password: { title: 'Invalid App Password', msg: 'App Password must be 16 characters from Google App Passwords.', icon: 'key' },
+        };
+        const n = notices['{{ smtp_notice }}'];
+        if (n && window.Alert) {
+            document.addEventListener('DOMContentLoaded', () => window.Alert(n.title, n.msg, n.icon));
+            if (window.history.replaceState) {
+                const u = new URL(window.location.href);
+                u.searchParams.delete('smtp_notice');
+                u.searchParams.delete('smtp_user');
+                window.history.replaceState({}, '', u.pathname + (u.search || ''));
+            }
+        }
+    })();
+    {% endif %}
 </script>
+
+<!-- Manage Salary password modal -->
+<div id="salary-unlock-modal" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="salary-unlock-title">
+    <div id="salary-unlock-overlay" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+    <div class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 p-8">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-lock text-xl"></i>
+        </div>
+        <h2 id="salary-unlock-title" class="text-xl font-black text-slate-900 text-center">Manage Salary</h2>
+        <p class="text-sm text-slate-500 text-center mt-2 font-medium">Enter password to open payroll.</p>
+        <form id="salary-unlock-form" class="mt-6 space-y-4">
+            <div>
+                <label for="salary-unlock-password" class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Password</label>
+                <input type="password" id="salary-unlock-password" name="password" required
+                    class="mt-1 w-full px-4 py-3 rounded-xl border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Enter password" autocomplete="current-password">
+            </div>
+            <p id="salary-unlock-error" class="hidden text-sm font-bold text-rose-600 text-center"></p>
+            <button type="submit" id="salary-unlock-submit"
+                class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm">
+                <i class="fas fa-unlock-alt mr-1"></i> Continue
+            </button>
+            <button type="button" id="salary-unlock-cancel"
+                class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+                Cancel
+            </button>
+        </form>
+    </div>
+</div>
 {% endblock %}

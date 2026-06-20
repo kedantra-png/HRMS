@@ -1,7 +1,7 @@
 {
     "faculty": "Mr. MAHESH KUMAR",
     "faculty_id": "BBHCF040",
-    "department": "DEPARTMENT OF COMPUTER APPLICATIONS",
+    "department": "COMPUTER APPLICATIONS",
     "mentor": "II BCA (B)",
     "total_hours": "19Hrs",
     "timetable": {
@@ -28,7 +28,7 @@
             },
             {
                 "period": "V",
-                "time": "02 - 2:50"
+                "time": "02-2:50"
             },
             {
                 "period": "VI",

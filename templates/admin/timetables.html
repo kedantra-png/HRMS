@@ -11,12 +11,10 @@
         </p>
     </div>
     <div class="flex flex-wrap gap-2">
-        <form action="{{ url_for('admin_timetables_bulk_delete') }}" method="POST" onsubmit="return confirm('Are you sure you want to delete ALL split images and JSON files? This cannot be undone.')">
-            <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-semibold shadow-sm transition-colors border border-rose-100">
-                <i class="fas fa-trash-alt mr-2"></i>
-                Bulk Delete All
-            </button>
-        </form>
+        <button type="button" onclick="showBulkDeleteModal()" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm font-semibold shadow-sm transition-colors border border-rose-100">
+            <i class="fas fa-trash-alt mr-2"></i>
+            Bulk Delete All
+        </button>
         <button type="button" onclick="showLogsModal()"
             class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 text-sm font-semibold shadow-sm transition-colors">
             <i class="fas fa-list-ul mr-2"></i>
@@ -53,7 +51,7 @@
             <p id="currentAction" class="mt-3 text-xs text-slate-400 italic">Initializing pipeline...</p>
         </div>
         <div class="md:col-span-2">
-            <div id="liveLogs" class="bg-black/40 rounded-xl p-4 h-32 overflow-y-auto font-mono text-[10px] text-emerald-400 border border-white/5 custom-scrollbar">
+            <div id="liveLogs" class="bg-black/40 rounded-xl p-4 h-48 overflow-y-auto font-mono text-[11px] text-emerald-400 border border-white/5 custom-scrollbar">
                 <div class="opacity-40 italic">Waiting for logs...</div>
             </div>
         </div>
@@ -70,6 +68,7 @@
             <h2 class="text-lg font-bold text-slate-800">Bulk PDF Upload</h2>
         </div>
         <form action="{{ url_for('admin_timetables_upload') }}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-violet-300 transition-colors group cursor-pointer relative" onclick="document.getElementById('pdfInput').click()">
                 <input type="file" id="pdfInput" name="timetable_pdf" accept="application/pdf" class="hidden" onchange="updateFileName(this, 'pdfName')">
                 <i class="fas fa-cloud-upload-alt text-4xl text-slate-300 group-hover:text-violet-400 mb-3 transition-colors"></i>
@@ -91,7 +90,8 @@
             </div>
             <h2 class="text-lg font-bold text-slate-800">Single Image Process</h2>
         </div>
-        <form action="{{ url_for('admin_timetables_upload_image') }}" method="POST" enctype="multipart/form-data" onsubmit="handleSingleUpload(this)">
+        <form id="singleImageForm" action="{{ url_for('admin_timetables_upload_image') }}" method="POST" enctype="multipart/form-data" onsubmit="return handleSingleUpload(event, this);">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-indigo-300 transition-colors group cursor-pointer relative" onclick="document.getElementById('imgInput').click()">
                 <input type="file" id="imgInput" name="timetable_image" accept="image/*" class="hidden" onchange="updateFileName(this, 'imgName')">
                 <i class="fas fa-image text-4xl text-slate-300 group-hover:text-indigo-400 mb-3 transition-colors"></i>
@@ -140,7 +140,7 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-50" id="staff-table-body">
-                {% for row in lecturers %}
+                {% for row in lecturers if not row.staff_id.startswith('BBHCFN') %}
                 <tr class="hover:bg-slate-50/80 transition-colors group">
                     <td class="px-8 py-4 font-mono text-[11px] text-slate-500">{{ row.staff_id }}</td>
                     <td class="px-8 py-4">
@@ -170,7 +170,7 @@
                              <button type="button" onclick="viewTimetableModal('{{ row.staff_id }}', true)" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-[10px] font-bold uppercase transition-colors" title="Open Interactive Editor">
                                 <i class="fas fa-edit mr-1"></i> Edit
                             </button>
-                            <form action="{{ url_for('admin_timetable_delete', staff_id=row.staff_id) }}" method="POST" onsubmit="return confirm('Delete timetable for {{ row.staff_id }}?')" class="inline-block">
+                            <form action="{{ url_for('admin_timetable_delete', staff_id=row.staff_id) }}" method="POST" class="inline-block js-delete-timetable-form" data-staff-id="{{ row.staff_id }}">
                                 <button type="submit" class="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold uppercase transition-colors" title="Delete Record">
                                     <i class="fas fa-trash mr-1"></i> Delete
                                 </button>
@@ -233,20 +233,37 @@
 
 <!-- Admin Edit Cell Modal -->
 <div id="adminEditModal" onclick="this.style.display='none'">
-    <div class="bg-white w-96 rounded-2xl p-6 shadow-2xl ml-auto mr-auto mt-20" onclick="event.stopPropagation()">
-        <h4 class="text-lg font-black text-slate-800 mb-4">Update Slot</h4>
+    <div class="bg-white w-[28rem] max-w-[95vw] rounded-2xl p-6 shadow-2xl ml-auto mr-auto mt-16" onclick="event.stopPropagation()">
+        <h4 class="text-lg font-black text-slate-800 mb-1">Update Slot</h4>
+        <p class="text-[10px] font-bold uppercase text-slate-400 mb-4 tracking-wider">Select from management timetables</p>
         <div class="space-y-4">
             <div>
                 <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Class</label>
-                <input type="text" id="adminCellClass" class="w-full p-2 border border-slate-200 rounded-lg font-bold">
+                <select id="adminCellClassSelect" onchange="onAdminClassSelectChange()" class="w-full p-2.5 border border-slate-200 rounded-lg font-bold text-sm bg-white mb-2">
+                    <option value="">-- Select class --</option>
+                </select>
+                <input type="text" id="adminCellClassCustom" placeholder="Or type custom class..." class="w-full p-2 border border-slate-100 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Section</label>
+                <select id="adminCellSectionSelect" onchange="onAdminSectionSelectChange()" class="w-full p-2.5 border border-slate-200 rounded-lg font-bold text-sm bg-white mb-2">
+                    <option value="">-- No section --</option>
+                </select>
+                <input type="text" id="adminCellSectionCustom" placeholder="Or type custom section (e.g. A)" class="w-full p-2 border border-slate-100 rounded-lg text-sm">
             </div>
             <div>
                 <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Subject</label>
-                <input type="text" id="adminCellSubject" class="w-full p-2 border border-slate-200 rounded-lg font-bold">
+                <select id="adminCellSubjectSelect" class="w-full p-2.5 border border-slate-200 rounded-lg font-bold text-sm bg-white mb-2">
+                    <option value="">-- Select subject --</option>
+                </select>
+                <input type="text" id="adminCellSubjectCustom" placeholder="Or type custom subject..." class="w-full p-2 border border-slate-100 rounded-lg text-sm">
             </div>
             <div class="flex gap-2 pt-2">
-                <button onclick="document.getElementById('adminEditModal').style.display='none'" class="flex-1 p-2 bg-slate-100 rounded-lg font-bold text-slate-500 text-sm">Cancel</button>
-                <button onclick="applyAdminCellChange()" class="flex-1 p-2 bg-indigo-600 rounded-lg font-bold text-white text-sm shadow-lg shadow-indigo-100">Update</button>
+                <button type="button" onclick="clearAdminSlotForm()" class="flex-1 p-2 bg-rose-50 text-rose-600 rounded-lg font-bold text-sm border border-rose-100 hover:bg-rose-100">
+                    <i class="fas fa-eraser mr-1"></i> Clear
+                </button>
+                <button type="button" onclick="document.getElementById('adminEditModal').style.display='none'" class="flex-1 p-2 bg-slate-100 rounded-lg font-bold text-slate-500 text-sm">Cancel</button>
+                <button type="button" onclick="applyAdminCellChange()" class="flex-1 p-2 bg-indigo-600 rounded-lg font-bold text-white text-sm shadow-lg shadow-indigo-100">Update</button>
             </div>
         </div>
     </div>
@@ -380,7 +397,49 @@
 </style>
 
 
+<!-- Bulk Delete Confirmation Modal -->
+<div id="bulkDeleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-[32px] shadow-2xl max-w-md w-full p-8 text-center animate-in zoom-in-95 duration-200">
+        <div class="w-16 h-16 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mx-auto mb-6 text-2xl">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="text-xl font-black text-slate-900 tracking-tight mb-2">Bulk Delete All?</h3>
+        <p class="text-slate-500 text-sm font-medium mb-6">This will permanently delete ALL faculty timetables, split images, and JSON records. This action is irreversible.</p>
+        
+        <div class="mb-6">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Verification Code</p>
+            <div id="bulkDeleteCodeDisplay" class="text-2xl font-black tracking-[0.5em] text-slate-900 bg-slate-100 py-3 rounded-2xl mb-4">-----</div>
+            <input type="text" id="bulkDeleteCodeInput" placeholder="Enter code here" class="w-full px-5 py-3 rounded-2xl border-none ring-2 ring-slate-200 focus:ring-rose-600 text-center font-black uppercase tracking-widest transition-all">
+            <p id="bulkDeleteCodeError" class="hidden text-rose-500 text-[10px] font-bold mt-2 uppercase tracking-tight">Code mismatch. Please try again.</p>
+        </div>
+
+        <form id="bulkDeleteForm" method="POST" action="{{ url_for('admin_timetables_bulk_delete') }}" class="flex gap-3">
+            <button type="button" onclick="hideBulkDeleteModal()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold">Cancel</button>
+            <button type="submit" class="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-bold shadow-lg shadow-rose-200">Confirm Wipe</button>
+        </form>
+    </div>
+</div>
+
 <script>
+    let bulkDeleteVerificationCode = null;
+    function generateBulkDeleteCode() {
+        return Math.random().toString(36).substring(2, 7).toUpperCase();
+    }
+
+    function showBulkDeleteModal() {
+        const modal = document.getElementById('bulkDeleteModal');
+        const codeDisplay = document.getElementById('bulkDeleteCodeDisplay');
+        bulkDeleteVerificationCode = generateBulkDeleteCode();
+        codeDisplay.textContent = bulkDeleteVerificationCode;
+        document.getElementById('bulkDeleteCodeInput').value = '';
+        document.getElementById('bulkDeleteCodeError').classList.add('hidden');
+        modal.classList.remove('hidden');
+    }
+
+    function hideBulkDeleteModal() {
+        document.getElementById('bulkDeleteModal').classList.add('hidden');
+    }
+
     function updateFileName(input, targetId) {
         const file = input.files[0];
         if (file) {
@@ -392,6 +451,130 @@
     let currentAdminData = null;
     let isAdminEditMode = false;
     let currentAdminEditingCell = null;
+    let timetableCatalog = null;
+
+    async function loadTimetableCatalog() {
+        if (timetableCatalog) return timetableCatalog;
+        const resp = await fetch('/api/timetable/catalog');
+        if (!resp.ok) throw new Error('Could not load class catalog');
+        timetableCatalog = await resp.json();
+        return timetableCatalog;
+    }
+
+    function adminFillSelect(selectId, values, selected, emptyLabel) {
+        const el = document.getElementById(selectId);
+        el.innerHTML = `<option value="">${emptyLabel}</option>`;
+        (values || []).forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = v;
+            if (v === selected) opt.selected = true;
+            el.appendChild(opt);
+        });
+    }
+
+    function adminSectionsForClass(catalog, className) {
+        if (!className) return catalog.sections || [];
+        const pairs = (catalog.class_sections || []).filter(p => p.class === className);
+        const secs = [...new Set(pairs.map(p => p.section).filter(Boolean))];
+        return secs.length ? secs : (catalog.sections || []);
+    }
+
+    function subjectsForClassSection(catalog, className, section) {
+        if (!className) return catalog.subjects || [];
+        const map = catalog.class_subject_map || {};
+        const secKey = `${className}|${section || ''}`;
+        const classKey = `${className}|`;
+        let list = [];
+        if (section && map[secKey] && map[secKey].length) {
+            list = map[secKey];
+        } else if (map[classKey] && map[classKey].length) {
+            list = map[classKey];
+        } else {
+            const merged = new Set();
+            Object.keys(map).forEach(k => {
+                if (k.startsWith(className + '|')) (map[k] || []).forEach(s => merged.add(s));
+            });
+            list = [...merged];
+        }
+        return list.length ? list : (catalog.subjects || []);
+    }
+
+    function adminRefreshSubjectOptions(keepSubject) {
+        if (!timetableCatalog) return;
+        const className = (document.getElementById('adminCellClassSelect').value
+            || document.getElementById('adminCellClassCustom').value).trim();
+        const section = (document.getElementById('adminCellSectionSelect').value
+            || document.getElementById('adminCellSectionCustom').value).trim();
+        const selected = keepSubject !== undefined ? keepSubject : (
+            document.getElementById('adminCellSubjectSelect').value
+            || document.getElementById('adminCellSubjectCustom').value
+        );
+        const subjects = subjectsForClassSection(timetableCatalog, className, section);
+        adminFillSelect('adminCellSubjectSelect', subjects, selected, '-- Select subject --');
+    }
+
+    function onAdminClassSelectChange() {
+        if (!timetableCatalog) return;
+        const className = document.getElementById('adminCellClassSelect').value;
+        document.getElementById('adminCellClassCustom').value = className || '';
+        adminFillSelect(
+            'adminCellSectionSelect',
+            adminSectionsForClass(timetableCatalog, className),
+            '',
+            '-- No section --'
+        );
+        adminRefreshSubjectOptions('');
+    }
+
+    function onAdminSectionSelectChange() {
+        const section = document.getElementById('adminCellSectionSelect').value;
+        document.getElementById('adminCellSectionCustom').value = section || '';
+        adminRefreshSubjectOptions('');
+    }
+
+    async function populateAdminSlotForm(slot) {
+        const catalog = await loadTimetableCatalog();
+        const cls = slot.class || '';
+        const sec = slot.section || '';
+        const sub = slot.subject || '';
+
+        adminFillSelect('adminCellClassSelect', catalog.classes, cls, '-- Select class --');
+        adminFillSelect('adminCellSectionSelect', adminSectionsForClass(catalog, cls), sec, '-- No section --');
+        adminFillSelect(
+            'adminCellSubjectSelect',
+            subjectsForClassSection(catalog, cls, sec),
+            sub,
+            '-- Select subject --'
+        );
+
+        document.getElementById('adminCellClassCustom').value = cls;
+        document.getElementById('adminCellSectionCustom').value = sec;
+        document.getElementById('adminCellSubjectCustom').value = sub;
+    }
+
+    function adminReadSlotValues() {
+        const className = (document.getElementById('adminCellClassSelect').value
+            || document.getElementById('adminCellClassCustom').value).trim();
+        const section = (document.getElementById('adminCellSectionSelect').value
+            || document.getElementById('adminCellSectionCustom').value).trim();
+        const subject = (document.getElementById('adminCellSubjectSelect').value
+            || document.getElementById('adminCellSubjectCustom').value).trim();
+        return { className, section, subject };
+    }
+
+    function clearAdminSlotForm() {
+        document.getElementById('adminCellClassSelect').value = '';
+        document.getElementById('adminCellClassCustom').value = '';
+        document.getElementById('adminCellSectionSelect').value = '';
+        document.getElementById('adminCellSectionCustom').value = '';
+        document.getElementById('adminCellSubjectSelect').value = '';
+        document.getElementById('adminCellSubjectCustom').value = '';
+        if (timetableCatalog) {
+            adminFillSelect('adminCellSectionSelect', timetableCatalog.sections || [], '', '-- No section --');
+            adminFillSelect('adminCellSubjectSelect', timetableCatalog.subjects || [], '', '-- Select subject --');
+        }
+    }
 
     async function viewTimetableModal(staffId, autoEdit = false) {
         currentAdminStaffId = staffId;
@@ -536,15 +719,18 @@
         document.getElementById('adminImageCard').classList.toggle('flex');
     }
 
-    function handleAdminCellClick(cell) {
+    async function handleAdminCellClick(cell) {
         if (!isAdminEditMode) return;
         currentAdminEditingCell = cell;
         const dayIdx = cell.dataset.dayIdx;
         const period = cell.dataset.period;
         const slot = currentAdminData.timetable.days[dayIdx].slots[period] || {};
-        
-        document.getElementById('adminCellClass').value = slot.class || '';
-        document.getElementById('adminCellSubject').value = slot.subject || '';
+
+        try {
+            await populateAdminSlotForm(slot);
+        } catch (e) {
+            console.warn('Catalog load failed', e);
+        }
         document.getElementById('adminEditModal').style.display = 'flex';
     }
 
@@ -552,14 +738,19 @@
         const cell = currentAdminEditingCell;
         const dayIdx = cell.dataset.dayIdx;
         const period = cell.dataset.period;
-        const className = document.getElementById('adminCellClass').value.trim();
-        const subject = document.getElementById('adminCellSubject').value.trim();
-        
+        const { className, section, subject } = adminReadSlotValues();
+
         if (className) {
-            currentAdminData.timetable.days[dayIdx].slots[period] = { class: className, subject: subject, span: 1 };
+            currentAdminData.timetable.days[dayIdx].slots[period] = {
+                class: className,
+                section: section || null,
+                subject: subject,
+                span: 1
+            };
+            const sectionLabel = section ? ` (${section})` : '';
             cell.innerHTML = `
                 <div class="slot-content-wrapper">
-                    <div class="slot-class">${className}</div>
+                    <div class="slot-class">${className}${sectionLabel}</div>
                     <div class="slot-subject">${subject}</div>
                 </div>
             `;
@@ -569,37 +760,93 @@
             cell.innerHTML = '';
             cell.classList.replace('slot-occupied', 'empty');
         }
-        
+
         document.getElementById('adminSaveBar').classList.remove('hidden');
         document.getElementById('adminEditModal').style.display = 'none';
     }
 
     async function saveAdminEdits() {
+        if (!currentAdminStaffId || !currentAdminData) {
+            await window.Alert("Nothing to save", "No timetable changes to sync.", "info-circle");
+            return;
+        }
         try {
-            const resp = await fetch("/lecturer/edit-timetable", { 
+            const resp = await fetch('/api/timetable/' + encodeURIComponent(currentAdminStaffId) + '/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
-                    'staff_id_override': currentAdminStaffId,
-                    'structured_json': JSON.stringify(currentAdminData)
+                    structured_json: JSON.stringify(currentAdminData)
                 })
             });
-            if (resp.ok) {
-                alert("Successfully saved changes for faculty " + currentAdminStaffId);
+            const result = await resp.json();
+            if (resp.ok && result.success) {
                 document.getElementById('adminSaveBar').classList.add('hidden');
+                await window.Alert(
+                    "Saved successfully",
+                    "Timetable updated for faculty " + currentAdminStaffId + ". The faculty page will reflect these changes.",
+                    "check-circle"
+                );
             } else {
-                alert("Failed to save.");
+                await window.Alert("Save failed", result.error || "Could not save timetable.", "exclamation-triangle");
             }
         } catch (e) {
-            alert("Error: " + e.message);
+            await window.Alert("Network error", e.message, "wifi");
         }
     }
 
-    function handleSingleUpload(form) {
+    function appendLiveLog(message, status) {
+        const entry = document.createElement('div');
+        entry.className = 'mb-1 border-l border-emerald-500/20 pl-2 py-0.5';
+        if (status === 'error') entry.className += ' text-rose-400';
+        if (status === 'warning') entry.className += ' text-amber-400';
+        entry.textContent = message;
+        if (liveLogs.innerHTML.includes('Waiting for logs')) liveLogs.innerHTML = '';
+        liveLogs.appendChild(entry);
+        liveLogs.scrollTop = liveLogs.scrollHeight;
+    }
+
+    function showLiveProcessor(initialMsg) {
+        liveStatusSection.classList.remove('hidden');
+        document.getElementById('statusPulse').classList.add('bg-emerald-500', 'animate-pulse');
+        document.getElementById('statusPulse').classList.remove('bg-blue-500', 'bg-rose-500');
+        liveProgressBar.style.width = '0%';
+        liveProgressPercent.textContent = '0%';
+        currentAction.textContent = initialMsg || 'Initializing pipeline...';
+        liveProgressLabel.textContent = 'Single image process';
+        if (initialMsg) appendLiveLog(initialMsg, 'info');
+    }
+
+    async function handleSingleUpload(event, form) {
+        event.preventDefault();
+        const fileInput = form.querySelector('input[type="file"]');
+        if (!fileInput || !fileInput.files || !fileInput.files.length) {
+            await window.Alert('No image', 'Please select a faculty timetable image first.', 'image');
+            return false;
+        }
+        showLiveProcessor('[' + new Date().toLocaleTimeString() + '] Uploading image to server…');
         const btn = document.getElementById('singleSubmitBtn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Initializing AI...';
-        // The form will submit normally to the background route
+        try {
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) {
+                appendLiveLog(data.error || 'Upload failed. Try again.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> <span>Process This Image</span>';
+                return false;
+            }
+            appendLiveLog('[' + new Date().toLocaleTimeString() + '] Processing started — waiting for AI logs…', 'info');
+        } catch (e) {
+            appendLiveLog('Network error: ' + e.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-magic"></i> <span>Process This Image</span>';
+        }
+        return false;
     }
 
     const liveStatusSection = document.getElementById('liveStatusSection');
@@ -611,23 +858,19 @@
 
     socket.on('timetable_log', function (data) {
         liveStatusSection.classList.remove('hidden');
-        
-        // Update labels based on log content
-        if (data.message.includes('Gemini')) {
-            liveProgressLabel.textContent = "AI Analysis (Step 3/4)";
-        } else if (data.message.includes('Slicing') || data.message.includes('Images')) {
-            liveProgressLabel.textContent = "Processing Visuals (Step 2/4)";
+        const msg = data.message || '';
+        if (msg.includes('Gemini') || msg.includes('AI extracted')) {
+            liveProgressLabel.textContent = 'AI Analysis (Step 2/4)';
+        } else if (msg.includes('Syncing') || msg.includes('matched via')) {
+            liveProgressLabel.textContent = 'Database Sync (Step 3/4)';
+        } else if (msg.includes('Initializing') || msg.includes('Sending image')) {
+            liveProgressLabel.textContent = 'Starting pipeline (Step 1/4)';
+        } else if (msg.includes('Successfully processed')) {
+            liveProgressLabel.textContent = 'Complete (Step 4/4)';
+        } else if (msg.includes('Slicing') || msg.includes('Images')) {
+            liveProgressLabel.textContent = 'Processing Visuals (Step 2/4)';
         }
-
-        const entry = document.createElement('div');
-        entry.className = 'mb-1 border-l border-emerald-500/20 pl-2 py-0.5';
-        if (data.status === 'error') entry.className += ' text-rose-400';
-        if (data.status === 'warning') entry.className += ' text-amber-400';
-        entry.textContent = data.message;
-        
-        if(liveLogs.innerHTML.includes('Waiting for logs')) liveLogs.innerHTML = '';
-        liveLogs.appendChild(entry);
-        liveLogs.scrollTop = liveLogs.scrollHeight;
+        appendLiveLog(msg, data.status || 'info');
     });
 
     socket.on('timetable_progress', function (data) {
@@ -661,19 +904,36 @@
 
     // Handle bulk submit click for visual feedback
     document.querySelector('form[action*="bulk"]').onsubmit = function() {
+        showLiveProcessor('[' + new Date().toLocaleTimeString() + '] Uploading PDF — page will reload when processing starts…');
         const btn = document.getElementById('bulkSubmitBtn');
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Preparing Bulk...';
     };
 
+    (function initLiveFromQuery() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('live') === '1') {
+            showLiveProcessor('[' + new Date().toLocaleTimeString() + '] Reconnected — listening for live progress…');
+            params.delete('live');
+            const qs = params.toString();
+            history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+        }
+    })();
+
     async function stopProcessing() {
-        if (!confirm('Are you sure you want to stop the current process?')) return;
+        const ok = await window.Confirm(
+            'Stop Processing?',
+            'Are you sure you want to stop the current timetable process?',
+            'stop-circle',
+            'Stop'
+        );
+        if (!ok) return;
         try {
             const resp = await fetch('{{ url_for("admin_timetables_stop") }}', { method: 'POST' });
             const res = await resp.json();
-            alert(res.message);
+            await window.Alert('Process stopped', res.message || 'The background process was stopped.', 'info-circle');
         } catch (e) {
-            alert('Failed to stop process.');
+            await window.Alert('Error', 'Failed to stop process.', 'exclamation-triangle');
         }
     }
 
@@ -701,12 +961,50 @@
         }
     });
 
-    // Handle initial alert messages from Flask
-    document.addEventListener('DOMContentLoaded', function() {
+    // Delete timetable — custom confirm (not browser popup)
+    document.querySelectorAll('.js-delete-timetable-form').forEach(function (form) {
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const staffId = form.dataset.staffId || 'this faculty';
+            const ok = await window.Confirm(
+                'Delete Timetable?',
+                'Delete timetable for ' + staffId + '? This cannot be undone.',
+                'trash-alt',
+                'Delete'
+            );
+            if (ok) form.submit();
+        });
+    });
+
+    // Handle initial messages from Flask (upload success, errors)
+    document.addEventListener('DOMContentLoaded', async function() {
+        loadTimetableCatalog().catch(() => {});
+
         const error = {{ (error or '') | tojson }};
         const message = {{ (message or '') | tojson }};
-        if (error) alert('Error: ' + error);
-        if (message) alert(message);
+        if (error) {
+            await window.Alert('Error', error, 'exclamation-triangle');
+        }
+        if (message) {
+            const isSuccess = /successful|started|deleted|cleared/i.test(message);
+            await window.Alert(
+                isSuccess ? 'Success' : 'Notice',
+                message,
+                isSuccess ? 'check-circle' : 'info-circle'
+            );
+        }
+
+        const bulkDeleteForm = document.getElementById('bulkDeleteForm');
+        if (bulkDeleteForm) {
+            bulkDeleteForm.onsubmit = function(e) {
+                const entered = document.getElementById('bulkDeleteCodeInput').value.trim().toUpperCase();
+                if (entered !== bulkDeleteVerificationCode) {
+                    e.preventDefault();
+                    document.getElementById('bulkDeleteCodeError').classList.remove('hidden');
+                    return false;
+                }
+            };
+        }
     });
 </script>
 {% endblock %}

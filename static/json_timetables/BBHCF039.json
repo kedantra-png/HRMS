@@ -1,42 +1,42 @@
 {
-    "faculty": "Ms. MEGHA",
+    "faculty": "Mrs. MEGHA S. BHAT",
     "faculty_id": "BBHCF039",
-    "department": "DEPARTMENT OF COMPUTER APPLICATIONS",
-    "mentor": "III BCA (B)",
-    "total_hours": "21Hrs",
+    "department": null,
+    "mentor": "",
+    "total_hours": "30",
     "timetable": {
         "periods": [
             {
                 "period": "0",
-                "time": "8:50-9:40"
+                "time": "8.50-9.40"
             },
             {
                 "period": "I",
-                "time": "9:45-10:35"
+                "time": "9.45-10.35"
             },
             {
                 "period": "II",
-                "time": "10:40-11:30"
+                "time": "10.40-11.30"
             },
             {
                 "period": "III",
-                "time": "11:35-12:25"
+                "time": "11.35-12.25"
             },
             {
                 "period": "IV",
-                "time": "1:05-1:55"
+                "time": "1.05-1.55"
             },
             {
                 "period": "V",
-                "time": "02:-2:50"
+                "time": "2.00-2.50"
             },
             {
                 "period": "VI",
-                "time": "2:55-3:45"
+                "time": "2.55-3.45"
             },
             {
                 "period": "VII",
-                "time": "3:50-4:40"
+                "time": ""
             }
         ],
         "days": [
@@ -44,50 +44,50 @@
                 "day": "MONDAY",
                 "slots": {
                     "0": {
+                        "class": "I B.COM",
+                        "section": "D",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "I": {
                         "class": null,
                         "section": null,
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
-                    "I": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP Lab",
-                        "is_lab": true,
-                        "span": 3
-                    },
                     "II": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP Lab",
-                        "is_lab": true,
-                        "span": 3
+                        "class": "I BCOM",
+                        "section": "A,B&C",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
                     },
                     "III": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP Lab",
-                        "is_lab": true,
-                        "span": 3
+                        "class": "II BCOM",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
                     },
                     "IV": {
-                        "class": null,
+                        "class": "I BBA",
                         "section": null,
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "V": {
-                        "class": null,
+                        "class": "II BBA",
                         "section": null,
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "VI": {
-                        "class": null,
-                        "section": null,
+                        "class": "II B.COM",
+                        "section": "D",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
@@ -105,49 +105,49 @@
                 "day": "TUESDAY",
                 "slots": {
                     "0": {
-                        "class": null,
-                        "section": null,
+                        "class": "II B.COM",
+                        "section": "D",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "I": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP",
+                        "class": "II B.COM",
+                        "section": "D",
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "II": {
-                        "class": null,
-                        "section": null,
+                        "class": "II BCA",
+                        "section": "A&B",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "III": {
-                        "class": "II BCA",
-                        "section": "B",
-                        "subject": "OS",
+                        "class": "II BBA",
+                        "section": null,
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "IV": {
-                        "class": null,
-                        "section": null,
+                        "class": "I B.COM",
+                        "section": "D",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "V": {
-                        "class": null,
-                        "section": null,
+                        "class": "I BCOM",
+                        "section": "A,B&C",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "VI": {
-                        "class": null,
+                        "class": "I BBA",
                         "section": null,
                         "subject": null,
                         "is_lab": false,
@@ -173,46 +173,46 @@
                         "span": 1
                     },
                     "I": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP",
+                        "class": "I BBA",
+                        "section": null,
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "II": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "Project",
+                        "class": "II BCOM",
+                        "section": "A&B",
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "III": {
+                        "class": "II BCA",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
                         "class": null,
                         "section": null,
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
-                    "IV": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP Lab",
-                        "is_lab": true,
-                        "span": 3
-                    },
                     "V": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP Lab",
-                        "is_lab": true,
-                        "span": 3
+                        "class": "II BBA",
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
                     },
                     "VI": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP Lab",
-                        "is_lab": true,
-                        "span": 3
+                        "class": "I BCA",
+                        "section": "A,B&C",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
                     },
                     "VII": {
                         "class": null,
@@ -241,46 +241,46 @@
                         "span": 1
                     },
                     "II": {
-                        "class": null,
-                        "section": null,
+                        "class": "I BCA",
+                        "section": "A,B&C",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "III": {
+                        "class": "I BCOM",
+                        "section": "A,B&C",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
+                    },
+                    "IV": {
                         "class": null,
                         "section": null,
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
-                    "IV": {
-                        "class": "I BCA",
-                        "section": "A",
-                        "subject": "AI Lab",
-                        "is_lab": true,
-                        "span": 4
-                    },
                     "V": {
-                        "class": "I BCA",
-                        "section": "A",
-                        "subject": "AI Lab",
-                        "is_lab": true,
-                        "span": 4
+                        "class": "II BCOM",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
                     },
                     "VI": {
-                        "class": "I BCA",
-                        "section": "A",
-                        "subject": "AI Lab",
-                        "is_lab": true,
-                        "span": 4
+                        "class": "II BCA",
+                        "section": "A&B",
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
                     },
                     "VII": {
-                        "class": "I BCA",
-                        "section": "A",
-                        "subject": "AI Lab",
-                        "is_lab": true,
-                        "span": 4
+                        "class": null,
+                        "section": null,
+                        "subject": null,
+                        "is_lab": false,
+                        "span": 1
                     }
                 }
             },
@@ -295,44 +295,44 @@
                         "span": 1
                     },
                     "I": {
-                        "class": null,
-                        "section": null,
+                        "class": "I BCA",
+                        "section": "A,B&C",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "II": {
-                        "class": "II BCA",
-                        "section": "B",
-                        "subject": "OS",
+                        "class": "II BBA",
+                        "section": null,
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "III": {
-                        "class": null,
-                        "section": null,
+                        "class": "I B.COM",
+                        "section": "D",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "IV": {
-                        "class": "I BCA",
-                        "section": "A",
-                        "subject": "AI",
+                        "class": "II BCA",
+                        "section": "A&B",
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "V": {
-                        "class": null,
-                        "section": null,
+                        "class": "II BCOM",
+                        "section": "A&B",
                         "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "VI": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP",
+                        "class": "I BCOM",
+                        "section": "A,B&C",
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
@@ -356,22 +356,22 @@
                         "span": 1
                     },
                     "I": {
-                        "class": "II BCA",
-                        "section": "B",
-                        "subject": "OS",
+                        "class": null,
+                        "section": null,
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "II": {
-                        "class": "III BCA",
-                        "section": "B",
-                        "subject": "PHP",
+                        "class": "I BBA",
+                        "section": null,
+                        "subject": null,
                         "is_lab": false,
                         "span": 1
                     },
                     "III": {
-                        "class": null,
-                        "section": null,
+                        "class": "I BCA",
+                        "section": "A,B&C",
                         "subject": null,
                         "is_lab": false,
                         "span": 1

@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Salary - Admin{% endblock %}
+
+{% block content %}
+<style>
+    main { max-width: none !important; padding: 0 !important; margin: 0 !important; background: #f8fafc; }
+    .glass-header {
+        background: rgba(255,255,255,.8);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(226,232,240,.8);
+    }
+    .premium-card {
+        background: white;
+        border-radius: 32px;
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .action-btn { transition: all .2s cubic-bezier(.4,0,.2,1); }
+    .action-btn:hover { transform: translateY(-2px); }
+    input[type="month"] {
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        font-weight: 700;
+        color: #334155;
+        min-width: 160px;
+    }
+</style>
+
+<div class="glass-header sticky top-0 z-40 px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+        <div class="p-2 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-200">
+            <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="Logo" class="h-10 w-10 object-contain brightness-0 invert">
+        </div>
+        <div>
+            <h1 class="text-xl font-black text-slate-900 tracking-tight">Manage Salary</h1>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Salary Slip Generator</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
+            <i class="fas fa-th-large text-slate-400"></i> Dashboard
+        </a>
+        <a href="{{ url_for('logout') }}" class="px-5 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl font-bold text-sm transition-all flex items-center gap-2">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+</div>
+
+<div class="p-8 space-y-6">
+    <div class="premium-card p-6 border-2 border-indigo-100" id="sender-email-card">
+        <div class="flex items-start gap-4 flex-wrap">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                <i class="fas fa-envelope-open-text text-lg"></i>
+            </div>
+            <div class="flex-1 min-w-[240px]">
+                <h3 class="text-lg font-black text-slate-900">Sender email (Gmail)</h3>
+                <p class="text-sm text-slate-500 font-medium mt-1">Enter the Gmail account that <strong>sends</strong> salary slips. Faculty receive mail at their own email — this is only the sender login.</p>
+                {% if smtp_configured %}
+                <p class="text-xs font-bold text-emerald-700 mt-2"><i class="fas fa-check-circle"></i> {{ smtp_status }}</p>
+                {% endif %}
+                {% if payroll_smtp.source == 'ui' %}
+                <p class="text-[11px] font-bold text-indigo-600 mt-1"><i class="fas fa-database"></i> Using login saved in this page (overrides .env)</p>
+                {% elif payroll_smtp.source == 'env' %}
+                <p class="text-[11px] font-bold text-amber-700 mt-1"><i class="fas fa-file-code"></i> Using .env — save below to change sender from the website</p>
+                {% endif %}
+            </div>
+        </div>
+        <form id="payroll-smtp-form" method="post" action="{{ url_for('admin_salary_settings') }}" class="mt-6 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="month_year" value="{{ month_year }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="smtp_user" class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Sender Gmail address</label>
+                    <input type="email" id="smtp_user" name="smtp_user" required
+                        class="mt-1 w-full px-4 py-3 rounded-xl border-2 border-slate-200 font-bold text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                        value="{{ payroll_smtp.smtp_user }}" placeholder="your-college@gmail.com" autocomplete="username">
+                </div>
+                <div>
+                    <label for="smtp_password" class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Gmail App Password</label>
+                    <div class="relative mt-1">
+                        <input type="password" id="smtp_password" name="smtp_password"
+                            class="w-full px-4 py-3 pr-12 rounded-xl border-2 border-slate-200 font-bold text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                            placeholder="{% if payroll_smtp.password_saved_in_ui %}Leave blank to keep saved password{% elif payroll_smtp.has_password %}Leave blank to use .env password{% else %}Paste 16-character app password{% endif %}"
+                            autocomplete="new-password">
+                        <button type="button" id="toggle-smtp-pw" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600" title="Show password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-500 font-medium leading-relaxed">
+                <i class="fas fa-info-circle text-indigo-500"></i>
+                Not your normal Gmail password — create an <strong>App Password</strong> at
+                <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" class="text-indigo-600 font-bold underline">Google App Passwords</a>
+                (2-Step Verification must be on). Server uses <strong>{{ payroll_smtp.smtp_host }}:{{ payroll_smtp.smtp_port }}</strong> (SSL).
+            </p>
+            <div id="smtp-test-result" class="hidden rounded-xl px-4 py-3 text-sm font-bold"></div>
+            <div class="flex flex-col sm:flex-row flex-wrap gap-3">
+                <button type="button" id="btn-test-smtp"
+                    class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-sm action-btn border border-slate-200">
+                    <i class="fas fa-plug mr-1"></i> Test connection
+                </button>
+                <button type="submit"
+                    class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm action-btn shadow-lg shadow-indigo-200">
+                    <i class="fas fa-save mr-1"></i> Save sender login
+                </button>
+                {% if payroll_smtp.source == 'ui' %}
+                <form method="post" action="{{ url_for('admin_salary_settings_reset_env') }}" class="inline"
+                    onsubmit="return confirm('Use .env sender instead? This removes the email/password saved on this page.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="month_year" value="{{ month_year }}">
+                    <button type="submit"
+                        class="px-5 py-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-black text-sm action-btn border border-amber-200">
+                        <i class="fas fa-undo mr-1"></i> Use .env sender
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if not smtp_configured %}
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 flex gap-3 items-start">
+        <i class="fas fa-exclamation-triangle text-amber-600 mt-1"></i>
+        <div>
+            <div class="font-black text-amber-900">Email sending is off</div>
+            <p class="text-sm text-amber-800 mt-1 font-medium">Save payroll email login above to enable Bulk Email.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if email_report %}
+    <div class="premium-card p-6 border-2 border-slate-200">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+                <h3 class="text-xl font-black text-slate-900">Email report — {{ email_report.month_year }}</h3>
+                <p class="text-sm text-slate-500 font-medium mt-1">Summary of the last email action</p>
+            </div>
+            <button type="button" onclick="document.getElementById('email-report-details').classList.toggle('hidden')"
+                class="text-sm font-bold text-indigo-600 hover:text-indigo-800">
+                Show / hide details
+            </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
+            <div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-center">
+                <div class="text-3xl font-black text-emerald-700">{{ email_report.sent_count }}</div>
+                <div class="text-xs font-black text-emerald-600 uppercase tracking-wider mt-1">Sent successfully</div>
+            </div>
+            <div class="rounded-2xl bg-amber-50 border border-amber-100 p-4 text-center">
+                <div class="text-3xl font-black text-amber-700">{{ email_report.skipped_count }}</div>
+                <div class="text-xs font-black text-amber-600 uppercase tracking-wider mt-1">Not sent (skipped)</div>
+            </div>
+            <div class="rounded-2xl bg-rose-50 border border-rose-100 p-4 text-center">
+                <div class="text-3xl font-black text-rose-700">{{ email_report.failed_count }}</div>
+                <div class="text-xs font-black text-rose-600 uppercase tracking-wider mt-1">Failed to send</div>
+            </div>
+        </div>
+        <div id="email-report-details" class="mt-5 space-y-4">
+            {% if email_report.sent %}
+            <div>
+                <div class="text-xs font-black text-emerald-700 uppercase tracking-widest mb-2">Sent to</div>
+                <ul class="space-y-1 text-sm">
+                    {% for r in email_report.sent %}
+                    <li class="flex flex-wrap gap-2 items-center text-slate-700">
+                        <span class="font-black text-slate-900">{{ r.staff_id }}</span>
+                        <span>{{ r.name }}</span>
+                        <span class="text-emerald-600 font-bold">→ {{ r.email }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if email_report.skipped %}
+            <div>
+                <div class="text-xs font-black text-amber-700 uppercase tracking-widest mb-2">Skipped — why not sent</div>
+                <ul class="space-y-2 text-sm">
+                    {% for r in email_report.skipped %}
+                    <li class="rounded-xl bg-amber-50/80 border border-amber-100 px-4 py-2">
+                        <span class="font-black text-slate-900">{{ r.staff_id }}</span> {{ r.name }}
+                        <div class="text-amber-800 font-bold mt-0.5"><i class="fas fa-info-circle mr-1"></i>{{ r.reason }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if email_report.failed %}
+            <div>
+                <div class="text-xs font-black text-rose-700 uppercase tracking-widest mb-2">Failed — fix and try again</div>
+                <ul class="space-y-2 text-sm">
+                    {% for r in email_report.failed %}
+                    <li class="rounded-xl bg-rose-50/80 border border-rose-100 px-4 py-2">
+                        <span class="font-black text-slate-900">{{ r.staff_id }}</span> {{ r.name }}
+                        {% if r.email %}<span class="text-slate-500">({{ r.email }})</span>{% endif %}
+                        <div class="text-rose-800 font-bold mt-0.5"><i class="fas fa-times-circle mr-1"></i>{{ r.reason }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if email_report.sent_count == 0 and email_report.skipped_count == 0 and email_report.failed_count == 0 %}
+            <p class="text-slate-500 font-bold text-sm">No completed slips with email were found for this action.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="premium-card p-6">
+        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+            <div>
+                <h2 class="text-3xl font-black text-slate-900 tracking-tight">Faculty Salary Slips</h2>
+                <p class="text-slate-500 mt-1 font-medium">Red = Not started, Yellow = Partial, Green = Completed</p>
+                <p class="text-xs text-slate-400 font-bold mt-2">Selected: <span class="text-slate-700">{{ month_year }}</span></p>
+            </div>
+            <div class="flex flex-col sm:flex-row flex-wrap items-end gap-3">
+                <form method="get" id="month-filter-form" class="flex items-end gap-3">
+                    <div class="flex flex-col">
+                        <label class="text-[11px] font-black text-slate-500 uppercase tracking-widest" for="monthPicker">Month / Year</label>
+                        <input type="month" id="monthPicker" value="{{ month_iso }}" class="mt-1">
+                        <input type="hidden" name="month_year" id="monthYearHidden" value="{{ month_year }}">
+                    </div>
+                    <button class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm action-btn flex items-center gap-2" type="submit">
+                        <i class="fas fa-calendar-alt"></i> Apply
+                    </button>
+                </form>
+
+                <form method="post" action="{{ url_for('admin_salary_bulk_publish') }}" id="bulk-upload-form" class="flex">
+                    <input type="hidden" name="month_year" value="{{ month_year }}">
+                    <button type="submit"
+                        class="px-5 py-2.5 rounded-xl font-black text-sm action-btn flex items-center gap-2
+                        {% if complete_unpublished > 0 %}bg-indigo-600 hover:bg-indigo-700 text-white{% else %}bg-slate-200 text-slate-500 cursor-not-allowed{% endif %}"
+                        {% if complete_unpublished == 0 %}disabled{% endif %}>
+                        <i class="fas fa-cloud-upload-alt"></i> Bulk Upload
+                        {% if complete_unpublished > 0 %}<span class="opacity-90">({{ complete_unpublished }})</span>{% endif %}
+                    </button>
+                </form>
+
+                <form method="post" action="{{ url_for('admin_salary_bulk_email') }}" id="bulk-email-form" class="flex">
+                    <input type="hidden" name="month_year" value="{{ month_year }}">
+                    <button type="submit"
+                        class="px-5 py-2.5 rounded-xl font-black text-sm action-btn flex items-center gap-2
+                        {% if smtp_configured and email_ready_count > 0 %}bg-sky-600 hover:bg-sky-700 text-white{% else %}bg-slate-200 text-slate-500 cursor-not-allowed{% endif %}"
+                        {% if not smtp_configured or email_ready_count == 0 %}disabled{% endif %}
+                        title="Email PDF slip to all completed faculty with valid email">
+                        <i class="fas fa-envelope"></i> Bulk Email
+                        {% if email_ready_count > 0 %}<span class="opacity-90">({{ email_ready_count }})</span>{% endif %}
+                    </button>
+                </form>
+
+                <form method="post" action="{{ url_for('admin_salary_cancel_month') }}" id="cancel-month-form" class="flex">
+                    <input type="hidden" name="month_year" value="{{ month_year }}">
+                    <button type="submit"
+                        class="px-5 py-2.5 rounded-xl font-black text-sm action-btn flex items-center gap-2
+                        {% if published_count > 0 %}bg-rose-100 hover:bg-rose-200 text-rose-700{% else %}bg-slate-200 text-slate-500 cursor-not-allowed{% endif %}"
+                        {% if published_count == 0 %}disabled{% endif %}>
+                        <i class="fas fa-ban"></i> Cancel Month
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="premium-card overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <div>
+                    <div class="text-lg font-black text-slate-900">Faculty List</div>
+                    <div class="text-xs text-slate-500 font-bold uppercase tracking-widest">Total: {{ rows|length }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full">
+                <thead class="bg-slate-50">
+                    <tr class="text-left text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                        <th class="px-6 py-4">Staff ID</th>
+                        <th class="px-6 py-4">Name</th>
+                        <th class="px-6 py-4">Department</th>
+                        <th class="px-6 py-4">Email</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4">Upload</th>
+                        <th class="px-6 py-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for r in rows %}
+                    {% set is_red = r.status == 'not_started' %}
+                    {% set is_yellow = r.status == 'partial' %}
+                    {% set is_green = r.status == 'complete' %}
+                    <tr class="hover:bg-slate-50/60 transition-colors">
+                        <td class="px-6 py-4 font-black text-slate-800">{{ r.staff_id }}</td>
+                        <td class="px-6 py-4">
+                            <div class="font-black text-slate-900">{{ r.name }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-slate-700 font-bold">{{ r.department or '—' }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if r.has_valid_email %}
+                            <div class="text-xs font-bold text-slate-600 max-w-[180px] truncate" title="{{ r.email }}">{{ r.email }}</div>
+                            {% if r.emailed_at %}
+                            <div class="text-[10px] font-black text-emerald-600 mt-1"><i class="fas fa-check"></i> Emailed</div>
+                            {% endif %}
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-50 text-rose-700 text-[10px] font-black" title="{{ r.email_hint }}">
+                                <i class="fas fa-exclamation-circle"></i> {{ r.email_hint }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black
+                                {% if is_green %}bg-emerald-50 text-emerald-700{% elif is_yellow %}bg-amber-50 text-amber-700{% else %}bg-rose-50 text-rose-700{% endif %}">
+                                <span class="w-2 h-2 rounded-full {% if is_green %}bg-emerald-500{% elif is_yellow %}bg-amber-500{% else %}bg-rose-500{% endif %}"></span>
+                                {% if is_green %}Completed{% elif is_yellow %}Partial{% else %}Not Ready{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap items-center gap-2">
+                                {% if r.published %}
+                                    <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-black bg-indigo-50 text-indigo-700">
+                                        <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Uploaded
+                                    </span>
+                                    <form method="post" action="{{ url_for('admin_salary_unpublish', lecturer_id=r.lecturer_id) }}" class="js-unpublish-form">
+                                        <input type="hidden" name="month_year" value="{{ month_year }}">
+                                        <button type="submit" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs action-btn bg-rose-50 hover:bg-rose-100 text-rose-700">
+                                            <i class="fas fa-times-circle"></i> Cancel
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{{ url_for('admin_salary_publish', lecturer_id=r.lecturer_id) }}">
+                                        <input type="hidden" name="month_year" value="{{ month_year }}">
+                                        <button type="submit"
+                                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm action-btn
+                                            {% if is_green %}bg-indigo-600 hover:bg-indigo-700 text-white{% else %}bg-slate-200 text-slate-500 cursor-not-allowed{% endif %}"
+                                            {% if not is_green %}disabled{% endif %}>
+                                            <i class="fas fa-cloud-upload-alt"></i> Upload
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                <form method="post" action="{{ url_for('admin_salary_email', lecturer_id=r.lecturer_id) }}" class="js-email-form">
+                                    <input type="hidden" name="month_year" value="{{ month_year }}">
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-black text-xs action-btn
+                                        {% if r.can_email %}bg-sky-600 hover:bg-sky-700 text-white{% else %}bg-slate-100 text-slate-400 cursor-not-allowed{% endif %}"
+                                        {% if not r.can_email %}disabled title="{{ r.email_hint }}"{% endif %}>
+                                        <i class="fas fa-envelope"></i> Email
+                                    </button>
+                                </form>
+                                <a class="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-black text-sm action-btn
+                                    {% if is_green %}bg-emerald-600 hover:bg-emerald-700 text-white
+                                    {% elif is_yellow %}bg-amber-500 hover:bg-amber-600 text-white
+                                    {% else %}bg-rose-600 hover:bg-rose-700 text-white{% endif %}"
+                                   href="{{ url_for('admin_salary_slip', lecturer_id=r.lecturer_id, month_year=month_year) }}">
+                                    <i class="fas fa-file-alt"></i> Open Slip
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+  function monthIsoToLabel(iso) {
+    if (!iso) return '';
+    const [y, m] = iso.split('-').map(Number);
+    const d = new Date(y, m - 1, 1);
+    return d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  const monthPicker = document.getElementById('monthPicker');
+  const monthHidden = document.getElementById('monthYearHidden');
+  const filterForm = document.getElementById('month-filter-form');
+
+  function syncMonthHidden() {
+    if (monthPicker && monthHidden) {
+      monthHidden.value = monthIsoToLabel(monthPicker.value);
+    }
+  }
+
+  if (monthPicker) monthPicker.addEventListener('change', syncMonthHidden);
+  if (filterForm) filterForm.addEventListener('submit', syncMonthHidden);
+
+  const bulkForm = document.getElementById('bulk-upload-form');
+  if (bulkForm) {
+    bulkForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ok = await Confirm('Bulk Upload', 'Upload all completed salary slips for {{ month_year }} to faculty pages?', 'cloud-upload-alt', 'Upload All');
+      if (ok) bulkForm.submit();
+    });
+  }
+
+  const bulkEmailForm = document.getElementById('bulk-email-form');
+  if (bulkEmailForm) {
+    bulkEmailForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ok = await Confirm(
+        'Bulk Email',
+        'Send salary slip PDF by email to all completed faculty with a valid email for {{ month_year }}?',
+        'envelope',
+        'Send Emails'
+      );
+      if (ok) bulkEmailForm.submit();
+    });
+  }
+
+  const cancelMonthForm = document.getElementById('cancel-month-form');
+  if (cancelMonthForm) {
+    cancelMonthForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ok = await Confirm('Cancel Month Upload', 'Hide all uploaded slips for {{ month_year }} from faculty?', 'ban', 'Cancel Month');
+      if (ok) cancelMonthForm.submit();
+    });
+  }
+
+  document.querySelectorAll('.js-unpublish-form').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ok = await Confirm('Cancel Upload', 'Remove this slip from the faculty page for {{ month_year }}?', 'times-circle', 'Cancel Upload');
+      if (ok) form.submit();
+    });
+  });
+
+  document.querySelectorAll('.js-email-form').forEach((form) => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const ok = await Confirm('Send Email', 'Email salary slip PDF to this faculty member?', 'envelope', 'Send Email');
+      if (ok) form.submit();
+    });
+  });
+
+  const togglePw = document.getElementById('toggle-smtp-pw');
+  const smtpPw = document.getElementById('smtp_password');
+  if (togglePw && smtpPw) {
+    togglePw.addEventListener('click', () => {
+      const isHidden = smtpPw.type === 'password';
+      smtpPw.type = isHidden ? 'text' : 'password';
+      togglePw.innerHTML = isHidden ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+    });
+  }
+
+  const btnTestSmtp = document.getElementById('btn-test-smtp');
+  const smtpTestResult = document.getElementById('smtp-test-result');
+  const payrollSmtpForm = document.getElementById('payroll-smtp-form');
+  if (btnTestSmtp && payrollSmtpForm && smtpTestResult) {
+    btnTestSmtp.addEventListener('click', async () => {
+      const user = document.getElementById('smtp_user')?.value?.trim();
+      const password = document.getElementById('smtp_password')?.value || '';
+      if (!user) {
+        smtpTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-rose-50 text-rose-800 border border-rose-200';
+        smtpTestResult.textContent = 'Enter sender Gmail address first.';
+        smtpTestResult.classList.remove('hidden');
+        return;
+      }
+      btnTestSmtp.disabled = true;
+      btnTestSmtp.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Testing…';
+      smtpTestResult.classList.remove('hidden');
+      smtpTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-slate-100 text-slate-600 border border-slate-200';
+      smtpTestResult.textContent = 'Connecting to Gmail…';
+      try {
+        const fd = new FormData(payrollSmtpForm);
+        const res = await fetch('{{ url_for("admin_salary_settings_test") }}', {
+          method: 'POST',
+          body: fd,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const data = await res.json();
+        if (data.ok) {
+          smtpTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-emerald-50 text-emerald-800 border border-emerald-200';
+        } else {
+          smtpTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-rose-50 text-rose-800 border border-rose-200';
+        }
+        smtpTestResult.textContent = data.message || (data.ok ? 'OK' : 'Test failed');
+      } catch (err) {
+        smtpTestResult.className = 'rounded-xl px-4 py-3 text-sm font-bold bg-rose-50 text-rose-800 border border-rose-200';
+        smtpTestResult.textContent = 'Could not run test. Refresh the page and try again.';
+      }
+      btnTestSmtp.disabled = false;
+      btnTestSmtp.innerHTML = '<i class="fas fa-plug mr-1"></i> Test connection';
+    });
+  }
+</script>
+{% endblock %}

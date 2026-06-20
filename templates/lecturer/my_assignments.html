@@ -5,10 +5,61 @@
 {% block content %}
 <div class="max-w-4xl mx-auto py-8">
     <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-800">My Class Assignments</h1>
-        <p class="text-slate-500 mt-2">Review and respond to class assignment requests from other faculty members</p>
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-800">My Class Assignments</h1>
+            <p class="text-slate-500 mt-2">Review and respond to class assignment requests from other faculty members</p>
+        </div>
+        <a href="{{ url_for('lecturer_dashboard') }}" class="w-12 h-12 rounded-2xl bg-white shadow-lg border border-slate-100 flex items-center justify-center text-slate-600 hover:text-indigo-600 transition-all hover:scale-110 group" title="Back to Dashboard">
+            <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+        </a>
     </div>
+
+    <!-- HOD Pending Requests (New) -->
+    {% if hod_pending %}
+    <div class="mb-12 bg-white rounded-2xl shadow-xl shadow-indigo-100/50 border-2 border-indigo-50 overflow-hidden">
+        <div class="p-6 border-b border-indigo-50 bg-gradient-to-r from-indigo-600 to-purple-600">
+            <h2 class="text-xl font-bold text-white flex items-center">
+                <i class="fas fa-user-shield mr-3"></i>
+                HOD Permission Requests
+                <span class="ml-3 px-3 py-1 rounded-full bg-white/20 text-white text-sm font-bold backdrop-blur-md">
+                    {{ hod_pending|length }}
+                </span>
+            </h2>
+            <p class="text-indigo-100 text-[10px] font-bold uppercase mt-1 tracking-widest opacity-80">Faculty awaiting your approval to submit leave</p>
+        </div>
+
+        <div class="divide-y divide-slate-50">
+            {% for h in hod_pending %}
+            <div class="p-4 md:p-6 hover:bg-indigo-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group" id="hod-request-{{ h.id }}">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-xl md:rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg md:text-xl shadow-inner group-hover:scale-110 transition-transform">
+                        {{ h.requester_name[0] }}
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="font-black text-slate-800 uppercase tracking-tight text-sm md:text-lg truncate">{{ h.requester_name }}</h3>
+                        <p class="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest">Requested on {{ h.created_at.strftime('%d-%m-%Y %H:%M') }}</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap md:flex-nowrap gap-2 md:gap-3">
+                    <a href="{{ url_for('hod_preview_sheet', request_id=h.id) }}"
+                       class="flex-1 md:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase transition-all flex items-center justify-center whitespace-nowrap">
+                        <i class="fas fa-file-alt mr-2"></i> View Sheet
+                    </a>
+                    <button onclick="respondToHodRequest('{{ h.id }}', 'approve')"
+                            class="flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center whitespace-nowrap">
+                        <i class="fas fa-check mr-2"></i> Approve
+                    </button>
+                    <button onclick="respondToHodRequest('{{ h.id }}', 'reject')"
+                            class="flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 bg-white border-2 border-rose-100 text-rose-600 hover:bg-rose-50 rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase transition-all active:scale-95 flex items-center justify-center whitespace-nowrap">
+                        <i class="fas fa-times mr-2"></i> Reject
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     {% if notifications %}
     <!-- Pending Assignments -->
@@ -47,22 +98,22 @@
 
                 <div class="space-y-3 ml-12">
                     {% for n in group %}
-                    <div class="assignment-item p-4 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center justify-between group" id="notification-{{ n.id }}">
-                        <div class="flex-1">
-                            <div class="text-[11px] font-black text-indigo-700 uppercase mb-1">{{ n.class_details.subject }}</div>
-                            <div class="flex items-center gap-3">
-                                <span class="text-[10px] font-bold text-slate-500"><i class="fas fa-calendar-day mr-1"></i> {{ n.class_details.date }}</span>
-                                <span class="text-[10px] font-bold text-slate-500"><i class="fas fa-clock mr-1"></i> {{ n.class_details.time }}</span>
-                                <span class="text-[10px] font-black text-slate-400 italic">Room {{ n.class_details.room or 'TBD' }}</span>
+                    <div class="assignment-item p-3 md:p-4 bg-white border border-slate-100 rounded-xl md:rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" id="notification-{{ n.id }}">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-[10px] md:text-[11px] font-black text-indigo-700 uppercase mb-1 truncate">{{ n.class_details.subject }}</div>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                <span class="text-[9px] md:text-[10px] font-bold text-slate-500 whitespace-nowrap"><i class="fas fa-calendar-day mr-1"></i> {{ n.class_details.date }}</span>
+                                <span class="text-[9px] md:text-[10px] font-bold text-slate-500 whitespace-nowrap"><i class="fas fa-clock mr-1"></i> {{ n.class_details.time }}</span>
+                                <span class="text-[9px] md:text-[10px] font-black text-slate-400 italic">Room {{ n.class_details.room or 'TBD' }}</span>
                             </div>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 w-full sm:w-auto">
                             <button onclick="respondToAssignment('{{ n.allocation_id }}', 'accept', '{{ n.id }}')"
-                                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black uppercase transition-all shadow-md active:scale-95">
+                                    class="flex-1 sm:flex-none px-3 md:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] md:text-[10px] font-black uppercase transition-all shadow-md active:scale-95 whitespace-nowrap">
                                 Accept
                             </button>
                             <button onclick="respondToAssignment('{{ n.allocation_id }}', 'reject', '{{ n.id }}')"
-                                    class="px-4 py-2 bg-white border border-rose-100 text-rose-600 hover:bg-rose-50 rounded-lg text-[10px] font-black uppercase transition-all active:scale-95">
+                                    class="flex-1 sm:flex-none px-3 md:px-4 py-2 bg-white border border-rose-100 text-rose-600 hover:bg-rose-50 rounded-lg text-[9px] md:text-[10px] font-black uppercase transition-all active:scale-95 whitespace-nowrap">
                                 Reject
                             </button>
                         </div>
@@ -132,10 +183,6 @@
         </div>
         <h2 class="text-xl font-bold text-slate-800 mb-2">No Recent Activity</h2>
         <p class="text-slate-500 mb-6">You don't have any pending requests or recent assignments.</p>
-        <a href="{{ url_for('lecturer_dashboard') }}" 
-           class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors">
-            <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
-        </a>
     </div>
     {% endif %}
 
@@ -174,6 +221,20 @@ socket.on('assignment_recalled', function(data) {
     }
 });
 
+// New Request Handlers
+socket.on('new_class_assignment', function(data) {
+    if (String(data.recipient_id) === "{{ current_user.id }}") {
+        // Use a slight delay to allow backend to finish writing if needed
+        setTimeout(() => location.reload(), 500);
+    }
+});
+
+socket.on('new_hod_request', function(data) {
+    if (String(data.recipient_id) === "{{ current_user.id }}") {
+        setTimeout(() => location.reload(), 500);
+    }
+});
+
 async function respondToAssignment(allocationId, action, notificationId) {
     const title = action === 'accept' ? 'Accept Class?' : 'Reject Request?';
     const msg = action === 'accept' 
@@ -203,6 +264,45 @@ async function respondToAssignment(allocationId, action, notificationId) {
                     const remaining = document.querySelectorAll('[id^="notification-"]');
                     if (remaining.length === 0) location.reload();
                     else location.reload(); // Refresh to update Confirmed section
+                }, 300);
+            } else {
+                location.reload();
+            }
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function respondToHodRequest(requestId, action) {
+    const title = action === 'approve' ? 'Approve Leave Request?' : 'Reject Request?';
+    const msg = action === 'approve' 
+        ? 'Are you sure you want to approve this faculty member to submit their leave application?'
+        : 'Are you sure you want to reject this permission request?';
+    const icon = action === 'approve' ? 'user-check' : 'user-times';
+    const btnText = action === 'approve' ? 'Yes, Approve' : 'Yes, Reject';
+
+    const confirmed = await window.Confirm(title, msg, icon, btnText);
+    if (!confirmed) return;
+    
+    try {
+        const response = await fetch(`/lecturer/api/respond-hod-permission/${requestId}/${action}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            const reqEl = document.getElementById(`hod-request-${requestId}`);
+            if (reqEl) {
+                reqEl.style.transition = 'all 0.3s ease';
+                reqEl.style.opacity = '0';
+                reqEl.style.transform = 'translateX(50px)';
+                setTimeout(() => {
+                    reqEl.remove();
+                    location.reload();
                 }, 300);
             } else {
                 location.reload();

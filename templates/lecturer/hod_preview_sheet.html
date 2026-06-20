@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}HOD Review - {{ hod_req.requester_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-4 md:py-8 no-print px-4">
+    <div class="flex flex-col md:flex-row justify-between items-center bg-white p-3 md:p-4 rounded-xl shadow-md gap-4">
+        <a href="{{ url_for('my_class_assignments') }}"
+            class="text-indigo-600 hover:text-indigo-800 transition-colors flex items-center font-bold text-sm md:text-base self-start md:self-auto">
+            <i class="fas fa-chevron-left mr-2"></i> Back to Requests
+        </a>
+        <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
+            <button onclick="respondToHodRequest('{{ hod_req._id|string }}', 'approve')"
+                class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-2 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl font-black shadow-lg shadow-emerald-100 transition-all active:scale-95 flex items-center justify-center text-[10px] md:text-sm">
+                <i class="fas fa-check mr-1 md:mr-2"></i> APPROVE
+            </button>
+            <button onclick="respondToHodRequest('{{ hod_req._id|string }}', 'reject')"
+                class="flex-1 md:flex-none bg-white border-2 border-rose-100 text-rose-600 hover:bg-rose-50 px-2 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl font-black transition-all active:scale-95 flex items-center justify-center text-[10px] md:text-sm">
+                <i class="fas fa-times mr-1 md:mr-2"></i> REJECT
+            </button>
+            <button onclick="window.print()"
+                class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold border border-slate-200 flex items-center justify-center text-xs md:text-sm">
+                <i class="fas fa-print"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- FORM SHEET START -->
+<div class="leave-sheet-container bg-slate-100 py-6 min-h-screen">
+    <div class="leave-application-sheet mx-auto bg-white shadow-2xl p-10 md:p-12 print:shadow-none print:p-0 print:m-0"
+        style="width: 210mm; min-height: fit-content; max-width: 95vw;">
+        <!-- Header -->
+        <div class="text-center border-b-2 border-slate-900 pb-2 mb-4">
+            <h1 class="text-xl font-black text-slate-900 uppercase tracking-tight">Dr. B. B. Hegde First Grade College, Kundapura</h1>
+            <h2 class="text-lg font-bold text-slate-800 mt-0.5 uppercase tracking-widest">LEAVE PERMISSION REQUEST (HOD PREVIEW)</h2>
+        </div>
+
+        <!-- Faculty Info -->
+        <div class="space-y-4 md:space-y-2 mb-6">
+            <div class="flex flex-col md:flex-row md:items-end gap-1 md:gap-0">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Name of the Faculty</span>
+                <span class="hidden md:inline mr-2">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base">{{ hod_req.requester_name }}</div>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-end gap-1 md:gap-0">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Department</span>
+                <span class="hidden md:inline mr-2">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base">{{ lecturer.department or '___________________________' }}</div>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-end gap-1 md:gap-0">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Designation</span>
+                <span class="hidden md:inline mr-2">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base">{{ lecturer.designation or '___________________________' }}</div>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-start pt-1 gap-2 md:gap-0">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Nature of Leave</span>
+                <span class="hidden md:inline mr-2">:</span>
+                <div class="pb-0.5 font-bold text-slate-900 flex flex-wrap items-center gap-4">
+                    {% if not duration_str and hod_req.mode != 'time' %}
+                    <span class="text-[9px] md:text-xs text-slate-400 font-normal italic">(CL / EL / RH / OOD / SCL / LOP) :</span>
+                    {% endif %}
+                    <span class="px-2 py-0.5 bg-slate-100 rounded border border-slate-200 uppercase text-xs">
+                        {% if hod_req.mode == 'time' %}Permission{% else %}{{ hod_req.leave_type or 'Regular Leave' }}{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-start pt-1 gap-2 md:gap-0">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase mt-0.5">No. of days of Leave</span>
+                <span class="hidden md:inline mr-2 mt-0.5">:</span>
+                <div class="flex-1 flex flex-col gap-3 md:gap-2 pb-0.5 w-full">
+                    <div class="flex flex-wrap gap-4 md:gap-6 items-center">
+                        <span class="text-sm">From: <span class="font-bold border-b border-dotted border-slate-400 px-2 min-w-[60px] inline-block">
+                                {% if hod_req.mode == 'time' %}
+                                    {{ hod_req.from_date.split(' ')[0] if ' ' in hod_req.from_date|string else hod_req.from_date or '____' }} 
+                                    {% if ' ' in hod_req.from_date|string %}
+                                    <span class="text-indigo-600 ml-1 font-black">({{ hod_req.from_date.split(' ')[1] }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    {% if ' ' in hod_req.from_date|string %}{{ hod_req.from_date.split(' ')[0] }}{% else %}{{ hod_req.from_date or '__________' }}{% endif %}
+                                {% endif %}
+                            </span></span>
+                        <span class="text-sm">To: <span class="font-bold border-b border-dotted border-slate-400 px-2 min-w-[60px] inline-block">
+                                {% if hod_req.mode == 'time' %}
+                                    {{ hod_req.to_date.split(' ')[0] if ' ' in hod_req.to_date|string else hod_req.to_date or '____' }}
+                                    {% if ' ' in hod_req.to_date|string %}
+                                    <span class="text-indigo-600 ml-1 font-black">({{ hod_req.to_date.split(' ')[1] }})</span>
+                                    {% endif %}
+                                {% else %}
+                                    {% if ' ' in hod_req.to_date|string %}{{ hod_req.to_date.split(' ')[0] }}{% else %}{{ hod_req.to_date or '__________' }}{% endif %}
+                                {% endif %}
+                            </span></span>
+                    </div>
+                    {% if hod_req.half_day %}
+                    <div class="text-[9px] font-black text-indigo-600 bg-indigo-50/50 px-2 py-1 rounded border border-indigo-100 uppercase self-start">
+                        <i class="fas fa-clock mr-1"></i> {{ hod_req.session_display or hod_req.session }}
+                    </div>
+                    {% endif %}
+                    <div class="font-bold text-sm bg-slate-50 md:bg-transparent p-2 md:p-0 rounded border border-slate-100 md:border-0">
+                        Total: <span class="border-b-2 border-slate-900 md:border-b md:border-dotted md:border-slate-400 px-4 min-w-[40px] inline-block text-center text-indigo-700">
+                                {% if duration_str %}
+                                    {{ duration_str }}
+                                {% elif hod_req.mode == 'time' %}
+                                    {{ total_days if total_days != 'N/A' else '---' }}{% if total_days != 'N/A' %}m{% endif %}
+                                {% else %}
+                                    {{ total_days }} Day(s)
+                                {% endif %}
+                            </span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-start gap-1 md:gap-0">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase mt-0.5">Reason for the Leave</span>
+                <span class="hidden md:inline mr-2 mt-0.5">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-1 font-medium text-slate-800 leading-relaxed italic min-h-[40px] text-sm md:text-base">
+                    {{ hod_req.reason or '__________________________________________________________________________' }}
+                </div>
+            </div>
+        </div>
+
+        <div class="text-[9px] font-bold text-slate-600 mb-2 italic">
+            Note: HOD review of the proposed substitution plan before leave submission.
+        </div>
+
+        <!-- CLASSES PLAN TABLE -->
+        <div class="text-center mb-2">
+            <h3 class="text-sm font-black uppercase tracking-widest">LEAVE PERIOD CLASSES PLAN*</h3>
+        </div>
+
+        <div class="border-2 border-slate-900 overflow-x-auto mb-8">
+            <table class="w-full text-left border-collapse min-w-[600px]">
+                <thead>
+                    <tr class="border-b-2 border-slate-900 text-[10px] font-black uppercase text-center bg-slate-50">
+                        <th class="border-r border-slate-900 p-2 w-24">Date/Day</th>
+                        <th class="border-r border-slate-900 p-2 w-16">Class</th>
+                        <th class="border-r border-slate-900 p-2 w-16">Section</th>
+                        <th class="border-r border-slate-900 p-2 w-16">Period</th>
+                        <th class="border-r border-slate-900 p-2">Arrangement</th>
+                        <th class="p-2 w-32">Faculty Permission</th>
+                    </tr>
+                </thead>
+                <tbody class="text-[10px]">
+                    {% set approved_count = namespace(total=0) %}
+                    {% for group in grouped_items %}
+                        {% set group_approved = [] %}
+                        {% for item in group.group_classes %}
+                            {% if item.status|lower in ['accepted', 'approved', 'finalized'] %}
+                                {% set _ = group_approved.append(item) %}
+                                {% set approved_count.total = approved_count.total + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% for item in group_approved %}
+                            {% set details = item.class_details %}
+                            <tr class="border-b border-slate-900 h-8">
+                                {% if loop.first %}
+                                <td class="border-r border-slate-900 p-1 font-bold text-center" rowspan="{{ group_approved|length }}">
+                                    <div class="text-[10px]">{{ details.date }}</div>
+                                    <div class="text-[8px] opacity-70 uppercase tracking-tighter">{{ group.day }}</div>
+                                </td>
+                                {% endif %}
+                                <td class="border-r border-slate-900 p-1 text-center font-bold">{{ details.class or 'N/A' }}</td>
+                                <td class="border-r border-slate-900 p-1 text-center">{{ details.section or '-' }}</td>
+                                <td class="border-r border-slate-900 p-1 text-center font-bold">{{ details.period }}</td>
+                                <td class="border-r border-slate-900 p-2 font-bold text-slate-800 text-[9px]">
+                                    {{ item.assigned_to_name if item.assigned_to_name else '________________' }}
+                                </td>
+                                <td class="p-1 text-center text-[8px] font-black uppercase italic leading-none">
+                                    {% if item.status|lower in ['accepted', 'approved', 'finalized'] %}
+                                        <span class="text-emerald-700">APPROVED</span>
+                                    {% elif item.status|lower == 'rejected' %}
+                                        <span class="text-rose-700">REJECTED</span>
+                                    {% else %}
+                                        <span class="text-slate-400">PENDING</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {# Fill remaining rows up to at least 5 total rows if needed #}
+                    {% if approved_count.total < 5 %}
+                        {% for i in range(5 - approved_count.total) %}
+                        <tr class="border-b border-slate-900 h-8">
+                            <td class="border-r border-slate-900 p-2"></td>
+                            <td class="border-r border-slate-900 p-2"></td>
+                            <td class="border-r border-slate-900 p-2"></td>
+                            <td class="border-r border-slate-900 p-2"></td>
+                            <td class="border-r border-slate-900 p-2"></td>
+                            <td class="p-2"></td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- HOD Decision Area (Print only) -->
+        <div class="hidden print:block mt-8">
+            <div class="flex justify-between items-end">
+                <div class="text-center w-64 border-t-2 border-slate-900 pt-1 text-[10px] font-black uppercase">
+                    Signature of the Faculty
+                </div>
+                <div class="text-center w-64">
+                    <div class="h-16 flex items-center justify-center italic font-bold text-indigo-600">
+                        {{ hod_req.status|upper }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function respondToHodRequest(requestId, action) {
+        const title = action === 'approve' ? 'Approve Leave Request?' : 'Reject Request?';
+        const msg = action === 'approve'
+            ? 'Are you sure you want to approve this faculty member to submit their leave application?'
+            : 'Are you sure you want to reject this permission request?';
+        const icon = action === 'approve' ? 'user-check' : 'user-times';
+        const btnText = action === 'approve' ? 'Yes, Approve' : 'Yes, Reject';
+
+        const confirmed = await window.Confirm(title, msg, icon, btnText);
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/lecturer/api/respond-hod-permission/${requestId}/${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                window.location.href = "{{ url_for('my_class_assignments') }}";
+            } else {
+                alert('Error: ' + data.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+</script>
+
+<style>
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 0;
+        }
+
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+        }
+
+        body * {
+            visibility: hidden;
+        }
+
+        .leave-application-sheet, .leave-application-sheet * {
+            visibility: visible;
+        }
+
+        .leave-application-sheet {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 210mm !important;
+            margin: 0 !important;
+            padding: 15mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: white !important;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+    }
+
+    .border-dotted {
+        border-style: dotted;
+    }
+</style>
+{% endblock %}

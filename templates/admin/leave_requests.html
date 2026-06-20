@@ -96,7 +96,7 @@
             <table class="w-full text-left" id="allocTable">
                 <thead class="bg-gradient-to-r from-slate-700 to-slate-800 text-white text-xs uppercase tracking-wider">
                     <tr>
-                        <th class="px-6 py-4 font-bold">Lecturer ID</th>
+                        <th class="px-6 py-4 font-bold">Faculty ID</th>
                         <th class="px-6 py-4 font-bold">Name</th>
                         <th class="px-6 py-4 font-bold">Leave Type</th>
                         <th class="px-6 py-4 font-bold">Leaves per Month</th>
@@ -113,7 +113,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1.5 min-w-[280px]" id="tags-{{ lecturer._id }}">
                                 {% for s in lecturer.leave_stats %}
                                     <div class="px-2 py-2 rounded-xl border flex flex-col justify-center min-w-[90px]
-                                        {% if s.total > 0 %}
+                                        {% if s.total is defined and s.total > 0 %}
                                             bg-white border-indigo-100 shadow-sm
                                         {% else %}
                                             bg-slate-50/50 border-slate-100 opacity-50
@@ -121,10 +121,14 @@
                                         <div class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5 truncate">{{ s.type }}</div>
                                         <div class="flex items-baseline justify-between transition-all">
                                             <div class="text-[11px] font-black text-slate-700">
-                                                {{ s.total|int if s.total.is_integer() else s.total }}/{{ s.left|int if s.left.is_integer() else s.left }}
+                                                {% if s.is_count_only %}
+                                                    {{ s.used }} (Count)
+                                                {% else %}
+                                                    {{ s.left|int if s.left.is_integer() else s.left }}/{{ s.total|int if s.total.is_integer() else s.total }}
+                                                {% endif %}
                                             </div>
                                             <div class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1 rounded uppercase">
-                                                Days
+                                                {{ 'Taken' if s.is_count_only else 'Days' }}
                                             </div>
                                         </div>
                                     </div>
@@ -135,14 +139,16 @@
                             {% set total_summary = namespace(total=0, left=0) %}
                             {% if lecturer.leave_stats %}
                                 {% for s in lecturer.leave_stats %}
-                                    {% set total_summary.total = total_summary.total + s.total %}
-                                    {% set total_summary.left = total_summary.left + s.left %}
+                                    {% if not s.is_count_only %}
+                                        {% set total_summary.total = total_summary.total + s.total %}
+                                        {% set total_summary.left = total_summary.left + s.left %}
+                                    {% endif %}
                                 {% endfor %}
                             {% endif %}
                             <div class="text-xl font-black text-slate-800">
-                                {{ total_summary.total|int if total_summary.total.is_integer() else total_summary.total }}/{{ total_summary.left|int if total_summary.left.is_integer() else total_summary.left }}
+                                {{ total_summary.left|int if total_summary.left.is_integer() else total_summary.left }}/{{ total_summary.total|int if total_summary.total.is_integer() else total_summary.total }}
                             </div>
-                            <div class="text-[10px] font-bold text-slate-400 uppercase leading-none">Days Balance</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase leading-none">Remaining / Total Days</div>
                         </td>
                         <td class="px-6 py-4">
                             <button onclick="openManageBalances('{{ lecturer._id }}', '{{ lecturer.name }}')"
@@ -155,7 +161,7 @@
                     {% else %}
                     <tr>
                         <td class="px-6 py-6 text-sm text-slate-500" colspan="5">
-                            No lecturers found.
+                            No faculty found.
                         </td>
                     </tr>
                     {% endif %}
@@ -170,7 +176,7 @@
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg border border-slate-100 overflow-hidden">
         <div class="bg-indigo-700 p-6 text-white flex justify-between items-center">
             <div>
-                <h3 class="text-xl font-bold" id="modalLecturerName">Manage Balances</h3>
+                <h3 class="text-xl font-bold" id="modalFacultyName">Manage Balances</h3>
                 <p class="text-indigo-200 text-xs uppercase font-bold tracking-widest mt-1">Set individual leave types</p>
             </div>
             <button onclick="closeBalanceModal()" class="text-white/60 hover:text-white transition-colors">
@@ -190,7 +196,7 @@
                         <thead class="bg-slate-50 text-slate-500 text-[10px] font-black uppercase">
                             <tr>
                                 <th class="px-4 py-3">Leave Type</th>
-                                <th class="px-4 py-3 text-center">Total / Remaining</th>
+                                <th class="px-4 py-3 text-center">Remaining / Total</th>
                                 <th class="px-4 py-3 text-center">Status</th>
                                 <th class="px-4 py-3 text-right">Action</th>
                             </tr>
@@ -300,7 +306,7 @@
             <table class="w-full text-left">
                 <thead class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                     <tr>
-                        <th class="px-6 py-4">Lecturer</th>
+                        <th class="px-6 py-4">Faculty</th>
                         <th class="px-6 py-4">Type</th>
                         <th class="px-6 py-4">Duration</th>
                         <th class="px-6 py-4">Reason</th>
@@ -337,11 +343,11 @@
                                         <i class="fas fa-file-alt mr-1"></i> Sheet
                                     </a>
                                     {% if leave.status == 'Pending' %}
-                                    <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Approved')"
+                                    <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Approved', '{{ leave.mode }}')"
                                         class="text-xs bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 transition-colors">
                                         Approve
                                     </button>
-                                    <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Rejected')"
+                                    <button type="button" onclick="reviewLeave('{{ leave._id|string }}', 'Rejected', '{{ leave.mode }}')"
                                         class="text-xs bg-rose-600 text-white px-3 py-1 rounded hover:bg-rose-700 transition-colors">
                                         Reject
                                     </button>
@@ -474,11 +480,11 @@
         }
     }
 
-    let currentLecturerId = null;
+    let currentFacultyId = null;
 
     function openManageBalances(id, name) {
-        currentLecturerId = id;
-        document.getElementById('modalLecturerName').innerText = name;
+        currentFacultyId = id;
+        document.getElementById('modalFacultyName').innerText = name;
         document.getElementById('balanceModal').classList.remove('hidden');
         document.getElementById('modalLoading').classList.remove('hidden');
         document.getElementById('modalContent').classList.add('hidden');
@@ -494,7 +500,7 @@
 
     function closeBalanceModal() {
         document.getElementById('balanceModal').classList.add('hidden');
-        currentLecturerId = null;
+        currentFacultyId = null;
     }
 
     function toggleTypeInput() {
@@ -505,7 +511,7 @@
 
     function renderModalBalances(stats) {
         const tbody = document.getElementById('modalBalancesTable');
-        const tags = document.getElementById('tags-' + currentLecturerId);
+        const tags = document.getElementById('tags-' + currentFacultyId);
         tbody.innerHTML = '';
         tags.innerHTML = '';
         
@@ -516,15 +522,18 @@
         }
 
         stats.forEach(s => {
-            const totalStr = Number.isInteger(s.total) ? s.total : s.total.toFixed(1);
-            const leftStr = Number.isInteger(s.left) ? s.left : s.left.toFixed(1);
+            const fmtPair = (left, total) => {
+                const l = Number.isInteger(left) ? left : parseFloat(left).toFixed(1);
+                const t = Number.isInteger(total) ? total : parseFloat(total).toFixed(1);
+                return `${l}/${t}`;
+            };
 
             // Modal Table Row
             const tr = document.createElement('tr');
             tr.className = s.total > 0 ? '' : 'opacity-40 bg-slate-50/50';
             tr.innerHTML = `
                 <td class="px-4 py-3 font-bold text-slate-800">${s.type}</td>
-                <td class="px-4 py-3 text-center font-black text-slate-600">${totalStr}/${leftStr}</td>
+                <td class="px-4 py-3 text-center font-black text-slate-600">${fmtPair(s.left, s.total)}</td>
                 <td class="px-4 py-3 text-center">
                     <span class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg font-black text-[9px] uppercase">${s.total > 0 ? 'Active' : 'Unset'}</span>
                 </td>
@@ -543,7 +552,7 @@
             box.innerHTML = `
                 <div class="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5 truncate">${s.type}</div>
                 <div class="flex items-baseline justify-between transition-all">
-                    <div class="text-[11px] font-black text-slate-700">${totalStr}/${leftStr}</div>
+                    <div class="text-[11px] font-black text-slate-700">${fmtPair(s.left, s.total)}</div>
                     <div class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1 rounded uppercase">Days</div>
                 </div>
             `;
@@ -552,7 +561,7 @@
     }
 
     async function saveModalAllocation() {
-        if (!currentLecturerId) return;
+        if (!currentFacultyId) return;
         const isCustom = document.getElementById('isCustomType').checked;
         const type = isCustom ? document.getElementById('customTypeName').value.trim() : document.getElementById('newTypeSelect').value;
         const val = document.getElementById('newTypeVal').value;
@@ -570,7 +579,7 @@
         btn.disabled = true;
         btn.innerText = 'Saving...';
         
-        fetch('/admin/leaves/api/set_allocation/' + currentLecturerId, {
+        fetch('/admin/leaves/api/set_allocation/' + currentFacultyId, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ leaves_per_month: val, leave_type: type })
@@ -581,7 +590,7 @@
             btn.innerText = 'Save Allocation';
             // Clear custom input
             document.getElementById('customTypeName').value = '';
-            openManageBalances(currentLecturerId, document.getElementById('modalLecturerName').innerText);
+            openManageBalances(currentFacultyId, document.getElementById('modalFacultyName').innerText);
         });
     }
 
@@ -594,10 +603,10 @@
         );
         if (!confirmed) return;
         
-        fetch(`/admin/leaves/api/delete_allocation/${currentLecturerId}/${type}`, { method: 'POST' })
+        fetch(`/admin/leaves/api/delete_allocation/${currentFacultyId}/${type}`, { method: 'POST' })
         .then(r => r.json())
         .then(data => {
-            openManageBalances(currentLecturerId, document.getElementById('modalLecturerName').innerText);
+            openManageBalances(currentFacultyId, document.getElementById('modalFacultyName').innerText);
         });
     }
 
@@ -610,8 +619,7 @@
         
         const confirmed = await window.Confirm(
             "Bulk Allocation", 
-            `Set ${leaveType} to ${value} days for ALL lecturers?`, 
-            'users-cog', 
+            `Set ${leaveType} to ${value} days for ALL faculty?`,             'users-cog', 
             'Set All'
         );
         if (!confirmed) return;
@@ -855,7 +863,7 @@
         }
     });
 
-    async function reviewLeave(id, status) {
+    async function reviewLeave(id, status, mode = 'full') {
         const confirmed = await window.Confirm(
             `${status} Leave?`,
             `Are you sure you want to mark this request as ${status.toLowerCase()}?`,
@@ -871,7 +879,8 @@
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
         try {
-            const res = await fetch(`/admin/leave/api/${id}/${status}`, { method: 'POST' });
+            const url = (mode === 'time') ? `/admin/permission/api/${id}/${status}` : `/admin/leave/api/${id}/${status}`;
+            const res = await fetch(url, { method: 'POST' });
             if (!res.ok) {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;

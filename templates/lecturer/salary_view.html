@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Slip - {{ payload.get('month_year','') }}{% endblock %}
+
+{% block head %}
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body.salary-slip-page { overflow: hidden; min-height: 0 !important; height: 100dvh; }
+  body.salary-slip-page footer { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<style>
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #f1f5f9;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .glass-header {
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(226,232,240,.8);
+    flex-shrink: 0;
+  }
+  .salary-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+  @media (max-width: 640px) {
+    .salary-toolbar { display: grid; grid-template-columns: 1fr 1fr; }
+  }
+  .salary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .salary-pdf-shell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    overflow: hidden;
+  }
+  @media (min-width: 640px) { .salary-pdf-shell { padding: 12px; } }
+  .salary-pdf-card {
+    flex: 1;
+    min-height: 0;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,.06);
+  }
+  .salary-pdf-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 11px;
+    font-weight: 900;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    flex-shrink: 0;
+  }
+  .salary-pdf-frame {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .salary-pdf-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #fff;
+  }
+</style>
+
+<script>document.body.classList.add('salary-slip-page');</script>
+
+<div class="glass-header z-40 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+  <div class="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+    <div class="p-2 bg-indigo-600 rounded-xl shrink-0">
+      <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="Logo" class="h-9 w-9 object-contain brightness-0 invert">
+    </div>
+    <div class="min-w-0">
+      <h1 class="text-lg font-black text-slate-900 truncate">Salary Slip</h1>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ payload.get('month_year','') }}</p>
+    </div>
+  </div>
+  <div class="salary-toolbar">
+    <a href="{{ url_for('view_salary') }}" class="salary-btn bg-slate-100 text-slate-700">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <a href="{{ url_for('lecturer_salary_pdf', salary_id=salary._id|string) }}" class="salary-btn bg-slate-900 text-white">
+      <i class="fas fa-download"></i> Download
+    </a>
+  </div>
+</div>
+
+<div class="salary-pdf-shell">
+  <div class="salary-pdf-card">
+    <div class="salary-pdf-head">
+      <i class="fas fa-file-pdf mr-1"></i> PDF Sheet Preview
+    </div>
+    <div class="salary-pdf-frame">
+      <iframe title="Salary slip {{ payload.get('month_year','') }}"
+        src="{{ url_for('lecturer_salary_pdf', salary_id=salary._id|string, inline=1) }}"></iframe>
+    </div>
+  </div>
+</div>
+{% endblock %}

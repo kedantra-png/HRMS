@@ -2,11 +2,79 @@
 
 {% block title %}Apply Leave - HRMS{% endblock %}
 
+{% block head %}
+<style>
+    .animate-pop-in {
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn {
+        0% { transform: scale(0.9); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Searchable Dropdown Styles */
+    .searchable-dropdown {
+        position: relative;
+        width: 100%;
+    }
+    .searchable-dropdown .search-input {
+        width: 100%;
+        padding: 0.625rem 0.75rem;
+        font-size: 11px;
+        font-weight: 900;
+        text-transform: uppercase;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        background-color: white;
+        transition: all 0.2s;
+    }
+    .searchable-dropdown .search-input:focus {
+        border-color: #6366f1;
+        ring: 2px solid #6366f1;
+        outline: none;
+    }
+    .searchable-dropdown .options-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        max-height: 200px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        margin-top: 0.25rem;
+        z-index: 50;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        display: none;
+    }
+    .searchable-dropdown .option-item {
+        padding: 0.5rem 0.75rem;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .searchable-dropdown .option-item:hover {
+        background-color: #f1f5f9;
+        color: #4f46e5;
+    }
+    .searchable-dropdown .option-item.selected {
+        background-color: #eef2ff;
+        color: #4f46e5;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-2xl mx-auto py-10">
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
-        <div class="bg-indigo-700 p-6 text-white text-center">
-            <h2 class="text-2xl font-bold">{% if mode == 'time' %}Apply Time-Based Leave (Current Day){% else %}Apply
+    <div class="bg-white rounded-3xl shadow-[0_25px_50px_-12px_rgba(79,70,229,0.25)] border border-slate-100">
+        <div class="bg-indigo-700 p-6 text-white text-center relative">
+            <a href="{{ url_for('lecturer_dashboard') }}" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all group" title="Back to Dashboard">
+                <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+            </a>
+            <h2 class="text-2xl font-bold">{% if mode == 'time' %}Permission Leave (Current Day){% else %}Apply
                 for Leave (Multi-Day){% endif %}</h2>
             <p class="text-indigo-200 mt-1">Submit your request for administrative review</p>
         </div>
@@ -18,9 +86,9 @@
                     <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <i class="fas fa-exclamation-circle text-rose-600 text-2xl"></i>
                     </div>
-                    <h4 class="text-lg font-black text-slate-800 mb-2">Limit Exceeded</h4>
-                    <p class="text-xs text-slate-500 font-medium mb-4">You do not have enough balanced days for this leave type. Please select another type.</p>
-                    <button type="button" onclick="resetLeaveType()" class="px-6 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black shadow-lg shadow-rose-100 hover:bg-rose-700 transition-all">
+                    <h4 id="overlayTitle" class="text-lg font-black text-slate-800 mb-2">Limit Exceeded</h4>
+                    <p id="overlayMessage" class="text-xs text-slate-500 font-medium mb-4">You do not have enough balanced days for this leave type. Please select another type.</p>
+                    <button type="button" id="overlayButton" onclick="resetLeaveType()" class="px-6 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black shadow-lg shadow-rose-100 hover:bg-rose-700 transition-all">
                         Change Leave Type
                     </button>
                 </div>
@@ -30,11 +98,15 @@
             <div>
                 <label class="block text-sm font-black text-slate-700 mb-2 uppercase tracking-widest text-[10px]">Reason for Leave</label>
                 <textarea name="reason" id="leaveReason" rows="3" required
-                    class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all font-medium placeholder:text-slate-400"
+                    class="block w-full px-4 py-3 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition-all font-medium placeholder:text-slate-400"
                     placeholder="Briefly explain why you need this leave..."></textarea>
             </div>
 
-            <div class="space-y-4 bg-slate-50/50 p-5 rounded-3xl border border-slate-100">
+            {% if mode == 'time' %}
+                <input type="hidden" name="type" value="Permission">
+            {% endif %}
+            
+            <div class="{% if mode == 'time' %}hidden{% endif %} space-y-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                         <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Leave Type</label>
@@ -45,13 +117,13 @@
                         </select>
                     </div>
                     <div class="hidden sm:block text-right">
-                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status Summary</div>
-                        <div id="selectedTypeBadge" class="text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block">12/0 Days Left</div>
+                        <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Remaining / Total</div>
+                        <div id="selectedTypeBadge" class="text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block">Select Leave Type</div>
                     </div>
                 </div>
 
                 <div class="space-y-2">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Allocation Overview</label>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest">Allocation Overview <span class="text-slate-300 font-bold normal-case">(Remaining / Total days)</span></label>
                     <div id="balanceGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                         <!-- Loading skeleton -->
                         <div class="animate-pulse bg-white border border-slate-100 h-16 rounded-2xl"></div>
@@ -65,7 +137,7 @@
             <div id="balanceDisplay" class="hidden"></div>
             {% if mode != 'time' %}
             <!-- Half Day Selection (New) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
                 <div class="flex items-center space-x-3">
                     <div class="relative flex items-center">
                         <input type="checkbox" name="half_day" id="halfDay" 
@@ -85,16 +157,71 @@
             {% endif %}
 
             {% if mode == 'time' %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">From Time</label>
-                    <input type="time" name="time_from" id="timeFrom" required
-                        class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
+            <div class="space-y-4">
+                <!-- Date for Permission (Locked to Current Day) -->
+                <div class="space-y-1">
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Permission Date (Fixed to Current Day)</label>
+                    <div class="flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm">
+                        <i class="fas fa-calendar-day text-indigo-600"></i>
+                        <span id="displayPermissionDate" class="text-sm font-bold text-slate-700"></span>
+                        <input type="hidden" name="from_date" id="permissionDate">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">To Time</label>
-                    <input type="time" name="time_to" id="timeTo" required
-                        class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- From Time 12h -->
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">From Time (12h)</label>
+                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                            <select id="fHour" onchange="syncTime('from')" class="flex-1 bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 appearance-none text-center">
+                                {% for i in range(1, 13) %}<option value="{{ i }}">{{ "%02d"|format(i) }}</option>{% endfor %}
+                            </select>
+                            <span class="text-slate-300 font-bold">:</span>
+                            <select id="fMin" onchange="syncTime('from')" class="flex-1 bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 appearance-none text-center">
+                                {% for i in range(0, 60, 5) %}<option value="{{ i }}">{{ "%02d"|format(i) }}</option>{% endfor %}
+                            </select>
+                            <select id="fPeriod" onchange="syncTime('from')" class="px-2 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-indigo-700 focus:ring-0 border-none appearance-none cursor-pointer">
+                                <option value="AM">AM</option>
+                                <option value="PM">PM</option>
+                            </select>
+                        </div>
+                        <input type="hidden" name="time_from" id="timeFrom" value="01:00">
+                    </div>
+
+                    <!-- To Time 12h -->
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">To Time (12h)</label>
+                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                            <select id="tHour" onchange="syncTime('to')" class="flex-1 bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 appearance-none text-center">
+                                {% for i in range(1, 13) %}<option value="{{ i }}">{{ "%02d"|format(i) }}</option>{% endfor %}
+                            </select>
+                            <span class="text-slate-300 font-bold">:</span>
+                            <select id="tMin" onchange="syncTime('to')" class="flex-1 bg-transparent border-none text-xs font-bold text-slate-700 focus:ring-0 appearance-none text-center">
+                                {% for i in range(0, 60, 5) %}<option value="{{ i }}">{{ "%02d"|format(i) }}</option>{% endfor %}
+                            </select>
+                            <select id="tPeriod" onchange="syncTime('to')" class="px-2 py-1 bg-slate-100 rounded-lg text-[10px] font-black text-indigo-700 focus:ring-0 border-none appearance-none cursor-pointer">
+                                <option value="AM">AM</option>
+                                <option value="PM">PM</option>
+                            </select>
+                        </div>
+                        <input type="hidden" name="time_to" id="timeTo" value="01:00">
+                    </div>
+                </div>
+                <div id="timeValidationMsg" class="hidden p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-[11px] animate-pop-in shadow-xl shadow-rose-100/50">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-exclamation-circle mt-0.5 text-rose-500 text-lg"></i>
+                        <div>
+                            <p class="font-black uppercase tracking-tight">Invalid Permission Time</p>
+                            <p id="timeValidationErrorText" class="font-medium normal-case mt-0.5 text-rose-500/80"></p>
+                        </div>
+                    </div>
+                </div>
+                <div id="timeDurationBadge" class="hidden px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Duration Preview</span>
+                        <span id="permissionCountBadge" class="hidden px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black rounded uppercase">Taken: 0</span>
+                    </div>
+                    <span id="timeDurationText" class="text-xs font-black text-slate-700"></span>
                 </div>
             </div>
             {% else %}
@@ -103,16 +230,18 @@
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">From Date</label>
                         <input type="date" name="from_date" id="fromDate" required
-                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
+                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition-all">
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-1">To Date</label>
                         <input type="date" name="to_date" id="toDate" required
-                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 transition-all">
+                            class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition-all">
                     </div>
                 </div>
+                <div id="dateValidationMsg" class="hidden mt-2 p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-[10px] font-black uppercase italic"></div>
+                <div id="leaveDaysPreview" class="hidden mt-2 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 text-[10px] font-black uppercase"></div>
                 <button type="button" onclick="window.updateClasses()" id="fetchClassesBtn" 
-                        class="w-full py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100 hover:bg-indigo-100 transition-all flex items-center justify-center">
+                        class="w-full py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100 hover:bg-indigo-100 shadow-sm transition-all flex items-center justify-center">
                     <i class="fas fa-search mr-2"></i> Check classes for these dates
                 </button>
             </div>
@@ -122,16 +251,81 @@
             <div id="assignmentSection" class="space-y-4 pt-4 border-t border-slate-100">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Class Rearrangements</h3>
-                    <span id="assignmentBadge" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-bold uppercase border">Waiting for dates</span>
+                    <span id="assignmentBadge" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-bold uppercase border">{% if mode == 'time' %}Waiting for time{% else %}Waiting for dates{% endif %}</span>
                 </div>
-                <div id="classListContainer" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Assignment Progress Summary -->
+                <div id="assignmentProgressBox" class="hidden mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Substitution Progress</h3>
+                        <span id="assignmentCountBadge" class="px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase">0/0 Accepted</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                        <div id="assignmentProgressBar" class="bg-indigo-600 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p id="assignmentStatusMsg" class="mt-2 text-[10px] text-slate-400 font-bold italic uppercase">Waiting for colleague responses...</p>
+                </div>
+
+                <div id="classListContainer" class="space-y-3 pr-2">
                     <div class="py-6 text-center border-2 border-dashed border-slate-100 rounded-xl">
-                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Please select leave dates to fetch classes</p>
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Please {% if mode == 'time' %}set time{% else %}select leave dates{% endif %} to fetch classes</p>
                     </div>
                 </div>
             </div>
 
             <input type="hidden" name="assignments_json" id="assignmentsJson">
+            <input type="hidden" name="no_class_dates_json" id="noClassDatesJson">
+
+            <!-- HOD Permission Section (New) -->
+            <div id="hodSection" class="hidden space-y-4 pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">HOD Permission</h3>
+                    <span id="hodBadge" class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-bold uppercase border">Not Requested</span>
+                </div>
+                <div class="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div>
+                            <div id="hodName" class="text-[11px] font-black text-slate-800 uppercase tracking-tight">HOD Not Assigned</div>
+                            <div id="hodDept" class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Department</div>
+                        </div>
+                    </div>
+                    <button type="button" id="requestHodBtn" onclick="window.requestHodPermission()" disabled
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black hover:bg-indigo-700 uppercase shadow-md transition-all disabled:opacity-40">
+                        Request Permission
+                    </button>
+                </div>
+                <p id="hodStatusMsg" class="text-[10px] text-slate-400 font-bold italic uppercase">Please complete class assignments first.</p>
+            </div>
+
+            <!-- Live Sheet Preview (New) -->
+            <div id="sheetPreviewSection" class="hidden space-y-4 pt-8 border-t-2 border-slate-200 mt-8">
+                <div class="text-center">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">LEAVE PERIOD CLASSES PLAN*</h3>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase mt-1">Live preview of your substitution plan</p>
+                </div>
+                
+                <div class="border-2 border-slate-900 overflow-x-auto rounded-sm bg-white shadow-sm custom-scrollbar">
+                    <table class="w-full text-left border-collapse min-w-[500px]">
+                        <thead>
+                            <tr class="border-b-2 border-slate-900 text-[10px] font-black uppercase text-center bg-slate-50">
+                                <th class="border-r border-slate-900 p-2 w-24">Date/Day</th>
+                                <th class="border-r border-slate-900 p-2 w-16">Class</th>
+                                <th class="border-r border-slate-900 p-2 w-16">Section</th>
+                                <th class="border-r border-slate-900 p-2 w-16">Period</th>
+                                <th class="border-r border-slate-900 p-2">Arrangement</th>
+                                <th class="p-2 w-32">Faculty Permission</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sheetPreviewBody" class="text-[10px]">
+                            <tr class="border-b border-slate-900 h-8">
+                                <td colspan="6" class="p-4 text-center text-slate-400 italic">Select dates to generate preview</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <div class="flex items-center space-x-4 pt-4">
                 <button type="submit" id="submitBtn" disabled
@@ -150,13 +344,281 @@
         const mode = "{{ mode }}";
         let currentBalance = 0;
         let totalAllocated = 0;
+        let dutyHours = null; // Initialize as null to force validation to wait/check
+
+        // Fetch duty hours for validation
+        if (mode === 'time') {
+            const staffId = "{{ current_user.staff_id }}";
+            if (staffId) {
+                fetch(`/api/faculty/duty-hours/${staffId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            dutyHours = data;
+                            
+                            // Set defaults based on duty hours
+                            const setPicker = (prefix, time24) => {
+                                if (!time24) return;
+                                let [h, m] = time24.split(':').map(Number);
+                                let p = h >= 12 ? 'PM' : 'AM';
+                                h = h % 12 || 12;
+                                
+                                const hEl = document.getElementById(prefix[0] + 'Hour');
+                                const mEl = document.getElementById(prefix[0] + 'Min');
+                                const pEl = document.getElementById(prefix[0] + 'Period');
+                                
+                                if (hEl) hEl.value = h;
+                                if (mEl) mEl.value = Math.floor(m / 5) * 5; // Round to nearest 5 min
+                                if (pEl) pEl.value = p;
+                                
+                                syncTime(prefix);
+                            };
+                            
+                            // Set specific UI defaults as requested: 08:40 AM to Standard End
+                            setPicker('from', "08:40");
+                            
+                            // For 'To', use duty end if available, else 16:30
+                            setPicker('to', dutyHours.end || "16:30");
+                            
+                            // Initialize without showing validation errors yet
+                            validateAndRefresh(false);
+                        }
+                    });
+            }
+        }
+        let hasInteractedWithTime = false;
         let isUserInteracted = false;
         
         let availableFaculty = [];
         let pendingClasses = [];
+        let allFetchedClasses = [];
+        let leavePeriodDates = [];
+        let classesFetched = false;
+        let noClassDates = new Set();
         let classAssignments = {};
         let liveStatus = {}; 
         let allocationToIdx = {};
+        let isDateValid = true; 
+        let draftTimeout = null; // For debouncing
+
+        function normalizeDateKey(dateStr) {
+            if (!dateStr) return '';
+            const s = String(dateStr).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+            const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+            if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+            return s;
+        }
+
+        function getActiveClasses() {
+            return allFetchedClasses.filter(c => !noClassDates.has(normalizeDateKey(c.date)));
+        }
+
+        function syncPendingFromNoClass() {
+            pendingClasses = getActiveClasses();
+        }
+
+        function pruneNoClassDatesInRange(fromIso, toIso) {
+            if (!fromIso || !toIso) return;
+            const start = new Date(fromIso + 'T12:00:00');
+            const end = new Date(toIso + 'T12:00:00');
+            const valid = new Set();
+            const cur = new Date(start);
+            while (cur <= end) {
+                if (cur.getDay() !== 0) valid.add(cur.toISOString().slice(0, 10));
+                cur.setDate(cur.getDate() + 1);
+            }
+            noClassDates.forEach(d => { if (!valid.has(d)) noClassDates.delete(d); });
+        }
+
+        function formatDisplayDate(iso) {
+            const [y, m, d] = iso.split('-');
+            return `${d}-${m}-${y}`;
+        }
+
+        function countWorkingLeaveDays(fromIso, toIso, halfDay = false) {
+            if (halfDay) return 0.5;
+            if (!fromIso || !toIso) return 0;
+            const start = new Date(fromIso + 'T12:00:00');
+            const end = new Date(toIso + 'T12:00:00');
+            if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return 0;
+            let count = 0;
+            const cur = new Date(start);
+            while (cur <= end) {
+                if (cur.getDay() !== 0) count++;
+                cur.setDate(cur.getDate() + 1);
+            }
+            return count;
+        }
+
+        function formatBalancePair(left, total) {
+            const l = Number.isInteger(left) ? left : parseFloat(left).toFixed(1);
+            const t = Number.isInteger(total) ? total : parseFloat(total).toFixed(1);
+            return `${l}/${t}`;
+        }
+
+        function buildLeavePeriodDays(fromIso, toIso) {
+            const days = [];
+            if (!fromIso || !toIso) return days;
+            const start = new Date(fromIso + 'T12:00:00');
+            const end = new Date(toIso + 'T12:00:00');
+            if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return days;
+            const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+            const cur = new Date(start);
+            while (cur <= end) {
+                // Sunday is not on the college timetable — skip it
+                if (cur.getDay() !== 0) {
+                    const dk = cur.toISOString().slice(0, 10);
+                    days.push({
+                        dk,
+                        day: dayNames[cur.getDay()],
+                        displayDate: formatDisplayDate(dk)
+                    });
+                }
+                cur.setDate(cur.getDate() + 1);
+            }
+            return days;
+        }
+
+        function refreshLeavePeriodDates() {
+            if (mode === 'time') {
+                const p = normalizeDateKey(document.getElementById('permissionDate')?.value || fromDateInput?.value || '');
+                leavePeriodDates = p ? buildLeavePeriodDays(p, p) : [];
+                return;
+            }
+            const f = normalizeDateKey(fromDateInput?.value || '');
+            const t = normalizeDateKey(toDateInput?.value || '');
+            leavePeriodDates = (f && t) ? buildLeavePeriodDays(f, t) : [];
+        }
+
+        function buildDateGroups() {
+            const grouped = {};
+            const orderedKeys = [];
+            leavePeriodDates.forEach(({ dk, day, displayDate }) => {
+                grouped[dk] = { day, displayDate, classes: [], id: dk.replace(/\//g, '-') };
+                orderedKeys.push(dk);
+            });
+            allFetchedClasses.forEach(c => {
+                const dk = normalizeDateKey(c.date);
+                const dObj = new Date(dk + 'T12:00:00');
+                if (!isNaN(dObj.getTime()) && dObj.getDay() === 0) return;
+                if (!grouped[dk]) {
+                    grouped[dk] = {
+                        day: c.day,
+                        displayDate: c.date,
+                        classes: [],
+                        id: dk.replace(/\//g, '-')
+                    };
+                    orderedKeys.push(dk);
+                }
+                if (c.day) grouped[dk].day = c.day;
+                grouped[dk].classes.push(c);
+            });
+            return { grouped, orderedKeys };
+        }
+
+        // HOD Status Logic (New)
+        let hodStatus = 'Not Requested';
+        
+        function updateHodUI(hodInfo = null) {
+            const hodSection = document.getElementById('hodSection');
+            const hodBadge = document.getElementById('hodBadge');
+            const requestHodBtn = document.getElementById('requestHodBtn');
+            const hodStatusMsg = document.getElementById('hodStatusMsg');
+            const hodNameDisplay = document.getElementById('hodName');
+            const hodDeptDisplay = document.getElementById('hodDept');
+            
+            if (!hodSection) return;
+            hodSection.classList.remove('hidden');
+            hodBadge.innerText = hodStatus;
+
+            if (hodInfo) {
+                if (hodNameDisplay) hodNameDisplay.innerText = hodInfo.name || "HOD Not Assigned";
+                if (hodDeptDisplay) hodDeptDisplay.innerText = hodInfo.dept || "Department";
+            }
+            
+            if (hodStatus === 'Approved') {
+                hodBadge.className = "px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-600 text-[10px] font-bold uppercase border border-emerald-200";
+                requestHodBtn.disabled = true;
+                requestHodBtn.innerText = "Approved";
+                hodStatusMsg.innerText = "HOD has approved. You can now submit.";
+                hodStatusMsg.className = "text-[10px] text-emerald-600 font-bold italic uppercase";
+            } else if (hodStatus === 'Pending') {
+                hodBadge.className = "px-2 py-0.5 rounded-md bg-amber-100 text-amber-600 text-[10px] font-bold uppercase border border-amber-200";
+                requestHodBtn.disabled = true;
+                requestHodBtn.innerText = "Requested";
+                hodStatusMsg.innerText = "Waiting for HOD response...";
+                hodStatusMsg.className = "text-[10px] text-amber-600 font-bold italic uppercase";
+            } else if (hodStatus === 'Rejected') {
+                hodBadge.className = "px-2 py-0.5 rounded-md bg-rose-100 text-rose-600 text-[10px] font-bold uppercase border border-rose-200";
+                requestHodBtn.disabled = false;
+                requestHodBtn.innerText = "Re-request";
+                hodStatusMsg.innerText = "HOD rejected your request. Please check and retry.";
+                hodStatusMsg.className = "text-[10px] text-rose-600 font-bold italic uppercase";
+            } else {
+                hodBadge.className = "px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-bold uppercase border";
+                requestHodBtn.innerText = "Request Permission";
+            }
+        }
+
+        window.requestHodPermission = async () => {
+            const hodName = document.getElementById('hodName')?.innerText || "HOD";
+            const confirmed = await window.Confirm("Request HOD Permission?", `Send leave permission request to ${hodName}?`, "user-tie", "Send Request");
+            if (!confirmed) return;
+            
+            let fDate = document.getElementById('fromDate')?.value || '';
+            let tDate = document.getElementById('toDate')?.value || '';
+            
+            if (mode === 'time') {
+                const pDate = document.getElementById('permissionDate')?.value || '';
+                const tFrom = document.getElementById('timeFrom')?.value || '';
+                const tTo = document.getElementById('timeTo')?.value || '';
+                
+                if (pDate && tFrom) fDate = `${pDate} ${tFrom}`;
+                else if (fDate && tFrom && !fDate.includes(' ')) fDate = `${fDate} ${tFrom}`;
+                
+                if (pDate && tTo) tDate = `${pDate} ${tTo}`;
+                else if (tDate && tTo && !tDate.includes(' ')) tDate = `${tDate} ${tTo}`;
+                
+                console.log("DEBUG: Sending Permission Request with:", fDate, tDate);
+            }
+
+            const payload = {
+                type: (mode === 'time') ? 'Permission' : (leaveTypeSelect.value || 'Permission'),
+                from_date: fDate,
+                to_date: tDate,
+                reason: document.getElementById('leaveReason').value,
+                half_day: halfDayCheck ? halfDayCheck.checked : false,
+                session: leaveSession ? leaveSession.value : '',
+                mode: mode
+            };
+            
+            try {
+                const resp = await fetch('/lecturer/api/request-hod-permission', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    hodStatus = 'Pending';
+                    updateHodUI();
+                    validateAndRefresh();
+                } else {
+                    await window.Confirm("HOD Required", data.message, "user-tie", "OK");
+                }
+            } catch (e) { console.error(e); }
+        };
+        
+        window.resetHodPermission = async () => {
+            if (hodStatus === 'Not Requested') return;
+            try {
+                await fetch('/lecturer/api/clear-hod-permission', { method: 'POST' });
+                hodStatus = 'Not Requested';
+                updateHodUI();
+                validateAndRefresh();
+            } catch (e) { console.error(e); }
+        };
 
         const fromDateInput = document.getElementById('fromDate');
         const toDateInput = document.getElementById('toDate');
@@ -181,25 +643,40 @@
                     // Dynamically populate dropdown from global source of truth
                     const currentVal = leaveTypeSelect.value;
                     const placeholder = '<option value="" disabled selected>-- Choose Type --</option>';
-                    const options = data.stats.map(s => `<option value="${s.type}" ${currentVal === s.type ? 'selected' : ''}>${s.type}</option>`).join('');
+                    
+                    // Filter out 'Permission' or other count-only entries from the main leave dropdown
+                    const mainStats = data.stats.filter(s => !s.is_count_only);
+                    const options = mainStats.map(s => `<option value="${s.type}" ${currentVal === s.type ? 'selected' : ''}>${s.type}</option>`).join('');
+                    
                     leaveTypeSelect.innerHTML = placeholder + options;
-                    if (currentVal && !data.stats.find(s => s.type === currentVal)) {
-                        leaveTypeSelect.value = ""; // Reset if current type was deleted
+                    if (currentVal && !mainStats.find(s => s.type === currentVal)) {
+                        leaveTypeSelect.value = ""; // Reset if current type was deleted or is now excluded
                     }
+                    
+                    // Auto-select first available type for Permission Leave if hidden
+                    if (mode === 'time' && !leaveTypeSelect.value && data.stats.length > 0) {
+                        leaveTypeSelect.value = data.stats[0].type;
+                    }
+                    
+                    data.stats.forEach(s => {
+                        if (s.type === 'Permission') {
+                            const pBadge = document.getElementById('permissionCountBadge');
+                            if (pBadge) {
+                                pBadge.innerText = `Taken: ${s.used}`;
+                                pBadge.classList.remove('hidden');
+                            }
+                        }
+                    });
                     
                     const active = data.stats.find(s => s.type === selectedType);
                     if (active) {
                         currentBalance = active.left;
                         totalAllocated = active.total;
                         
-                        const totalStr = Number.isInteger(active.total) ? active.total : active.total.toFixed(1);
-                        const leftStr = Number.isInteger(active.left) ? active.left : active.left.toFixed(1);
-                        
                         const badge = document.getElementById('selectedTypeBadge');
-                        if (badge) badge.innerText = `${totalStr}/${leftStr} Days`;
-                        
-                        validateAndRefresh();
+                        if (badge) badge.innerText = `${formatBalancePair(active.left, active.total)} Days`;
                     }
+                    validateAndRefresh();
                 }
             } catch (e) {
                 console.error('Balance Fetch Error:', e);
@@ -208,20 +685,23 @@
 
         function renderBalanceGrid(stats, selectedType) {
             const grid = document.getElementById('balanceGrid');
+            if (!grid) return;
             grid.innerHTML = '';
             stats.forEach(s => {
+                // Skip special count entries from the main grid if we don't want them there
+                if (s.is_count_only) return;
+
                 const isSelected = s.type === selectedType;
-                const totalStr = Number.isInteger(s.total) ? s.total : s.total.toFixed(1);
-                const usedStr = Number.isInteger(s.used) ? s.used : s.used.toFixed(1);
-                const leftStr = Number.isInteger(s.left) ? s.left : s.left.toFixed(1);
+                const total = s.total || 0;
+                const left = s.left || 0;
                 
                 const box = document.createElement('div');
-                box.className = `p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer ${isSelected ? 'ring-2 ring-indigo-600 border-indigo-200 bg-indigo-50 md:scale-[1.02] shadow-md' : 'bg-white border-slate-100 hover:border-indigo-200'} ${s.total > 0 ? '' : 'opacity-40 grayscale-[0.8]'}`;
+                box.className = `p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer ${isSelected ? 'ring-2 ring-indigo-600 border-indigo-200 bg-indigo-50 md:scale-[1.02] shadow-md' : 'bg-white border-slate-100 hover:border-indigo-200'} ${total > 0 ? '' : 'opacity-40 grayscale-[0.8]'}`;
                 
                 box.innerHTML = `
                     <div class="text-[7.5px] font-black ${isSelected ? 'text-indigo-600' : 'text-slate-400'} uppercase tracking-wider mb-1 truncate">${s.type}</div>
                     <div class="flex items-baseline justify-between">
-                        <div class="text-[11px] font-black text-slate-800">${totalStr}/${leftStr}</div>
+                        <div class="text-[11px] font-black text-slate-800">${formatBalancePair(left, total)}</div>
                         <div class="text-[9px] font-bold ${isSelected ? 'text-indigo-700 bg-white px-1 shadow-sm' : 'text-slate-400'} rounded">Days</div>
                     </div>
                 `;
@@ -237,50 +717,38 @@
 
         leaveTypeSelect.addEventListener('change', () => {
             isUserInteracted = true;
+            resetHodPermission();
             fetchBalances();
             validateAndRefresh();
         });
-        fetchBalances();
+        // Initial balance fetch is now handled by the init() function at the bottom
 
-        if (halfDayCheck) {
-            halfDayCheck.addEventListener('change', function() {
-                if (this.checked) {
-                    sessionContainer.classList.remove('hidden');
-                    if (toDateInput && fromDateInput) {
-                        toDateInput.value = fromDateInput.value;
-                        toDateInput.parentElement.classList.add('opacity-50');
-                        toDateInput.readOnly = true;
-                    }
-                } else {
-                    sessionContainer.classList.add('hidden');
-                    if (toDateInput) {
-                        toDateInput.parentElement.classList.remove('opacity-50');
-                        toDateInput.readOnly = false;
-                    }
-                }
-                updateClasses();
-            });
-        }
-
-        if (leaveSession) {
-            leaveSession.addEventListener('change', updateClasses);
-        }
-
-        if (fromDateInput) {
-            fromDateInput.addEventListener('input', function() {
-                if (halfDayCheck && halfDayCheck.checked && toDateInput) {
-                    toDateInput.value = this.value;
-                }
-            });
+        // UI Sync Logic is now integrated into validateAndRefresh
+        function debouncedSaveDraft() {
+            if (draftTimeout) clearTimeout(draftTimeout);
+            draftTimeout = setTimeout(saveDraft, 500);
         }
 
         async function saveDraft() {
             const draft = {
                 reason: leaveReason?.value || '',
+                type: leaveTypeSelect?.value || '',
+                from_date: fromDateInput?.value || '',
+                to_date: toDateInput?.value || '',
+                half_day: halfDayCheck?.checked || false,
+                session: leaveSession?.value || '',
                 assignments: classAssignments,
                 live: liveStatus,
-                map: allocationToIdx
+                map: allocationToIdx,
+                no_class_dates: Array.from(noClassDates)
             };
+            
+            // Add time fields if in time mode
+            if (mode === 'time') {
+                draft.time_from = document.getElementById('timeFrom')?.value || '';
+                draft.time_to = document.getElementById('timeTo')?.value || '';
+            }
+
             try {
                 await fetch('/lecturer/api/save-draft', {
                     method: 'POST',
@@ -297,9 +765,48 @@
                 if (data.success && data.draft) {
                     const d = data.draft;
                     if (leaveReason) leaveReason.value = d.reason || '';
+                    if (leaveTypeSelect) leaveTypeSelect.value = d.type || '';
+                    if (fromDateInput) fromDateInput.value = d.from_date || '';
+                    if (toDateInput) toDateInput.value = d.to_date || '';
+                    if (halfDayCheck) halfDayCheck.checked = d.half_day || false;
+                    if (leaveSession) leaveSession.value = d.session || '';
+                    
+                    if (mode === 'time') {
+                        const tFrom = d.time_from || '09:25';
+                        const tTo = d.time_to || '11:25';
+                        if (document.getElementById('timeFrom')) document.getElementById('timeFrom').value = tFrom;
+                        if (document.getElementById('timeTo')) document.getElementById('timeTo').value = tTo;
+
+                        const syncDropdowns = (prefix, time24) => {
+                            if (!time24) return;
+                            let [hh, mm] = time24.split(':');
+                            hh = parseInt(hh);
+                            const ampm = hh >= 12 ? 'PM' : 'AM';
+                            const h12 = (hh % 12 || 12).toString();
+                            const pfx = prefix === 'from' ? 'f' : 't';
+                            const hEl = document.getElementById(pfx + 'Hour');
+                            const mEl = document.getElementById(pfx + 'Min');
+                            const pEl = document.getElementById(pfx + 'Period');
+                            if (hEl) hEl.value = h12;
+                            if (mEl) mEl.value = parseInt(mm).toString();
+                            if (pEl) pEl.value = ampm;
+                        };
+                        syncDropdowns('from', tFrom);
+                        syncDropdowns('to', tTo);
+                    }
+
                     classAssignments = d.assignments || {};
                     liveStatus = d.live || {};
                     allocationToIdx = d.map || {};
+                    noClassDates = new Set((d.no_class_dates || []).map(normalizeDateKey));
+                    
+                    // Refresh UI
+                    refreshLeavePeriodDates();
+                    renderClasses();
+                    validateAndRefresh();
+                    if ((fromDateInput && fromDateInput.value) || mode === 'time') {
+                        updateClasses();
+                    }
                 }
             } catch (e) { console.error('Draft Load Error:', e); }
         }
@@ -310,17 +817,111 @@
             return `${c.date}_${c.time}_${sub}`.replace(/\s+/g, '_');
         }
 
-        socket.on('assignment_response', function(data) {
-            const idx = allocationToIdx[data.allocation_id];
-            if (idx !== undefined) {
-                liveStatus[idx] = (data.action === 'accept') ? 'accepted' : 'rejected';
-                renderClasses();
+        window.markNoClass = async (date) => {
+            const dk = normalizeDateKey(date);
+            if (!dk) return;
+            const confirmed = await window.Confirm(
+                "No Class This Day?",
+                "Mark this date as having no classes? Substitution will not be required; you can proceed to HOD permission.",
+                "calendar-day",
+                "Yes, No Class"
+            );
+            if (!confirmed) return;
+
+            const classesOnDate = allFetchedClasses.filter(c => normalizeDateKey(c.date) === dk);
+            for (const c of classesOnDate) {
+                const key = getClassKey(c);
+                const allocId = Object.keys(allocationToIdx).find(id => allocationToIdx[id] === key);
+                const status = (liveStatus[key] || '').toLowerCase();
+                if (allocId && ['pending', 'pending_faculty', 'requested'].includes(status)) {
+                    try {
+                        await fetch(`/lecturer/api/cancel-substitution/${allocId}`, { method: 'POST' });
+                    } catch (e) { console.error(e); }
+                    delete allocationToIdx[allocId];
+                }
+                delete liveStatus[key];
+                delete classAssignments[key];
             }
+
+            noClassDates.add(dk);
+            syncPendingFromNoClass();
+            debouncedSaveDraft();
+            renderClasses();
+            validateAndRefresh();
+        };
+
+        window.undoNoClass = (date) => {
+            const dk = normalizeDateKey(date);
+            noClassDates.delete(dk);
+            syncPendingFromNoClass();
+            debouncedSaveDraft();
+            renderClasses();
+            validateAndRefresh();
+        };
+
+        function handleAssignmentResponse(data) {
+            const myId = "{{ current_user.id }}";
+            if (data.recipient_id && data.recipient_id !== myId) return;
+
+            const idx = allocationToIdx[data.allocation_id];
+            const nextStatus = (data.action === 'accept') ? 'accepted' : 'rejected';
+
+            if (idx !== undefined) {
+                liveStatus[idx] = nextStatus;
+                renderClasses();
+                validateAndRefresh();
+                debouncedSaveDraft();
+                return;
+            }
+
+            if (typeof updateClasses === 'function') {
+                updateClasses();
+            }
+        }
+
+        function handleHodPermissionResponse(data) {
+            const myId = "{{ current_user.id }}";
+            if (data.recipient_id && data.recipient_id !== myId) return;
+
+            hodStatus = data.status || hodStatus;
+            updateHodUI();
+            validateAndRefresh();
+            debouncedSaveDraft();
+        }
+
+        function handleAssignmentRecalled(data) {
+            const myId = "{{ current_user.id }}";
+            if (data.recipient_id && data.recipient_id !== myId) return;
+
+            const allocationId = data.allocation_id;
+            const idx = allocationToIdx[allocationId];
+            if (idx !== undefined) {
+                delete liveStatus[idx];
+                delete classAssignments[idx];
+                delete allocationToIdx[allocationId];
+                renderClasses();
+                validateAndRefresh();
+                debouncedSaveDraft();
+            }
+        }
+
+        if (typeof socket !== 'undefined') {
+            socket.off('assignment_response', handleAssignmentResponse);
+            socket.off('hod_permission_response', handleHodPermissionResponse);
+            socket.off('assignment_recalled', handleAssignmentRecalled);
+            socket.on('assignment_response', handleAssignmentResponse);
+            socket.on('hod_permission_response', handleHodPermissionResponse);
+            socket.on('assignment_recalled', handleAssignmentRecalled);
+        }
+
+        socket.on('hod_assigned', function(data) {
+            // Re-fetch everything if HOD is reassigned for the department
+            updateClasses();
         });
 
         window.tempAssign = (key, id) => {
             classAssignments[key] = id;
-            saveDraft();
+            debouncedSaveDraft();
             validateAndRefresh();
         };
 
@@ -347,7 +948,7 @@
                 const data = await resp.json();
                 if (data.success) {
                     allocationToIdx[data.allocation_id] = key;
-                    saveDraft();
+                    debouncedSaveDraft();
                 } else {
                     await window.Confirm("Request Failed", data.message, "exclamation-triangle", "OK");
                     liveStatus[key] = 'None';
@@ -371,112 +972,377 @@
                 const resp = await fetch(`/lecturer/api/cancel-substitution/${allocationId}`, { method: 'POST' });
                 const data = await resp.json();
                 if (data.success) {
-                    delete liveStatus[key];
+                    liveStatus[key] = 'None';
                     delete classAssignments[key];
                     delete allocationToIdx[allocationId];
-                    saveDraft();
+                    debouncedSaveDraft();
                     renderClasses();
                 }
             } catch (e) { console.error(e); }
         };
 
-        async function validateAndRefresh() {
+        let isTimeValid = true;
+        async function validateAndRefresh(showErrors = true) {
+            if (showErrors) hasInteractedWithTime = true;
+            
+            // 0. Sync UI (Half-Day / Session Container)
+            if (halfDayCheck) {
+                if (halfDayCheck.checked) {
+                    sessionContainer.classList.remove('hidden');
+                    if (toDateInput && fromDateInput) {
+                        toDateInput.value = fromDateInput.value;
+                        toDateInput.parentElement.classList.add('opacity-50');
+                        toDateInput.readOnly = true;
+                    }
+                } else {
+                    sessionContainer.classList.add('hidden');
+                    if (toDateInput) {
+                        toDateInput.parentElement.classList.remove('opacity-50');
+                        toDateInput.readOnly = false;
+                    }
+                }
+            }
+
             let isValid = true;
-            saveDraft();
+            debouncedSaveDraft();
             
             const badge = document.getElementById('selectedTypeBadge');
             const overlay = document.getElementById('blockingOverlay');
             
-            // 1. Check if Balance is 0 (Absolute Block)
-            if (currentBalance <= 0) {
-                isValid = false;
-                if (badge) {
-                    badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> No Balance Available`;
-                    badge.className = "text-[10px] font-black text-rose-600 px-3 py-1 bg-rose-50 rounded-lg border border-rose-100 shadow-sm inline-block";
-                }
-                
-                // ONLY show overlay if user has actually interacted with the form
-                if (isUserInteracted && overlay && overlay.classList.contains('hidden')) {
-                    overlay.classList.remove('hidden');
-                }
-            } 
-            // ...
-            else if (mode === 'full') {
-                const fVal = fromDateInput?.value, tVal = toDateInput?.value;
-                if (!fVal || !tVal || new Date(fVal) > new Date(tVal)) {
-                    isValid = false;
-                    if (overlay) overlay.classList.add('hidden');
-                } else {
-                    const diffDays = Math.ceil(Math.abs(new Date(tVal) - new Date(fVal)) / (1000 * 60 * 60 * 24)) + 1;
-                    const deduction = (halfDayCheck && halfDayCheck.checked) ? 0.5 : diffDays;
-                    
-                    if (deduction > currentBalance) {
-                        isValid = false;
-                        if (badge) {
-                            badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Limit Exceeded (${currentBalance} Left)`;
-                            badge.className = "text-[10px] font-black text-rose-600 px-3 py-1 bg-rose-50 rounded-lg border border-rose-100 shadow-sm inline-block";
-                        }
-                        if (isUserInteracted && overlay && overlay.classList.contains('hidden')) {
-                            overlay.classList.remove('hidden');
-                        }
-                    } else {
-                        const remaining = (currentBalance - deduction).toFixed(1);
-                        if (badge) {
-                            badge.innerText = `${totalAllocated}/${parseFloat(remaining)} Days`;
-                            badge.className = "text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block";
-                        }
-                        if (overlay) overlay.classList.add('hidden');
-                    }
-                }
-            } else if (mode === 'time') {
-                // For time-based leave, we assume a 1 day deduction if balance exists
-                const deduction = 1.0;
-                if (deduction > currentBalance) {
+            if (mode !== 'time') {
+                // 1. Check if type is selected and balance is available
+                const selectedType = leaveTypeSelect.value;
+                if (!selectedType) {
                     isValid = false;
                     if (badge) {
-                        badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Short Leave Limit Met`;
+                        badge.innerText = `Select Leave Type`;
+                        badge.className = "text-sm font-black text-slate-400 px-3 py-1 bg-slate-50 rounded-lg border border-slate-100 shadow-sm inline-block";
+                    }
+                } else if (currentBalance <= 0) {
+                    isValid = false;
+                    if (badge) {
+                        badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> No Balance Available`;
                         badge.className = "text-[10px] font-black text-rose-600 px-3 py-1 bg-rose-50 rounded-lg border border-rose-100 shadow-sm inline-block";
                     }
+                    
+                    // ONLY show overlay if user has actually interacted with the form
                     if (isUserInteracted && overlay && overlay.classList.contains('hidden')) {
                         overlay.classList.remove('hidden');
                     }
-                } else {
-                    const remaining = (currentBalance - deduction).toFixed(1);
-                    if (badge) {
-                        badge.innerText = `${totalAllocated}/${parseFloat(remaining)} Days`;
-                        badge.className = "text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block";
+                } 
+                else if (mode === 'full') {
+                    const fVal = fromDateInput?.value, tVal = toDateInput?.value;
+                    if (!fVal || !tVal || new Date(fVal) > new Date(tVal)) {
+                        isValid = false;
+                        if (overlay) overlay.classList.add('hidden');
+                    } else {
+                        const deduction = countWorkingLeaveDays(
+                            fVal,
+                            tVal,
+                            halfDayCheck && halfDayCheck.checked
+                        );
+
+                        if (deduction <= 0) {
+                            isValid = false;
+                            if (badge) {
+                                badge.innerHTML = `<i class="fas fa-info-circle mr-1"></i> No working days (Sundays excluded)`;
+                                badge.className = "text-[10px] font-black text-amber-600 px-3 py-1 bg-amber-50 rounded-lg border border-amber-100 shadow-sm inline-block";
+                            }
+                            if (overlay) overlay.classList.add('hidden');
+                        } else if (deduction > currentBalance) {
+                            isValid = false;
+                            if (badge) {
+                                badge.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> Limit Exceeded (${currentBalance} Left)`;
+                                badge.className = "text-[10px] font-black text-rose-600 px-3 py-1 bg-rose-50 rounded-lg border border-rose-100 shadow-sm inline-block";
+                            }
+                            if (isUserInteracted && overlay && overlay.classList.contains('hidden')) {
+                                overlay.classList.remove('hidden');
+                            }
+                        } else {
+                            const remainingAfter = Math.max(0, currentBalance - deduction);
+                            if (badge) {
+                                badge.innerText = `${formatBalancePair(remainingAfter, totalAllocated)} Days (${deduction} day${deduction === 1 ? '' : 's'} this leave)`;
+                                badge.className = "text-sm font-black text-indigo-700 px-3 py-1 bg-white rounded-lg border border-indigo-100 shadow-sm inline-block";
+                            }
+                            if (overlay) overlay.classList.add('hidden');
+                        }
                     }
-                    if (overlay) overlay.classList.add('hidden');
                 }
+            } else {
+                // Permission mode: bypass balance checks
+                if (overlay) overlay.classList.add('hidden');
+                
+                // 2. Validate Duty Hours (Read directly from dropdowns for zero-lag sync)
+                const getDropdownTime = (pfx) => {
+                    const h = document.getElementById(pfx + 'Hour')?.value;
+                    const m = document.getElementById(pfx + 'Min')?.value;
+                    const p = document.getElementById(pfx + 'Period')?.value;
+                    if (!h || !m || !p) return null;
+                    let hh = parseInt(h);
+                    if (p === 'PM' && hh < 12) hh += 12;
+                    if (p === 'AM' && hh === 12) hh = 0;
+                    return hh * 60 + parseInt(m);
+                };
+
+                const reqS = getDropdownTime('f');
+                const reqE = getDropdownTime('t');
+                const vMsg = document.getElementById('timeValidationMsg');
+                const errorText = document.getElementById('timeValidationErrorText');
+                
+                if (reqS !== null && reqE !== null) {
+                    if (dutyHours) {
+                        const dS = (t) => { const [h,m] = t.split(':').map(Number); return h*60+m; };
+                        const dutyS = dS(dutyHours.start), dutyE = dS(dutyHours.end);
+                        
+                        if (reqS < dutyS || reqE > dutyE) {
+                            isValid = false;
+                            if (vMsg && errorText) {
+                                errorText.innerText = `Permission must be within duty hours (${dutyHours.start} to ${dutyHours.end}).`;
+                                vMsg.classList.remove('hidden');
+                            }
+                        } else if (reqS >= reqE) {
+                            isValid = false;
+                            if (vMsg && errorText) {
+                                errorText.innerText = `'From' time must be earlier than 'To' time.`;
+                                vMsg.classList.remove('hidden');
+                            }
+                        } else {
+                            const now = new Date();
+                            const nowMins = now.getHours() * 60 + now.getMinutes();
+                            if (reqS < nowMins) {
+                                isValid = false;
+                                if (vMsg && errorText) {
+                                    errorText.innerText = `Permission 'From' time cannot be in the past.`;
+                                    vMsg.classList.remove('hidden');
+                                }
+                            } else {
+                                    if (vMsg) vMsg.classList.add('hidden');
+                            }
+                        }
+                    }
+
+                    // Update Duration Preview Badge
+                    const durationBadge = document.getElementById('timeDurationBadge');
+                    const durationText = document.getElementById('timeDurationText');
+                    if (durationBadge && durationText && reqS < reqE) {
+                        durationBadge.classList.remove('hidden');
+                        const h = Math.floor((reqE - reqS) / 60);
+                        const m = (reqE - reqS) % 60;
+                        const fmt = (mins) => {
+                            let hh = Math.floor(mins/60), mm = mins%60;
+                            const ampm = hh >= 12 ? 'PM' : 'AM';
+                            return `${hh%12||12}:${mm.toString().padStart(2,'0')} ${ampm}`;
+                        };
+                        durationText.innerText = `${fmt(reqS)} to ${fmt(reqE)} (${h}h ${m}m)`;
+                    } else if (durationBadge) {
+                        durationBadge.classList.add('hidden');
+                    }
+                }
+                isTimeValid = isValid;
             }
             if (!leaveReason.value.trim()) isValid = false;
 
-            const total = pendingClasses.length;
+            const activeClasses = getActiveClasses();
+            const total = activeClasses.length;
+            const progressBox = document.getElementById('assignmentProgressBox');
+            
             if (total > 0) {
+                progressBox.classList.remove('hidden');
                 // Count successful assignments (Colleague Accepted OR Management Approved)
                 let completedCount = 0;
                 const posStatus = ['accepted', 'approved', 'finalized'];
-                pendingClasses.forEach(c => {
+                activeClasses.forEach(c => {
                     const key = getClassKey(c);
-                    if (posStatus.includes(liveStatus[key])) completedCount++;
+                    const status = (liveStatus[key] || '').toLowerCase();
+                    if (posStatus.includes(status)) completedCount++;
                 });
 
-                const badge = document.getElementById('assignmentBadge');
+                // Update Progress UI
+                const countBadge = document.getElementById('assignmentCountBadge');
+                const progressBar = document.getElementById('assignmentProgressBar');
+                const statusMsg = document.getElementById('assignmentStatusMsg');
+                
+                const percent = (completedCount / total) * 100;
+                countBadge.innerText = `${completedCount}/${total} Accepted`;
+                progressBar.style.width = `${percent}%`;
+                
                 if (completedCount < total) {
                     isValid = false;
-                    badge.innerHTML = `<i class="fas fa-lock mr-1"></i> waiting for ${total - completedCount} approvals`;
-                    badge.className = "px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[10px] font-black uppercase border border-rose-100 italic";
+                    statusMsg.innerText = `Waiting for ${total - completedCount} colleague approvals...`;
+                    countBadge.className = "px-2 py-0.5 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-black uppercase border border-rose-100";
+                    progressBar.className = "bg-rose-500 h-full transition-all duration-500";
                 } else {
-                    badge.innerHTML = `<i class="fas fa-unlock mr-1"></i> all assignments complete`;
-                    badge.className = "px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase border border-emerald-200";
+                    statusMsg.innerText = "All assignments confirmed! You can now submit.";
+                    countBadge.className = "px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase border border-emerald-200";
+                    progressBar.className = "bg-emerald-500 h-full transition-all duration-500";
+                }
+            } else {
+                progressBox.classList.add('hidden');
+            }
+
+            // HOD Permission Check (New Logic)
+            const hodSection = document.getElementById('hodSection');
+            const assignmentSection = document.getElementById('assignmentSection');
+            const requestHodBtn = document.getElementById('requestHodBtn');
+            const hodStatusMsg = document.getElementById('hodStatusMsg');
+            
+            let assignmentsDone = true;
+            if (activeClasses.length > 0) {
+                const posStatus = ['accepted', 'approved', 'finalized'];
+                assignmentsDone = activeClasses.every(c => {
+                    const status = (liveStatus[getClassKey(c)] || '').toLowerCase();
+                    return posStatus.includes(status);
+                });
+            }
+
+            // HOD Permission Visibility Logic (Improved)
+            const hasDatesSet = (mode === 'time') ? (document.getElementById('permissionDate')?.value) : (fromDateInput?.value && toDateInput?.value);
+            
+            // Show HOD section only if dates are set AND (either no classes exist OR all classes are assigned)
+            if (hasDatesSet && assignmentsDone) {
+                if (hodSection) hodSection.classList.remove('hidden');
+            } else {
+                if (hodSection) hodSection.classList.add('hidden');
+            }
+
+            // Always show assignment section if dates are set
+            if (hasDatesSet) {
+                if (assignmentSection) assignmentSection.classList.remove('hidden');
+            } else {
+                if (assignmentSection) assignmentSection.classList.add('hidden');
+            }
+            
+            if (isValid && assignmentsDone && hodStatus === 'Not Requested') {
+                requestHodBtn.disabled = false;
+                if (activeClasses.length === 0 && classesFetched) {
+                    hodStatusMsg.innerText = "No-class days marked. Request HOD permission now.";
+                } else {
+                    hodStatusMsg.innerText = "All assignments clear. Request HOD permission now.";
+                }
+                hodStatusMsg.className = "text-[10px] text-indigo-600 font-bold italic uppercase";
+            } else if (!assignmentsDone) {
+                requestHodBtn.disabled = true;
+                if (hodStatus === 'Not Requested') {
+                    hodStatusMsg.innerText = "Please complete class assignments first (or mark days as No Class).";
+                    hodStatusMsg.className = "text-[10px] text-slate-400 font-bold italic uppercase";
                 }
             }
 
-            submitBtn.disabled = !isValid;
-            document.getElementById('assignmentsJson').value = JSON.stringify(pendingClasses.map(c => {
-                const key = `${c.date}_${c.time}_${c.subject}`.replace(/\s+/g, '_');
+            const isHodApproved = hodStatus === 'Approved';
+            
+            // Current Day Time-Based Validation
+            const dateMsg = document.getElementById('dateValidationMsg');
+            const leaveDaysPreview = document.getElementById('leaveDaysPreview');
+            // DATE VALIDATION LOGIC
+            isDateValid = true; // Reset before checking
+            if (leaveDaysPreview) leaveDaysPreview.classList.add('hidden');
+            if (dateMsg && fromDateInput && fromDateInput.value) {
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                const todayStr = `${yyyy}-${mm}-${dd}`;
+                const fromVal = fromDateInput.value;
+                const toVal = toDateInput ? toDateInput.value : '';
+                
+                const now = new Date();
+                const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+                const cutoffMorning = 9 * 60 + 30; // 9:30 AM
+                const cutoffAfternoon = 15 * 60;   // 3:00 PM
+
+                if (fromVal < todayStr) {
+                    isDateValid = false;
+                    dateMsg.innerText = "From Date cannot be in the past.";
+                    dateMsg.classList.remove('hidden');
+                } else if (toVal && toVal < todayStr) {
+                    isDateValid = false;
+                    dateMsg.innerText = "To Date cannot be in the past.";
+                    dateMsg.classList.remove('hidden');
+                } else if (fromVal && toVal && fromVal > toVal) {
+                    isDateValid = false;
+                    dateMsg.innerText = "To Date cannot be before From Date.";
+                    dateMsg.classList.remove('hidden');
+                } else if (mode === 'full' && fromVal && toVal) {
+                    refreshLeavePeriodDates();
+                    const workingDays = countWorkingLeaveDays(
+                        fromVal,
+                        toVal,
+                        halfDayCheck && halfDayCheck.checked
+                    );
+                    if (leaveDaysPreview && workingDays > 0) {
+                        leaveDaysPreview.classList.remove('hidden');
+                        leaveDaysPreview.innerText = `This leave uses ${workingDays} working day(s) — Sundays are not counted.`;
+                    }
+                    if (leavePeriodDates.length === 0) {
+                        isDateValid = false;
+                        dateMsg.innerText = "No working days in this range (Sundays are excluded — not on timetable).";
+                        dateMsg.classList.remove('hidden');
+                    } else {
+                        dateMsg.classList.add('hidden');
+                    }
+                } else if (fromVal === todayStr) {
+                    if (currentTimeInMinutes >= cutoffAfternoon) {
+                        isDateValid = false;
+                        dateMsg.innerText = "It's past 3:00 PM. Current day leave is no longer available.";
+                        dateMsg.classList.remove('hidden');
+                    } else if (currentTimeInMinutes >= cutoffMorning) {
+                        const isHalfDay = halfDayCheck && halfDayCheck.checked;
+                        const isAfternoon = leaveSession && leaveSession.value === 'afternoon';
+                        if (!isHalfDay || !isAfternoon) {
+                            isDateValid = false;
+                            dateMsg.innerText = "It's past 9:30 AM. Today you can only apply for 'Afternoon Half-Day'. (Please check 'Half Day Leave' and select 'Afternoon').";
+                            dateMsg.classList.remove('hidden');
+                        } else {
+                            dateMsg.classList.add('hidden');
+                        }
+                    } else {
+                        dateMsg.classList.add('hidden');
+                    }
+                } else {
+                    dateMsg.classList.add('hidden');
+                }
+            }
+            
+            // TRUE VALIDATION BLOCK: Disable all subsequent actions if date is invalid
+            const fetchClassesBtn = document.getElementById('fetchClassesBtn');
+            const classContainer = document.getElementById('classListContainer');
+            const assignmentBadge = document.getElementById('assignmentBadge');
+            if (!isDateValid) {
+                if (fetchClassesBtn) fetchClassesBtn.disabled = true;
+                if (fetchClassesBtn) fetchClassesBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                if (assignmentBadge) {
+                    assignmentBadge.innerText = "Validation Applied";
+                    assignmentBadge.className = "px-2 py-0.5 rounded-md bg-rose-600 text-white text-[10px] font-black uppercase border border-rose-700";
+                }
+                if (classContainer) classContainer.innerHTML = `<div class="py-12 text-center border-2 border-dashed border-rose-100 rounded-3xl bg-rose-50/20"><div class="text-[11px] font-black uppercase text-rose-600 tracking-wider"><i class="fas fa-info-circle mr-2"></i> Date Validation Applied</div></div>`;
+                pendingClasses = [];
+                allFetchedClasses = [];
+                leavePeriodDates = [];
+                classesFetched = false;
+            } else {
+                if (fetchClassesBtn) fetchClassesBtn.disabled = false;
+                if (fetchClassesBtn) fetchClassesBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                if (assignmentBadge && leavePeriodDates.length === 0 && allFetchedClasses.length === 0) {
+                    assignmentBadge.innerText = mode === 'time' ? "Waiting for time" : "Waiting for search";
+                    assignmentBadge.className = "px-2 py-0.5 rounded-md bg-slate-100 text-slate-400 text-[10px] font-bold uppercase border";
+                } else if (assignmentBadge && leavePeriodDates.length > 0 && !classesFetched) {
+                    assignmentBadge.innerText = `${leavePeriodDates.length} day(s) selected`;
+                    assignmentBadge.className = "px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase border border-indigo-100";
+                } else if (assignmentBadge && getActiveClasses().length === 0 && classesFetched) {
+                    assignmentBadge.innerText = "No class days set";
+                    assignmentBadge.className = "px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase border border-indigo-200";
+                }
+            }
+
+            const needsHod = (mode === 'full') || (mode === 'time' && activeClasses.length > 0);
+            submitBtn.disabled = !isValid || !assignmentsDone || (needsHod && !isHodApproved) || !isDateValid;
+            
+            document.getElementById('assignmentsJson').value = JSON.stringify(activeClasses.map(c => {
+                const key = getClassKey(c);
                 return { class_details: c, assigned_to_id: classAssignments[key] };
             }));
+            const noClassJson = document.getElementById('noClassDatesJson');
+            if (noClassJson) noClassJson.value = JSON.stringify(Array.from(noClassDates));
         }
 
         // CLEAR DRAFT ON SUCCESSFUL SUBMIT
@@ -486,43 +1352,87 @@
              localStorage.removeItem('leave_draft_v3');
         };
 
-        async function updateClasses() {
-            const fDate = fromDateInput?.value || '', tDate = toDateInput?.value || '';
-            if (mode === 'full' && (!fDate || !tDate)) return;
+          async function updateClasses() {
+            const container = document.getElementById('classListContainer');
+            if (container) {
+                container.innerHTML = `<div class="py-10 text-center text-slate-400 text-[10px] font-black uppercase"><i class="fas fa-circle-notch fa-spin mr-2"></i> Syncing timetable...</div>`;
+            }
+            
+            // isDateValid is mostly for full leaves, for time mode we check permissionDate
+            if (mode === 'full' && !isDateValid) {
+                if (container) container.innerHTML = '<div class="py-6 text-center border-2 border-dashed border-slate-100 rounded-xl"><p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Please select valid dates</p></div>';
+                return;
+            }
+
+            let fDate = fromDateInput?.value || '';
+            let tDate = toDateInput?.value || '';
+            
+            if (mode === 'time') {
+                fDate = document.getElementById('permissionDate')?.value || '';
+                tDate = fDate; // Same day
+            }
+            
+            // For time mode, we require the hidden inputs to be set by syncTime
+            const tFrom = document.getElementById('timeFrom')?.value || '';
+            const tTo = document.getElementById('timeTo')?.value || '';
+            
+            if (!fDate || (mode === 'full' && !tDate)) return;
+            if (mode === 'time' && (!tFrom || !tTo || tFrom === tTo)) return;
             
             const isHalfDay = halfDayCheck?.checked || false;
             const session = leaveSession?.value || '';
-            
-            const container = document.getElementById('classListContainer');
-            container.innerHTML = `<div class="py-10 text-center text-slate-400 text-[10px] font-black uppercase"><i class="fas fa-circle-notch fa-spin mr-2"></i> Syncing timetable...</div>`;
 
             try {
-                const url = `/lecturer/api/preview-classes?mode=${mode}&from_date=${fDate}&to_date=${tDate}&half_day=${isHalfDay}&session=${session}`;
+                let url = `/lecturer/api/preview-classes?mode=${mode}&from_date=${fDate}&to_date=${tDate}&half_day=${isHalfDay}&session=${session}`;
+                if (mode === 'time') {
+                    const tFrom = document.getElementById('timeFrom')?.value || '';
+                    const tTo = document.getElementById('timeTo')?.value || '';
+                    if (!tFrom || !tTo) return;
+                    url += `&time_from=${tFrom}&time_to=${tTo}`;
+                }
                 const resp = await fetch(url);
                 const data = await resp.json();
                 if (data.success) {
                     availableFaculty = data.faculty;
-                    pendingClasses = data.classes;
+                    allFetchedClasses = (data.classes || []).filter(c => {
+                        const dk = normalizeDateKey(c.date);
+                        const dObj = new Date(dk + 'T12:00:00');
+                        return isNaN(dObj.getTime()) || dObj.getDay() !== 0;
+                    });
+                    classesFetched = true;
+                    refreshLeavePeriodDates();
+                    if (mode === 'full') {
+                        pruneNoClassDatesInRange(
+                            normalizeDateKey(fDate),
+                            normalizeDateKey(tDate)
+                        );
+                    }
+                    syncPendingFromNoClass();
                     
                     // SYNC WITH DATABASE: Clear old memory and pull latest from Server
                     const serverAllocs = data.live_allocations || {};
                     
-                    // Loop through all classes we just fetched
-                    pendingClasses.forEach(c => {
+                    allFetchedClasses.forEach(c => {
                         const key = getClassKey(c);
                         if (serverAllocs[key]) {
-                            liveStatus[key] = serverAllocs[key].status;
+                            liveStatus[key] = (serverAllocs[key].status || 'pending').toLowerCase();
                             classAssignments[key] = serverAllocs[key].faculty_id;
                             allocationToIdx[serverAllocs[key].allocation_id] = key;
                         } else {
-                            // If not in DB, it MUST be a fresh start - Clear any old local choice
-                            delete liveStatus[key];
-                            delete classAssignments[key];
+                            // If it's on the server but was 'pending' or 'accepted' locally, it means it's gone
+                            const localStat = (liveStatus[key] || 'none').toLowerCase();
+                            if (['pending', 'accepted', 'approved', 'finalized', 'requested', 'pending_faculty'].includes(localStat)) {
+                                delete liveStatus[key];
+                                delete classAssignments[key];
+                            }
                         }
                     });
-
-                    saveDraft();
+                    
+                    debouncedSaveDraft();
+                    hodStatus = data.hod_status || 'Not Requested';
+                    updateHodUI(data.hod_info);
                     renderClasses();
+                    validateAndRefresh();
                 }
             } catch (e) { console.error(e); }
         }
@@ -530,35 +1440,72 @@
 
         function renderClasses() {
             const container = document.getElementById('classListContainer');
-            if (pendingClasses.length > 0) {
-                const grouped = {};
-                pendingClasses.forEach(c => {
-                    if (!grouped[c.date]) grouped[c.date] = { day: c.day, classes: [], id: c.date.replace(/\//g, '-') };
-                    grouped[c.date].classes.push(c);
-                });
+            if (mode === 'full') refreshLeavePeriodDates();
+
+            const hasPeriodView = (mode === 'full' && leavePeriodDates.length > 0) ||
+                (mode === 'time' && allFetchedClasses.length > 0);
+
+            if (hasPeriodView) {
+                const { grouped, orderedKeys } = buildDateGroups();
+                const keysToRender = mode === 'full'
+                    ? leavePeriodDates.map(d => d.dk)
+                    : orderedKeys;
 
                 // STRICT Regex Filter: BBHCF followed ONLY by digits (Excludes BBHCFN, etc.)
                 const facultyRegex = /^BBHCF\d+$/;
                 const filteredFaculty = availableFaculty.filter(f => f.staff_id && facultyRegex.test(f.staff_id));
 
                 let html = '';
-                for (const date in grouped) {
-                    const group = grouped[date];
+                for (const dk of keysToRender) {
+                    const group = grouped[dk];
+                    if (!group) continue;
+                    const isMarkedNoClass = noClassDates.has(dk);
+                    const isNaturallyEmpty = classesFetched && group.classes.length === 0;
+                    const isPendingFetch = mode === 'full' && !classesFetched;
+                    const showAsNoClass = isMarkedNoClass || isNaturallyEmpty;
+                    const displayDate = group.displayDate;
+                    const showNoClassBtn = classesFetched && group.classes.length > 0 && !isMarkedNoClass;
+
                     html += `
-                        <div class="mb-4 overflow-hidden border border-slate-100 rounded-2xl bg-white shadow-sm">
-                            <div onclick="document.getElementById('subjects-${group.id}').classList.toggle('hidden')" 
-                                 class="p-4 bg-slate-50 flex items-center justify-between cursor-pointer active:bg-slate-100 transition-colors">
-                                <div class="flex items-center gap-3">
-                                    <div class="px-3 py-1 bg-indigo-700 text-white text-[10px] font-black rounded-lg uppercase shadow-sm">${group.day}</div>
-                                    <div class="text-[12px] font-black text-slate-800 tracking-tight">${date}</div>
+                        <div class="mb-4 border border-slate-100 rounded-2xl bg-white shadow-sm ${showAsNoClass ? 'ring-2 ring-indigo-100' : ''}">
+                            <div class="p-4 bg-slate-50 flex items-center justify-between rounded-t-2xl gap-2">
+                                <div onclick="document.getElementById('subjects-${group.id}').classList.toggle('hidden')" 
+                                     class="flex items-center gap-3 flex-1 cursor-pointer active:bg-slate-100 transition-colors min-w-0">
+                                    <div class="px-3 py-1 ${showAsNoClass ? 'bg-slate-500' : 'bg-indigo-700'} text-white text-[10px] font-black rounded-lg uppercase shadow-sm">${group.day}</div>
+                                    <div class="text-[12px] font-black text-slate-800 tracking-tight truncate">${displayDate}</div>
+                                    ${isMarkedNoClass ? '<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase rounded border border-indigo-200">No Class</span>' : ''}
+                                    ${isNaturallyEmpty && !isMarkedNoClass ? '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded border border-slate-200">No Classes</span>' : ''}
                                 </div>
-                                <div class="text-slate-400"><i class="fas fa-chevron-down text-[10px]"></i></div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    ${isMarkedNoClass
+                                        ? `<button type="button" onclick="event.stopPropagation(); window.undoNoClass('${dk}')"
+                                               class="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase hover:bg-slate-50 transition-all">
+                                            Undo
+                                           </button>`
+                                        : (showNoClassBtn
+                                            ? `<button type="button" onclick="event.stopPropagation(); window.markNoClass('${dk}')"
+                                                   class="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-[9px] font-black uppercase hover:bg-indigo-50 transition-all shadow-sm">
+                                                <i class="fas fa-ban mr-1"></i> No Class
+                                               </button>`
+                                            : '')
+                                    }
+                                    <div onclick="document.getElementById('subjects-${group.id}').classList.toggle('hidden')" class="text-slate-400 cursor-pointer p-1"><i class="fas fa-chevron-down text-[10px]"></i></div>
+                                </div>
                             </div>
 
                             <div id="subjects-${group.id}" class="p-3 space-y-3">
-                                ${group.classes.map((c) => {
+                                ${isPendingFetch ? `
+                                    <div class="py-6 text-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
+                                        <div class="text-[10px] font-black text-slate-500 uppercase tracking-wider"><i class="fas fa-search mr-1"></i> Click "Check classes" to load timetable</div>
+                                    </div>
+                                ` : (showAsNoClass ? `
+                                    <div class="py-8 text-center border-2 border-dashed border-indigo-100 rounded-2xl bg-indigo-50/30">
+                                        <div class="text-[10px] font-black text-indigo-600 uppercase tracking-wider mb-1"><i class="fas fa-calendar-check mr-1"></i> ${isMarkedNoClass ? 'No classes this day' : 'No classes scheduled'}</div>
+                                        <div class="text-[9px] text-slate-500 font-bold uppercase">Proceed to HOD permission below</div>
+                                    </div>
+                                ` : group.classes.map((c) => {
                                     const cKey = getClassKey(c);
-                                    const status = liveStatus[cKey] || 'None';
+                                    const status = (liveStatus[cKey] || 'None').toLowerCase();
                                     let rowClass = 'bg-white border-slate-50', statusHtml = '';
                                     
                                     if (status === 'accepted') {
@@ -570,54 +1517,191 @@
                                     } else if (status === 'rejected') {
                                         rowClass = 'bg-rose-50/30 border-rose-100';
                                         statusHtml = '<span class="text-[9px] font-black text-rose-600 uppercase italic"><i class="fas fa-times-circle"></i> Rejected</span>';
-                                    } else if (status === 'pending') {
+                                    } else if (status === 'pending' || status === 'pending_faculty' || status === 'requested') {
                                         rowClass = 'bg-amber-50/30 border-amber-100';
                                         statusHtml = '<span class="text-[9px] font-black text-amber-600 animate-pulse uppercase italic"><i class="fas fa-sync fa-spin"></i> Processing...</span>';
                                     }
 
                                     return `
-                                    <div class="p-3 border rounded-xl shadow-sm flex items-center gap-3 transition-all ${rowClass}">
-                                        <div class="flex-1">
-                                            <div class="flex justify-between items-start mb-1">
-                                                <div class="text-[11px] font-black text-slate-800 uppercase leading-none">${c.subject}</div>
+                                    <div class="relative p-3 md:p-4 border rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 transition-all ${rowClass}">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex justify-between items-start mb-1.5">
+                                                <div class="text-[12px] font-black text-slate-800 uppercase leading-tight truncate pr-2">${c.subject}</div>
                                                 ${statusHtml}
                                             </div>
                                             <div class="flex items-center gap-2">
-                                                <div class="px-1.5 py-0.5 bg-slate-100 text-[8px] font-black text-slate-500 rounded uppercase">${c.time}</div>
-                                                <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic">Room ${c.room || 'TBD'}</div>
+                                                <div class="px-2 py-0.5 bg-slate-100 text-[9px] font-black text-slate-500 rounded uppercase shadow-sm">${c.time}</div>
+                                                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Room ${c.room || 'TBD'}</div>
                                             </div>
                                         </div>
-                                        <div class="w-1/2 flex items-center gap-1.5">
-                                            ${status === 'accepted' ? 
-                                                `<div class="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-100/30 rounded-lg border border-emerald-200/50 uppercase italic tracking-tighter">
-                                                    <i class="fas fa-handshake"></i> Assignment Fixed
+                                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 mt-1 sm:mt-0">
+                                            ${(status === 'accepted' || status === 'approved' || status === 'finalized') ? 
+                                                `<div class="w-full py-2.5 px-4 flex items-center justify-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-100/30 rounded-xl border border-emerald-200/50 uppercase italic tracking-tighter shadow-sm">
+                                                    <i class="fas fa-check-double"></i> Assignment Fixed
                                                 </div>` :
-                                              status === 'pending' ?
+                                              (status === 'pending' || status === 'pending_faculty' || status === 'requested') ?
                                                 `<button type="button" onclick="window.cancelRequest('${cKey}')" 
-                                                         class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-2 border border-slate-200 shadow-sm transition-all active:scale-95">
+                                                         class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border border-slate-200 shadow-sm transition-all active:scale-95">
                                                     <i class="fas fa-undo"></i> Recall Request
                                                 </button>` :
-                                                `<select onchange="window.tempAssign('${cKey}', this.value)" 
-                                                         class="flex-1 text-[10px] py-2 px-3 rounded-lg border-slate-200 bg-white font-black text-slate-600 uppercase border shadow-sm outline-none focus:ring-1 focus:ring-indigo-500">
-                                                    <option value="">-- Faculty --</option>
-                                                    ${filteredFaculty.map(f => `<option value="${f._id}" ${classAssignments[cKey] === f._id ? 'selected' : ''}>${f.name}</option>`).join('')}
-                                                </select>
-                                                <button type="button" onclick="window.sendIndividualRequest('${cKey}', ${JSON.stringify(c).replace(/"/g, '&quot;')})" 
-                                                         class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-[10px] font-black hover:bg-indigo-700 uppercase shadow-md active:scale-95 transition-transform">
-                                                    ${status === 'rejected' ? 'Retry' : 'Send'}
+                                                `<div class="searchable-dropdown w-full sm:w-48" id="dropdown-${cKey}">
+                                                    <input type="text" 
+                                                           placeholder="TYPE NAME..."
+                                                           class="search-input ${!isTimeValid ? 'opacity-50 cursor-not-allowed' : ''}"
+                                                           ${!isTimeValid ? 'disabled' : ''}
+                                                           value="${classAssignments[cKey] ? (availableFaculty.find(f => f._id === classAssignments[cKey])?.name || '') : ''}"
+                                                           onfocus="window.showOptions('${cKey}')"
+                                                           oninput="window.filterOptions('${cKey}', this.value)"
+                                                           onblur="window.hideOptions('${cKey}')">
+                                                    <div class="options-list" id="options-${cKey}">
+                                                        <div class="option-item text-slate-400 italic" onclick="window.selectFaculty('${cKey}', '', '')">-- NONE --</div>
+                                                        ${filteredFaculty.map(f => `
+                                                            <div class="option-item ${classAssignments[cKey] === f._id ? 'selected' : ''}" 
+                                                                 data-name="${f.name.toUpperCase()}"
+                                                                 onmousedown="window.selectFaculty('${cKey}', '${f._id}', '${f.name.replace(/'/g, "\\'")}')">
+                                                                ${f.name}
+                                                            </div>
+                                                        `).join('')}
+                                                    </div>
+                                                </div>
+                                                <button type="button" ${!isTimeValid ? 'disabled' : ''} onclick="window.sendIndividualRequest('${cKey}', ${JSON.stringify(c).replace(/"/g, '&quot;')})" 
+                                                         class="w-full sm:w-auto px-6 py-2.5 ${!isTimeValid ? 'bg-slate-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} text-white rounded-xl text-[11px] font-black uppercase shadow-lg active:scale-95 transition-all whitespace-nowrap">
+                                                    ${status === 'rejected' ? 'Retry Request' : 'Send Request'}
                                                 </button>`
                                             }
                                         </div>
                                     </div>`;
-                                }).join('')}
+                                }).join(''))}
                             </div>
                         </div>`;
                 }
                 container.innerHTML = html;
+                
+                // POPULATE LIVE SHEET PREVIEW (NEW)
+                const previewBody = document.getElementById('sheetPreviewBody');
+                if (previewBody) {
+                    let previewHtml = '';
+                    let totalClassesCount = 0;
+                    
+                    // Unified Header/Title style matching formal sheet
+                    const previewHeader = document.getElementById('sheetPreviewHeader');
+                    if (previewHeader) {
+                        previewHeader.innerHTML = `
+                            <div class="text-center mb-2">
+                                <h3 class="text-sm font-black uppercase tracking-widest">LEAVE PERIOD CLASSES PLAN*</h3>
+                            </div>
+                        `;
+                    }
+                    
+                    const previewKeys = mode === 'full'
+                        ? leavePeriodDates.map(d => d.dk)
+                        : orderedKeys;
+
+                    for (const dk of previewKeys) {
+                        const group = grouped[dk];
+                        if (!group) continue;
+                        const isMarkedNoClass = noClassDates.has(dk);
+                        const isNaturallyEmpty = classesFetched && group.classes.length === 0;
+                        const isPendingFetch = mode === 'full' && !classesFetched;
+                        const showAsNoClass = isMarkedNoClass || isNaturallyEmpty;
+
+                        if (isPendingFetch) {
+                            totalClassesCount++;
+                            previewHtml += `
+                            <tr class="border-b border-slate-900 h-8">
+                                <td class="border-r border-slate-900 p-1 font-bold text-center">
+                                    <div class="text-[10px]">${group.displayDate}</div>
+                                    <div class="text-[8px] opacity-70 uppercase tracking-tighter">${group.day}</div>
+                                </td>
+                                <td colspan="4" class="border-r border-slate-900 p-2 text-center text-[9px] font-black text-slate-500 uppercase italic">—</td>
+                                <td class="p-1 text-center text-[8px] font-black uppercase italic text-slate-400">Pending</td>
+                            </tr>`;
+                            continue;
+                        }
+                        if (showAsNoClass) {
+                            totalClassesCount++;
+                            previewHtml += `
+                            <tr class="border-b border-slate-900 h-8">
+                                <td class="border-r border-slate-900 p-1 font-bold text-center">
+                                    <div class="text-[10px]">${group.displayDate}</div>
+                                    <div class="text-[8px] opacity-70 uppercase tracking-tighter">${group.day}</div>
+                                </td>
+                                <td colspan="4" class="border-r border-slate-900 p-2 text-center text-[9px] font-black text-indigo-700 uppercase italic">No class — HOD permission</td>
+                                <td class="p-1 text-center text-[8px] font-black uppercase italic text-indigo-600">N/A</td>
+                            </tr>`;
+                            continue;
+                        }
+                        group.classes.forEach((c, index) => {
+                            totalClassesCount++;
+                            const cKey = getClassKey(c);
+                            const status = (liveStatus[cKey] || 'None').toLowerCase();
+                            const facultyId = classAssignments[cKey];
+                            const facultyName = facultyId ? (availableFaculty.find(f => f._id === facultyId)?.name || '________________') : '________________';
+                            
+                            let statusText = 'PENDING';
+                            let statusClass = 'text-slate-400';
+                            
+                            if (['accepted', 'approved', 'finalized'].includes(status)) {
+                                statusText = 'APPROVED';
+                                statusClass = 'text-emerald-700';
+                            } else if (status === 'rejected') {
+                                statusText = 'REJECTED';
+                                statusClass = 'text-rose-700';
+                            }
+
+                            previewHtml += `
+                            <tr class="border-b border-slate-900 h-8">
+                                ${index === 0 ? `
+                                <td class="border-r border-slate-900 p-1 font-bold text-center" rowspan="${group.classes.length}">
+                                    <div class="text-[10px]">${group.displayDate}</div>
+                                    <div class="text-[8px] opacity-70 uppercase tracking-tighter">${group.day}</div>
+                                </td>` : ''}
+                                <td class="border-r border-slate-900 p-1 text-center font-bold">${c.class || 'N/A'}</td>
+                                <td class="border-r border-slate-900 p-1 text-center">${c.section || '-'}</td>
+                                <td class="border-r border-slate-900 p-1 text-center font-bold">${c.period}</td>
+                                <td class="border-r border-slate-900 p-2 font-bold text-slate-800 text-[9px]">
+                                    ${facultyName}
+                                </td>
+                                <td class="p-1 text-center text-[8px] font-black uppercase italic leading-none ${statusClass}">
+                                    ${statusText}
+                                </td>
+                            </tr>`;
+                        });
+                    }
+
+                    // Fill remaining rows up to at least 5 total rows if needed for formal look
+                    if (totalClassesCount < 5) {
+                        for (let i = 0; i < (5 - totalClassesCount); i++) {
+                            previewHtml += `
+                            <tr class="border-b border-slate-900 h-8">
+                                <td class="border-r border-slate-900 p-2"></td>
+                                <td class="border-r border-slate-900 p-2"></td>
+                                <td class="border-r border-slate-900 p-2"></td>
+                                <td class="border-r border-slate-900 p-2"></td>
+                                <td class="border-r border-slate-900 p-2"></td>
+                                <td class="p-2"></td>
+                            </tr>`;
+                        }
+                    }
+                    previewBody.innerHTML = previewHtml;
+                    document.getElementById('sheetPreviewSection').classList.remove('hidden');
+                }
             } else {
-                container.innerHTML = `<div class="py-12 text-center border-2 border-dashed border-slate-200/60 rounded-3xl bg-slate-50/20"><div class="text-[11px] font-black uppercase text-slate-500 tracking-wider">Select Dates to Start</div></div>`;
+                let msg = mode === 'time' ? 'Set Time to Check Classes' : 'Select Dates to Start';
+                if (mode === 'full' && fromDateInput?.value && toDateInput?.value) {
+                    refreshLeavePeriodDates();
+                    if (leavePeriodDates.length === 0) {
+                        msg = 'No working days in range (Sundays excluded)';
+                    }
+                }
+                container.innerHTML = `<div class="py-12 text-center border-2 border-dashed border-slate-200/60 rounded-3xl bg-slate-50/20"><div class="text-[11px] font-black uppercase text-slate-500 tracking-wider">${msg}</div></div>`;
+                
+                // Clear preview table
+                const previewBody = document.getElementById('sheetPreviewBody');
+                if (previewBody) {
+                    previewBody.innerHTML = `<tr class="border-b border-slate-900 h-8"><td colspan="6" class="p-4 text-center text-slate-400 italic">Select dates to generate preview</td></tr>`;
+                }
             }
-            validateAndRefresh();
         }
 
         window.resetLeaveType = () => {
@@ -627,12 +1711,141 @@
             // Optional: reset to first type with balance? Or just let them choose.
         };
 
-        [fromDateInput, toDateInput].forEach(el => el && el.addEventListener('input', updateClasses));
-        leaveReason.addEventListener('input', validateAndRefresh);
+        const pDateInput = document.getElementById('permissionDate');
+        const inputElements = [fromDateInput, toDateInput, halfDayCheck, leaveSession, pDateInput];
         
-        loadDraft();
-        if (fromDateInput?.value && toDateInput?.value) updateClasses();
-        validateAndRefresh();
+        // Ensure pDateInput change triggers updateClasses
+        if (pDateInput) {
+            pDateInput.addEventListener('change', () => {
+                // If we're in time mode, use permissionDate value for fromDate logic
+                if (fromDateInput && pDateInput.value) fromDateInput.value = pDateInput.value;
+                updateClasses();
+            });
+        }
+
+        // Custom 12h Sync
+        window.syncTime = (prefix) => {
+            if (prefix === 'from' || prefix === 'to') hasInteractedWithTime = true;
+            const h = document.getElementById(prefix[0] + 'Hour').value;
+            const m = document.getElementById(prefix[0] + 'Min').value;
+            const p = document.getElementById(prefix[0] + 'Period').value;
+            
+            let hh = parseInt(h);
+            if (p === 'PM' && hh < 12) hh += 12;
+            if (p === 'AM' && hh === 12) hh = 0;
+            
+            const time24 = `${String(hh).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            document.getElementById('time' + prefix.charAt(0).toUpperCase() + prefix.slice(1)).value = time24;
+            
+            resetHodPermission();
+            validateAndRefresh();
+            
+            // Direct show movement: Trigger class fetch if we have valid-ish times
+            if (hh !== undefined) {
+                const tFrom = document.getElementById('timeFrom').value;
+                const tTo = document.getElementById('timeTo').value;
+                if (tFrom && tTo && tFrom !== tTo) {
+                    updateClasses();
+                }
+            }
+        };
+
+        inputElements.forEach(el => {
+            if (el) {
+                const eventType = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : (el.type === 'time' ? 'change' : 'input');
+                el.addEventListener(eventType, () => {
+                    resetHodPermission();
+                    if (el === fromDateInput || el === toDateInput) {
+                        classesFetched = false;
+                        refreshLeavePeriodDates();
+                        renderClasses();
+                    }
+                    validateAndRefresh();
+                    if (el === fromDateInput || el === toDateInput || el === halfDayCheck || el === leaveSession || el.id === 'timeFrom' || el.id === 'timeTo') {
+                        updateClasses();
+                    }
+                });
+            }
+        });
+
+        leaveReason.addEventListener('input', () => {
+            resetHodPermission();
+            validateAndRefresh();
+        });
+
+        // Searchable Dropdown Logic
+        window.showOptions = (key) => {
+            const list = document.getElementById(`options-${key}`);
+            if (list) {
+                list.style.display = 'block';
+                // Set high z-index on parent row to ensure dropdown is on top
+                const row = list.closest('.relative');
+                if (row) row.style.zIndex = '100';
+            }
+        };
+
+        window.filterOptions = (key, query) => {
+            const list = document.getElementById(`options-${key}`);
+            if (!list) return;
+            const items = list.querySelectorAll('.option-item');
+            const q = query.toUpperCase();
+            items.forEach(item => {
+                const name = item.getAttribute('data-name') || '';
+                if (name.includes(q) || q === '') {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        };
+
+        window.hideOptions = (key) => {
+            // Delay to allow onclick to fire
+            setTimeout(() => {
+                const list = document.getElementById(`options-${key}`);
+                if (list) {
+                    list.style.display = 'none';
+                    // Reset z-index on parent row
+                    const row = list.closest('.relative');
+                    if (row) row.style.zIndex = '';
+                }
+            }, 200);
+        };
+
+        window.selectFaculty = (key, id, name) => {
+            const dropdown = document.getElementById(`dropdown-${key}`);
+            const input = dropdown.querySelector('.search-input');
+            input.value = name;
+            window.tempAssign(key, id);
+            const list = document.getElementById(`options-${key}`);
+            if (list) list.style.display = 'none';
+        };
+        
+        async function init() {
+            // Set current date for permission
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
+            const displayStr = `${day}-${month}-${year}`;
+            
+            if (pDateInput) {
+                pDateInput.value = dateStr;
+                const displayEl = document.getElementById('displayPermissionDate');
+                if (displayEl) displayEl.innerText = displayStr;
+            }
+
+            await fetchBalances(); // Load types list
+            await loadDraft();     // Restore selected type from draft
+            await fetchBalances(); // Sync UI badge and grid highlights
+            
+            if (mode === 'time') {
+                if (fromDateInput) fromDateInput.value = dateStr;
+                updateClasses();
+            }
+        }
+        init();
         
         if (typeof socket !== 'undefined') {
             socket.on('leave_types_updated', function() {
