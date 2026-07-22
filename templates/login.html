@@ -32,19 +32,19 @@
         {% set role = request.args.get('role') %}
         {% if role == 'admin' %}
         {% set page_title = 'Management Login' %}
-        {% set default_user = 'admin' %}
-        {% set default_pass = 'admin123' %}
+        {% set default_user = request.form.get('username') or '' %}
+        {% set default_pass = '' %}
         {% set icon_class = 'fas fa-user-shield' %}
         {% set bg_color = 'bg-slate-900' %}
         {% elif role == 'lecturer' %}
         {% set page_title = 'Faculty Login' %}
-        {% set default_user = 'lecturer' %}
-        {% set default_pass = 'lect123' %}
+        {% set default_user = request.form.get('username') or '' %}
+        {% set default_pass = '' %}
         {% set icon_class = 'fas fa-chalkboard-teacher' %}
         {% set bg_color = 'bg-indigo-700' %}
         {% else %}
         {% set page_title = 'Welcome Back' %}
-        {% set default_user = '' %}
+        {% set default_user = request.form.get('username') or '' %}
         {% set default_pass = '' %}
         {% set icon_class = 'fas fa-university' %}
         {% set bg_color = 'bg-indigo-700' %}
@@ -60,7 +60,7 @@
                 <p class="text-indigo-200 mt-2">Sign in to continue</p>
             </div>
 
-            <form action="{{ url_for('login') }}" method="POST" class="flex-1 p-6 sm:p-8 space-y-6">
+            <form action="{{ request.full_path }}" method="POST" class="flex-1 p-6 sm:p-8 space-y-6">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -102,13 +102,10 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <input type="checkbox" id="remember"
-                            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded">
-                        <label for="remember" class="ml-2 block text-sm text-slate-600">Remember me</label>
-                    </div>
-                    <a href="#" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">Forgot password?</a>
+                <div class="flex items-center">
+                    <input type="checkbox" id="remember" name="remember"
+                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded">
+                    <label for="remember" class="ml-2 block text-sm text-slate-600">Remember me</label>
                 </div>
 
                 <button type="submit"

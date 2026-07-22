@@ -399,7 +399,7 @@
         
         #daySelector {
             gap: 6px !important;
-            justify-content: space-between;
+            padding: 0 16px;
         }
 
         #timelineSwipeArea {
@@ -1243,5 +1243,99 @@
             await window.Alert("Network Error", "Network error: " + e.message, "wifi");
         }
     }
+
+    // Auto-sync accepted assignments
+    {% if accepted_assignments %}
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Wait a small amount for the page to render fully
+        setTimeout(async () => {
+            try {
+                const assignments = {{ accepted_assignments | tojson | safe }};
+                if (!assignments || assignments.length === 0) return;
+                
+                let updatesNeeded = [];
+                let newTimetableData = JSON.parse(JSON.stringify(currentData)); // Deep copy
+                let hasChanges = false;
+                
+                assignments.forEach(a => {
+                    const c = a.class_details;
+                    if (!c) return;
+                    
+                    const day = (c.day || '').toUpperCase();
+                    const time = c.time;
+                    const subject = c.subject;
+                    if (!day || !time || !subject) return;
+                    
+                    // Find matching period index
+                    let periodKey = null;
+                    if (newTimetableData.timetable && newTimetableData.timetable.periods) {
+                        for (let i = 0; i < newTimetableData.timetable.periods.length; i++) {
+                            if (newTimetableData.timetable.periods[i].time === time) {
+                                periodKey = newTimetableData.timetable.periods[i].period;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (periodKey && newTimetableData.timetable && newTimetableData.timetable.days) {
+                        // Check day
+                        const dayData = newTimetableData.timetable.days.find(d => d.day.toUpperCase() === day);
+                        if (dayData) {
+                            if (!dayData.slots) dayData.slots = {};
+                            const currentSlot = dayData.slots[periodKey];
+                            const currentSubject = currentSlot ? currentSlot.subject : '';
+                            
+                            if (currentSubject !== subject) {
+                                updatesNeeded.push({
+                                    day: day,
+                                    time: time,
+                                    periodKey: periodKey,
+                                    oldSubject: currentSubject || 'Empty Slot',
+                                    newSubject: subject
+                                });
+                                dayData.slots[periodKey] = { subject: subject, faculty: "SUBSTITUTION" };
+                                hasChanges = true;
+                            }
+                        }
+                    }
+                });
+                
+                if (hasChanges && updatesNeeded.length > 0) {
+                    let msg = "You have accepted class substitutions for TODAY that are not yet in your timetable. Would you like to update your timetable to reflect these assignments?\n\n";
+                    updatesNeeded.forEach(u => {
+                        msg += `${u.day} | ${u.time}\nChange: ${u.oldSubject} -> ${u.newSubject}\n\n`;
+                    });
+                    
+                    const confirmed = await window.Confirm(
+                        "Update Timetable?", 
+                        msg, 
+                        "calendar-plus", 
+                        "Yes, Update Timetable", 
+                        "No, Cancel"
+                    );
+                    
+                    if (confirmed) {
+                        const resp = await fetch('/lecturer/timetable/edit', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({ structured_json: JSON.stringify(newTimetableData) })
+                        });
+                        const result = await resp.json();
+                        if (resp.ok && result.success) {
+                            await window.Alert("Success", "Timetable updated with substitutions!", "check-circle");
+                            window.location.reload();
+                        } else {
+                            await window.Alert("Error", "Failed to update timetable.", "exclamation-circle");
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error auto-syncing timetable:", err);
+            }
+        }, 500); // slight delay so it pops up cleanly
+    });
+    {% endif %}
 </script>
 {% endblock %}

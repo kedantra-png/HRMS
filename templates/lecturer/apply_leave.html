@@ -833,7 +833,7 @@
                 const key = getClassKey(c);
                 const allocId = Object.keys(allocationToIdx).find(id => allocationToIdx[id] === key);
                 const status = (liveStatus[key] || '').toLowerCase();
-                if (allocId && ['pending', 'pending_faculty', 'requested'].includes(status)) {
+                if (allocId && ['pending', 'pending_faculty', 'requested', 'accepted', 'approved', 'finalized'].includes(status)) {
                     try {
                         await fetch(`/lecturer/api/cancel-substitution/${allocId}`, { method: 'POST' });
                     } catch (e) { console.error(e); }
@@ -1522,6 +1522,21 @@
                                         statusHtml = '<span class="text-[9px] font-black text-amber-600 animate-pulse uppercase italic"><i class="fas fa-sync fa-spin"></i> Processing...</span>';
                                     }
 
+                                    let callBtnHtml = '';
+                                    if (['pending', 'pending_faculty', 'requested'].includes(status) && classAssignments[cKey]) {
+                                        const assignedFid = classAssignments[cKey];
+                                        const assignedFacultyObj = availableFaculty.find(f => f._id === assignedFid);
+                                        if (assignedFacultyObj && assignedFacultyObj.phone) {
+                                            let phone = assignedFacultyObj.phone.replace(/\D/g,'');
+                                            if (phone.length === 10) phone = '91' + phone;
+                                            const waMsg = encodeURIComponent(`Hi ${assignedFacultyObj.name},\nCould you please substitute my class?\n\n*Subject:* ${c.subject}\n*Time:* ${c.time}\n*Room:* ${c.room || 'TBD'}\n\nPlease check the HRMS dashboard to accept. Thanks!`);
+                                            callBtnHtml = `<div class="flex w-full sm:w-auto gap-2">
+                                                <a href="tel:${phone}" class="flex-1 sm:flex-none py-2.5 px-3 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 border border-green-200 shadow-sm transition-all active:scale-95 text-center"><i class="fas fa-phone-alt"></i> Call</a>
+                                                <a href="https://wa.me/${phone}?text=${waMsg}" target="_blank" class="flex-1 sm:flex-none py-2.5 px-3 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 text-center"><i class="fab fa-whatsapp text-sm"></i> WhatsApp</a>
+                                            </div>`;
+                                        }
+                                    }
+
                                     return `
                                     <div class="relative p-3 md:p-4 border rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4 transition-all ${rowClass}">
                                         <div class="flex-1 min-w-0">
@@ -1534,16 +1549,16 @@
                                                 <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">Room ${c.room || 'TBD'}</div>
                                             </div>
                                         </div>
-                                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 mt-1 sm:mt-0">
+                                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 mt-1 sm:mt-0 w-full sm:w-auto">
                                             ${(status === 'accepted' || status === 'approved' || status === 'finalized') ? 
-                                                `<div class="w-full py-2.5 px-4 flex items-center justify-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-100/30 rounded-xl border border-emerald-200/50 uppercase italic tracking-tighter shadow-sm">
+                                                `<div class="w-full sm:flex-1 py-2.5 px-4 flex items-center justify-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-100/30 rounded-xl border border-emerald-200/50 uppercase italic tracking-tighter shadow-sm">
                                                     <i class="fas fa-check-double"></i> Assignment Fixed
                                                 </div>` :
                                               (status === 'pending' || status === 'pending_faculty' || status === 'requested') ?
                                                 `<button type="button" onclick="window.cancelRequest('${cKey}')" 
-                                                         class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border border-slate-200 shadow-sm transition-all active:scale-95">
+                                                         class="w-full sm:flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-2 border border-slate-200 shadow-sm transition-all active:scale-95">
                                                     <i class="fas fa-undo"></i> Recall Request
-                                                </button>` :
+                                                </button>${callBtnHtml}` :
                                                 `<div class="searchable-dropdown w-full sm:w-48" id="dropdown-${cKey}">
                                                     <input type="text" 
                                                            placeholder="TYPE NAME..."

@@ -148,7 +148,8 @@ def login():
             flash('Invalid Password', 'danger')
         else:
             user_obj = User(user_data)
-            login_user(user_obj)
+            remember = 'remember' in request.form
+            login_user(user_obj, remember=remember)
             if user_obj.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             return redirect(url_for('lecturer_dashboard'))
@@ -3786,6 +3787,78 @@ def get_thresholds_for(date_obj, staff_type, faculty_id=None):
         
     return checkin_deadline, checkout_after
 
+def load_json_attendance_file(source):
+    """Safely loads attendance JSON files, supporting standard JSON,
+    duplicate key JSON objects (which are split into distinct session records),
+    and JSONL line-by-line files.
+    """
+    def parse_with_dup_keys(pairs):
+        keys = [k for k, v in pairs]
+        if keys.count('checkin') > 1 or keys.count('checkout') > 1:
+            records = []
+            base_meta = {}
+            curr_rec = {}
+            for k, v in pairs:
+                if k in ('checkin', 'checkout'):
+                    if k in curr_rec:
+                        records.append(curr_rec)
+                        curr_rec = {}
+                    curr_rec[k] = v
+                else:
+                    base_meta[k] = v
+            if curr_rec:
+                records.append(curr_rec)
+            for r in records:
+                r.update(base_meta)
+            return records
+        return dict(pairs)
+
+    raw_data = None
+    try:
+        if isinstance(source, (str, os.PathLike)) and os.path.exists(str(source)):
+            with open(source, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+        elif hasattr(source, 'read'):
+            content = source.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+            content = content.strip()
+        elif isinstance(source, str):
+            content = source.strip()
+        else:
+            return []
+
+        if not content:
+            return []
+
+        try:
+            raw_data = json.loads(content, object_pairs_hook=parse_with_dup_keys)
+        except Exception:
+            raw_data = []
+            for line in content.splitlines():
+                line_str = line.strip()
+                if line_str:
+                    try:
+                        parsed = json.loads(line_str, object_pairs_hook=parse_with_dup_keys)
+                        if isinstance(parsed, list): raw_data.extend(parsed)
+                        elif isinstance(parsed, dict): raw_data.append(parsed)
+                    except Exception:
+                        pass
+    except Exception:
+        return []
+
+    flattened = []
+    if isinstance(raw_data, list):
+        for item in raw_data:
+            if isinstance(item, list):
+                flattened.extend(item)
+            elif isinstance(item, dict):
+                flattened.append(item)
+        return flattened
+    elif isinstance(raw_data, dict):
+        return [raw_data]
+    return []
+
 def format_to_hhmmss(seconds):
     if seconds <= 0: return "00:00:00"
     h = seconds // 3600
@@ -3800,11 +3873,12 @@ def compute_daily_delay(records, date_obj, user_doc):
     checkins = [parse_ts(r.get('checkin')) for r in records if r.get('checkin')]
     checkouts = [parse_ts(r.get('checkout')) for r in records if r.get('checkout')]
     
-    if not checkins or not checkouts: return 'Absent'
+    if not checkins: return 'Absent'
     
     # 1. Define the Required Duty Window for the day
     staff_type = determine_staff_type(user_doc)
-    deadline_in, threshold_out = get_thresholds_for(date_obj, staff_type, user_doc.get('staff_id'))
+    faculty_id = user_doc.get('staff_id') if isinstance(user_doc, dict) else (user_doc if isinstance(user_doc, str) else None)
+    deadline_in, threshold_out = get_thresholds_for(date_obj, staff_type, faculty_id)
     
     ref_date = min(checkins).date()
     req_start = datetime.combine(ref_date, deadline_in)
@@ -3814,18 +3888,16 @@ def compute_daily_delay(records, date_obj, user_doc):
     covered_intervals = []
     
     # Add actual physical attendance
-    # We pair each checkin with its corresponding checkout (if available)
     for r in records:
         ci = parse_ts(r.get('checkin'))
         co = parse_ts(r.get('checkout'))
         if ci and co:
             covered_intervals.append((ci, co))
         elif ci:
-            # If no checkout yet, and it's today, we can assume they are still here
-            # But for delay calc, we usually only care about closed intervals or early-in.
-            # To be safe, we'll treat a missing checkout as "present until now" if it's today.
             if ref_date == datetime.now().date():
                 covered_intervals.append((ci, datetime.now()))
+            else:
+                covered_intervals.append((ci, req_end))
     
     # Add Permissions/Leaves from status_note
     status_note = ""
@@ -3979,7 +4051,7 @@ def lecturer_attendance():
                 curr += timedelta(days=1)
         except: pass
         
-    permission_dates = {p['date']: "Permission" for p in approved_permissions if p.get('date')}
+    permission_dates = {p['date']: p for p in approved_permissions if p.get('date')}
 
     if base_dir and debug_info["dir_exists"] and staff_id:
         for fname in os.listdir(base_dir):
@@ -3996,57 +4068,48 @@ def lecturer_attendance():
                 display_date = iso_date
 
             try:
-                with open(fpath, encoding="utf-8") as f:
+                data = load_json_attendance_file(fpath)
+
+                user_rows = [r for r in data if str(r.get("staff_id") or "").strip().upper() == staff_id.upper()]
+                if user_rows:
+                    perm = permission_dates.get(iso_date)
+                    if perm and isinstance(perm, dict):
+                        t_from = perm.get('time_from') or perm.get('start_time') or ""
+                        t_to = perm.get('time_to') or perm.get('end_time') or ""
+                        p_note = f"Permission ({t_from} to {t_to})" if (t_from and t_to) else "Permission"
+                        for r in user_rows:
+                            if not r.get('status_note'):
+                                r['status_note'] = p_note
+
+                    checkins = [parse_ts(r.get("checkin")) for r in user_rows if r.get("checkin")]
+                    checkouts = [parse_ts(r.get("checkout")) for r in user_rows if r.get("checkout")]
+                    min_ci = min(checkins) if checkins else None
+                    max_co = max(checkouts) if checkouts else None
+                    time_in = min_ci.strftime("%H:%M") if min_ci else ""
+                    time_out = max_co.strftime("%H:%M") if max_co else ""
+                    status = "Present" if (min_ci and max_co) else ("Checked-in" if min_ci else "Unknown")
+
                     try:
-                        data = json.load(f)
-                        if isinstance(data, dict): data = [data]
+                        dt_obj = datetime.fromisoformat(iso_date)
+                        delay_val = compute_daily_delay(user_rows, dt_obj, staff_doc)
                     except:
-                        f.seek(0)
-                        data = [json.loads(line) for line in f if line.strip()]
+                        delay_val = "00:00:00"
 
-                user_found = False
-                for row in data:
-                    if row.get("staff_id") == staff_id:
-                        user_found = True
-                        checkin = row.get("checkin") or ""
-                        checkout = row.get("checkout") or ""
-                        time_in = ""
-                        time_out = ""
-                        
-                        if checkin:
-                            try: time_in = datetime.fromisoformat(checkin).time().strftime("%H:%M")
-                            except: time_in = checkin[11:16] if len(checkin) >= 16 else ""
-                        
-                        if checkout:
-                            try: time_out = datetime.fromisoformat(checkout).time().strftime("%H:%M")
-                            except: time_out = checkout[11:16] if len(checkout) >= 16 else ""
+                    # Override status if on leave/permission
+                    l_type = leave_dates.get(iso_date)
+                    p_type = permission_dates.get(iso_date)
+                    if l_type: status = l_type
+                    elif p_type: status = "Permission"
 
-                        status = "Present" if (checkin and checkout) else ("Checked-in" if checkin else "Unknown")
-                        
-                        try:
-                            dt_obj = datetime.fromisoformat(iso_date)
-                            delay_val = compute_daily_delay([row], dt_obj, staff_doc)
-                        except:
-                            delay_val = "00:00:00"
-
-                        # Override status if on leave/permission
-                        l_type = leave_dates.get(iso_date)
-                        p_type = permission_dates.get(iso_date)
-                        if l_type: status = l_type
-                        elif p_type: status = "Permission"
-
-                        records.append({
-
-                            "date": iso_date,
-                            "display_date": display_date,
-                            "time_in": time_in,
-                            "time_out": time_out,
-                            "status": status,
-                            "delay": delay_val
-                        })
-                        break
-                
-                if not user_found:
+                    records.append({
+                        "date": iso_date,
+                        "display_date": display_date,
+                        "time_in": time_in,
+                        "time_out": time_out,
+                        "status": status,
+                        "delay": delay_val
+                    })
+                else:
                     # Override status if on leave/permission even if no record in file
                     l_type = leave_dates.get(iso_date)
                     p_type = permission_dates.get(iso_date)
@@ -4143,36 +4206,36 @@ def admin_faculty_attendance():
             date_part = fname.replace(".json", "")
             
             try:
-                with open(fpath, encoding="utf-8") as f:
-                    try:
-                        data = json.load(f)
-                        if isinstance(data, dict): data = [data]
-                    except:
-                        f.seek(0)
-                        data = [json.loads(line) for line in f if line.strip()]
+                data = load_json_attendance_file(fpath)
                 
+                grouped = {}
                 for row in data:
-                    s_id = str(row.get("staff_id") or "").upper()
-                    if not s_id: continue
-                    
+                    s_id = str(row.get("staff_id") or "").strip().upper()
+                    if s_id:
+                        if s_id not in grouped: grouped[s_id] = []
+                        grouped[s_id].append(row)
+
+                for s_id, s_rows in grouped.items():
                     if staff_filter and s_id != staff_filter:
                         continue
                     
-                    # For summary stats, we only care about the view_date
                     if date_part == view_date:
-                        attendance_data_map[s_id] = row
+                        attendance_data_map[s_id] = s_rows[0]
 
-                    # Add to records list for the table
                     u_doc = staff_lookup.get(s_id)
                     try:
                         dt_obj = datetime.fromisoformat(date_part)
-                        delay_val = compute_daily_delay([row], dt_obj, u_doc)
+                        delay_val = compute_daily_delay(s_rows, dt_obj, u_doc)
                     except:
                         delay_val = "00:00:00"
 
-                    status = "Present" if (row.get("checkin") and row.get("checkout")) else ("Checked-in" if row.get("checkin") else "Unknown")
+                    checkins = [parse_ts(r.get("checkin")) for r in s_rows if r.get("checkin")]
+                    checkouts = [parse_ts(r.get("checkout")) for r in s_rows if r.get("checkout")]
+                    min_ci = min(checkins) if checkins else None
+                    max_co = max(checkouts) if checkouts else None
+
+                    status = "Present" if (min_ci and max_co) else ("Checked-in" if min_ci else "Unknown")
                     
-                    # Override status if on leave/permission
                     if date_part == view_date:
                         l_type = leave_map.get(str(u_doc['_id']) if u_doc else "")
                         p_type = permission_map.get(str(u_doc['_id']) if u_doc else "") or permission_map.get(s_id)
@@ -4182,9 +4245,9 @@ def admin_faculty_attendance():
                     records.append({
                         "date": date_part,
                         "staff_id": s_id,
-                        "name": row.get("name") or (u_doc['name'] if u_doc else "Unknown"),
-                        "checkin": row.get("checkin") or "",
-                        "checkout": row.get("checkout") or "",
+                        "name": s_rows[0].get("name") or (u_doc['name'] if u_doc else "Unknown"),
+                        "checkin": min_ci.isoformat() if min_ci else "",
+                        "checkout": max_co.isoformat() if max_co else "",
                         "status": status,
                         "delay": delay_val
                     })
@@ -5067,12 +5130,30 @@ def lecturer_timetable():
     if tt_doc and tt_doc.get("image_path"):
         image_path = (tt_doc.get("image_path") or "").replace("\\", "/")
         image_url = url_for("static", filename=image_path)
+        
+    accepted_assignments_cursor = leave_class_allocations.find({
+        "assigned_to": str(current_user.id),
+        "status": {"$in": ["accepted", "approved"]}
+    })
+    
+    from datetime import datetime
+    now_str = datetime.now().strftime('%Y-%m-%d')
+    now_str2 = datetime.now().strftime('%d-%m-%Y')
+    now_str3 = datetime.now().strftime('%d/%m/%Y')
+    
+    accepted_assignments = []
+    for a in accepted_assignments_cursor:
+        date_str = a.get('class_details', {}).get('date', '')
+        if date_str in [now_str, now_str2, now_str3]:
+            a['_id'] = str(a['_id'])
+            accepted_assignments.append(a)
     
     return render_template(
         'lecturer/timetable.html',
         has_timetable=image_url is not None,
         timetable_image_url=image_url,
         structured=structured,
+        accepted_assignments=accepted_assignments
     )
 
 
@@ -5458,7 +5539,7 @@ def api_preview_classes():
     faculty = list(users.find({
         "role": "lecturer",
         "_id": {"$ne": ObjectId(current_user.id)}
-    }, {"name": 1, "staff_id": 1}).sort("name", 1))
+    }, {"name": 1, "staff_id": 1, "phone": 1}).sort("name", 1))
     
     for f in faculty:
         f['_id'] = str(f['_id'])
@@ -5905,9 +5986,35 @@ def my_class_assignments():
             notifications_raw.append(n)
 
 
+    # Fetch user timetable to check for existing subjects in requested slots
+    tt_doc = timetable.find_one({"lecturer_id": current_user.id})
+    structured = tt_doc.get("structured") if tt_doc else {}
+    
     # Convert notifications to JSON-serializable format
     notifications = []
     for n in notifications_raw:
+        class_details = n.get('class_details', {})
+        existing_subject = "Free Slot"
+        
+        if structured and class_details:
+            req_day = class_details.get('day', '').upper()
+            req_time = class_details.get('time', '')
+            
+            period_key = None
+            if structured.get('timetable') and structured['timetable'].get('periods'):
+                for p in structured['timetable']['periods']:
+                    if p.get('time') == req_time:
+                        period_key = p.get('period')
+                        break
+                        
+            if period_key and structured['timetable'].get('days'):
+                for d in structured['timetable']['days']:
+                    if d.get('day', '').upper() == req_day:
+                        slot = d.get('slots', {}).get(period_key, {})
+                        if slot and slot.get('subject'):
+                            existing_subject = slot.get('subject')
+                        break
+
         notifications.append({
             'id': str(n['_id']),
             'allocation_id': n.get('allocation_id'),
@@ -5916,11 +6023,11 @@ def my_class_assignments():
             'sender_id': n.get('sender_id'),
             'sender_name': n.get('sender_name'),
             'message': n.get('message'),
-            'class_details': n.get('class_details', {}),
+            'class_details': class_details,
             'status': n.get('status'),
-            'created_at': n.get('created_at')
+            'created_at': n.get('created_at'),
+            'existing_subject': existing_subject
         })
-    
     # Get all related allocations
     allocation_ids = [n.get('allocation_id') for n in notifications if n.get('allocation_id')]
     allocations = []
@@ -5936,16 +6043,66 @@ def my_class_assignments():
                 'status': alloc.get('status'),
                 'created_at': alloc.get('created_at')
             })
+    from datetime import datetime
     
+    upcoming_assignments = []
+    completed_assignments = []
+    now = datetime.now()
+    
+    for a in accepted_assignments:
+        c = a.get('class_details', {})
+        date_str = c.get('date', '')
+        time_str = c.get('time', '')
+        
+        is_completed = False
+        try:
+            if date_str:
+                end_time_str = time_str.split('-')[-1].strip().replace('.', ':')
+                time_parts = end_time_str.split(':')
+                hour = int(time_parts[0])
+                minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+                if hour < 8:
+                    hour += 12
+                    
+                if '-' in date_str and len(date_str) == 10:
+                    y, m, d = map(int, date_str.split('-'))
+                elif '-' in date_str:
+                    parts = date_str.split('-')
+                    y, m, d = (int(parts[0]), int(parts[1]), int(parts[2])) if len(parts[0]) == 4 else (int(parts[2]), int(parts[1]), int(parts[0]))
+                else:
+                    y, m, d = map(int, date_str.split('/'))
+                    
+                class_end_dt = datetime(y, m, d, hour, minute)
+                a['sort_dt'] = class_end_dt
+                if class_end_dt < now:
+                    is_completed = True
+        except Exception:
+            try:
+                if date_str and date_str < now.strftime('%Y-%m-%d'):
+                    is_completed = True
+                a['sort_dt'] = now
+            except:
+                a['sort_dt'] = now
+                
+        a['is_completed'] = is_completed
+        if is_completed:
+            completed_assignments.append(a)
+        else:
+            upcoming_assignments.append(a)
+            
+    upcoming_assignments.sort(key=lambda x: x.get('sort_dt', now))
+    completed_assignments.sort(key=lambda x: x.get('sort_dt', now), reverse=True)
+
     return render_template(
         'lecturer/my_assignments.html',
         notifications=notifications,
         allocations=allocations,
         accepted_assignments=accepted_assignments,
+        upcoming_assignments=upcoming_assignments,
+        completed_assignments=completed_assignments,
         hod_pending=hod_pending,
         is_hod=is_hod
     )
-
 
 @app.route('/lecturer/assignment/<allocation_id>/<action>', methods=['POST'])
 @login_required

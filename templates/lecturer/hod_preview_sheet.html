@@ -2,34 +2,139 @@
 
 {% block title %}HOD Review - {{ hod_req.requester_name }}{% endblock %}
 
+{% block head %}
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body.leave-sheet-page { overflow: hidden; min-height: 0 !important; height: 100dvh; }
+  body.leave-sheet-page footer { display: none !important; }
+  
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #f1f5f9;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .glass-header {
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(226,232,240,.8);
+    flex-shrink: 0;
+  }
+  .action-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .sheet-shell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    overflow: hidden;
+  }
+  @media (min-width: 640px) { .sheet-shell { padding: 12px; } }
+  .sheet-card {
+    flex: 1;
+    min-height: 0;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,.06);
+  }
+  .sheet-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 11px;
+    font-weight: 900;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    flex-shrink: 0;
+  }
+  .sheet-frame {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #e2e8f0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  @media (max-width: 640px) {
+    .sheet-frame { padding: 8px; justify-content: flex-start; }
+  }
+  
+
+  /* Print Styles Override */
+  @media print {
+    body.leave-sheet-page { height: auto !important; overflow: visible !important; }
+    main { height: auto !important; overflow: visible !important; display: block !important; background: white !important; }
+    .glass-header, .sheet-head, .sheet-shell { display: none !important; }
+    .sheet-frame { display: block !important; padding: 0 !important; background: white !important; overflow: visible !important; }
+    .sheet-card { border: none !important; box-shadow: none !important; border-radius: 0 !important; overflow: visible !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto py-4 md:py-8 no-print px-4">
-    <div class="flex flex-col md:flex-row justify-between items-center bg-white p-3 md:p-4 rounded-xl shadow-md gap-4">
-        <a href="{{ url_for('my_class_assignments') }}"
-            class="text-indigo-600 hover:text-indigo-800 transition-colors flex items-center font-bold text-sm md:text-base self-start md:self-auto">
-            <i class="fas fa-chevron-left mr-2"></i> Back to Requests
-        </a>
-        <div class="flex items-center gap-2 md:gap-3 w-full md:w-auto">
-            <button onclick="respondToHodRequest('{{ hod_req._id|string }}', 'approve')"
-                class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-2 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl font-black shadow-lg shadow-emerald-100 transition-all active:scale-95 flex items-center justify-center text-[10px] md:text-sm">
-                <i class="fas fa-check mr-1 md:mr-2"></i> APPROVE
-            </button>
-            <button onclick="respondToHodRequest('{{ hod_req._id|string }}', 'reject')"
-                class="flex-1 md:flex-none bg-white border-2 border-rose-100 text-rose-600 hover:bg-rose-50 px-2 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl font-black transition-all active:scale-95 flex items-center justify-center text-[10px] md:text-sm">
-                <i class="fas fa-times mr-1 md:mr-2"></i> REJECT
-            </button>
-            <button onclick="window.print()"
-                class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-3 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold border border-slate-200 flex items-center justify-center text-xs md:text-sm">
-                <i class="fas fa-print"></i>
-            </button>
-        </div>
+<script>document.body.classList.add('leave-sheet-page');</script>
+
+<div class="glass-header z-40 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
+  <div class="flex items-center gap-3 w-full sm:w-auto">
+    <div class="p-2 bg-indigo-600 rounded-xl shrink-0">
+      <i class="fas fa-file-signature text-white text-lg"></i>
     </div>
+    <div class="min-w-0 flex-1">
+      <h1 class="text-lg font-black text-slate-900 truncate">HOD Review</h1>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider truncate">{{ hod_req.requester_name }}</p>
+    </div>
+  </div>
+  <div class="action-toolbar flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto justify-end">
+    <a href="{{ url_for('my_class_assignments') }}" class="flex-1 sm:flex-none action-btn bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 justify-center">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    <button onclick="respondToHodRequest('{{ hod_req._id|string }}', 'reject')" class="flex-1 sm:flex-none action-btn bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 justify-center">
+      <i class="fas fa-times"></i> Reject
+    </button>
+    <button onclick="respondToHodRequest('{{ hod_req._id|string }}', 'approve')" class="flex-1 sm:flex-none action-btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200 justify-center">
+      <i class="fas fa-check"></i> Approve
+    </button>
+  </div>
 </div>
 
-<!-- FORM SHEET START -->
-<div class="leave-sheet-container bg-slate-100 py-6 min-h-screen">
-    <div class="leave-application-sheet mx-auto bg-white shadow-2xl p-10 md:p-12 print:shadow-none print:p-0 print:m-0"
-        style="width: 210mm; min-height: fit-content; max-width: 95vw;">
+<div class="sheet-shell">
+  <div class="sheet-card">
+    <div class="sheet-head no-print">
+      <i class="fas fa-file-pdf mr-1"></i> PDF SHEET PREVIEW
+    </div>
+    <div class="sheet-frame">
+      <!-- FORM SHEET START -->
+      <div class="leave-application-sheet bg-white shadow-xl md:shadow-2xl p-6 md:p-12 print:shadow-none print:p-0 print:m-0 shrink-0"
+           style="width: 210mm; min-height: fit-content;">
         <!-- Header -->
         <div class="text-center border-b-2 border-slate-900 pb-2 mb-4">
             <h1 class="text-xl font-black text-slate-900 uppercase tracking-tight">Dr. B. B. Hegde First Grade College, Kundapura</h1>
@@ -112,7 +217,7 @@
             <div class="flex flex-col md:flex-row md:items-start gap-1 md:gap-0">
                 <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase mt-0.5">Reason for the Leave</span>
                 <span class="hidden md:inline mr-2 mt-0.5">:</span>
-                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-1 font-medium text-slate-800 leading-relaxed italic min-h-[40px] text-sm md:text-base">
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-1 font-medium text-slate-800 leading-relaxed italic min-h-[40px] text-sm md:text-base break-all min-w-0">
                     {{ hod_req.reason or '__________________________________________________________________________' }}
                 </div>
             </div>
@@ -208,7 +313,9 @@
                 </div>
             </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <script>
@@ -283,4 +390,43 @@
         border-style: dotted;
     }
 </style>
+
+<script>
+    function scaleLeaveSheet() {
+        const sheet = document.querySelector('.leave-application-sheet');
+        const container = document.querySelector('.sheet-frame');
+        if (!sheet || !container) return;
+
+        sheet.style.transform = 'none';
+        sheet.style.maxWidth = window.innerWidth <= 820 ? 'none' : '100%';
+        
+        const containerWidth = container.clientWidth;
+        const isMobile = window.innerWidth <= 640;
+        const padding = isMobile ? 16 : 32;
+        const availableWidth = containerWidth - padding;
+        const originalWidth = sheet.offsetWidth || 794;
+
+        if (availableWidth < originalWidth) {
+            const scale = availableWidth / originalWidth;
+            sheet.style.transformOrigin = 'top left';
+            sheet.style.transform = `scale(${scale})`;
+            sheet.style.marginBottom = `-${sheet.offsetHeight * (1 - scale)}px`;
+            sheet.style.marginRight = `-${originalWidth * (1 - scale)}px`;
+        } else {
+            sheet.style.transform = 'none';
+            sheet.style.marginBottom = '0';
+            sheet.style.marginRight = '0';
+        }
+    }
+
+    window.addEventListener('resize', scaleLeaveSheet);
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(scaleLeaveSheet, 150);
+    });
+    
+    // Fallback for dynamically loaded content
+    if(document.readyState === 'complete') {
+        scaleLeaveSheet();
+    }
+</script>
 {% endblock %}

@@ -2,41 +2,151 @@
 
 {% block title %}Leave Application Sheet - {{ leave.lecturer_name }}{% endblock %}
 
+{% block head %}
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body.leave-sheet-page { overflow: hidden; min-height: 0 !important; height: 100dvh; }
+  body.leave-sheet-page footer { display: none !important; }
+  
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #f1f5f9;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .glass-header {
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(226,232,240,.8);
+    flex-shrink: 0;
+  }
+  .action-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+  }
+  @media (max-width: 640px) {
+    .action-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .action-toolbar > * { width: 100%; justify-content: center; }
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 12px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .sheet-shell {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    overflow: hidden;
+  }
+  @media (min-width: 640px) { .sheet-shell { padding: 12px; } }
+  .sheet-card {
+    flex: 1;
+    min-height: 0;
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,.06);
+  }
+  .sheet-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 11px;
+    font-weight: 900;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    flex-shrink: 0;
+  }
+  .sheet-frame {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #e2e8f0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  @media (max-width: 640px) {
+    .sheet-frame { padding: 8px; }
+  }
+  
+  /* Print Styles Override */
+  @media print {
+    body.leave-sheet-page { height: auto !important; overflow: visible !important; }
+    main { height: auto !important; overflow: visible !important; display: block !important; background: white !important; }
+    .glass-header, .sheet-head, .sheet-shell { display: none !important; }
+    .sheet-frame { display: block !important; padding: 0 !important; background: white !important; overflow: visible !important; }
+    .sheet-card { border: none !important; box-shadow: none !important; border-radius: 0 !important; overflow: visible !important; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto py-8 no-print">
-    <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-xl shadow-md gap-4">
-        <a href="{{ url_for('admin_dashboard' if current_user.role == 'admin' else 'lecturer_dashboard') }}" class="text-indigo-600 hover:text-indigo-800 transition-colors flex items-center font-bold">
-            <i class="fas fa-chevron-left mr-2"></i> Return to Dashboard
-        </a>
-        <div class="flex flex-wrap gap-3 items-center justify-end">
-            {% if current_user.role == 'admin' and leave.status|lower == 'pending' %}
-            <button type="button" id="sheet-btn-approve" onclick="reviewLeaveFromSheet('Approved')"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm flex items-center transition-all active:scale-95">
-                <i class="fas fa-check mr-2"></i> Approve
-            </button>
-            <button type="button" id="sheet-btn-reject" onclick="reviewLeaveFromSheet('Rejected')"
-                class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-lg font-bold shadow-sm flex items-center transition-all active:scale-95">
-                <i class="fas fa-times mr-2"></i> Reject
-            </button>
-            {% elif current_user.role == 'admin' %}
-            <span class="text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg
-                {% if leave.status|lower == 'approved' %}bg-emerald-100 text-emerald-800{% elif leave.status|lower == 'rejected' %}bg-rose-100 text-rose-800{% else %}bg-slate-100 text-slate-600{% endif %}">
-                {{ leave.status }}
-            </span>
-            {% endif %}
-            <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-6 py-3 rounded-lg font-bold shadow-sm flex items-center transition-all active:scale-95 border border-slate-200">
-                <i class="fas fa-print mr-2"></i> PRINT SHEET
-            </button>
-            <button onclick="exportToPDF()" class="bg-indigo-600 hover:bg-slate-800 text-white px-8 py-3 rounded-lg font-black shadow-lg flex items-center transition-all active:scale-95 group">
-                <i class="fas fa-file-pdf mr-3 group-hover:scale-125 transition-transform"></i> EXPORT TO PDF
-            </button>
-        </div>
+<script>document.body.classList.add('leave-sheet-page');</script>
+
+<div class="glass-header z-40 px-4 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
+  <div class="flex items-center gap-3 min-w-0 w-full sm:w-auto">
+    <div class="p-2 bg-indigo-600 rounded-xl shrink-0">
+      <i class="fas fa-file-signature text-white text-lg"></i>
     </div>
+    <div class="min-w-0">
+      <h1 class="text-lg font-black text-slate-900 truncate">Leave Application</h1>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ leave.lecturer_name }}</p>
+    </div>
+  </div>
+  <div class="action-toolbar">
+    <a href="{{ url_for('admin_dashboard' if current_user.role == 'admin' else 'lecturer_dashboard') }}" class="action-btn bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+    {% if current_user.role == 'admin' and leave.status|lower == 'pending' %}
+    <button type="button" id="sheet-btn-reject" onclick="reviewLeaveFromSheet('Rejected')" class="action-btn bg-white border border-rose-200 text-rose-600 hover:bg-rose-50">
+      <i class="fas fa-times"></i> Reject
+    </button>
+    <button type="button" id="sheet-btn-approve" onclick="reviewLeaveFromSheet('Approved')" class="action-btn bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-200">
+      <i class="fas fa-check"></i> Approve
+    </button>
+    {% elif current_user.role == 'admin' %}
+    <span class="action-btn {% if leave.status|lower == 'approved' %}bg-emerald-100 text-emerald-800{% elif leave.status|lower == 'rejected' %}bg-rose-100 text-rose-800{% else %}bg-slate-100 text-slate-600{% endif %}">
+      {{ leave.status }}
+    </span>
+    {% endif %}
+    <button onclick="exportToPDF()" class="action-btn bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200">
+      <i class="fas fa-file-pdf mr-1"></i> PDF
+    </button>
+  </div>
 </div>
 
-<!-- FORM SHEET START -->
-<div class="leave-sheet-container bg-slate-100 py-6 md:py-10 min-h-screen overflow-x-auto">
-    <div class="leave-application-sheet mx-auto bg-white shadow-2xl p-10 md:p-12 print:shadow-none print:p-0 print:m-0" style="width: 210mm; min-width: 210mm; min-height: fit-content;">
+<div class="sheet-shell">
+  <div class="sheet-card">
+    <div class="sheet-head no-print">
+      <i class="fas fa-file-pdf mr-1"></i> PDF SHEET PREVIEW
+    </div>
+    <div class="sheet-frame">
+      <!-- FORM SHEET START -->
+      <div class="leave-application-sheet bg-white shadow-xl md:shadow-2xl p-6 md:p-12 print:shadow-none print:p-0 print:m-0 shrink-0"
+           style="width: 210mm; min-height: fit-content;">
         <!-- Header -->
         <div class="text-center border-b-2 border-slate-900 pb-2 mb-4">
             <h1 class="text-xl font-black text-slate-900 uppercase tracking-tight">Dr. B. B. Hegde First Grade College, Kundapura</h1>
@@ -218,7 +328,9 @@
             </table>
         </div>
         {% endif %}
+      </div>
     </div>
+  </div>
 </div>
 
 
@@ -309,12 +421,26 @@ async function exportToPDF() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> GENERATING...';
     btn.disabled = true;
 
+    // Remove scaling to generate full-size PDF
+    const originalTransform = element.style.transform;
+    const originalMarginBottom = element.style.marginBottom;
+    const originalMarginRight = element.style.marginRight;
+    
+    element.style.transform = 'none';
+    element.style.marginBottom = '0px';
+    element.style.marginRight = '0px';
+
     try {
         await html2pdf().set(opt).from(element).save();
     } catch (error) {
         console.error('PDF Export failed:', error);
         alert('Failed to generate PDF. Please try printing instead.');
     } finally {
+        // Restore scaling
+        element.style.transform = originalTransform;
+        element.style.marginBottom = originalMarginBottom;
+        element.style.marginRight = originalMarginRight;
+        
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
@@ -362,5 +488,41 @@ async function reviewLeaveFromSheet(status) {
     }
 }
 {% endif %}
+
+function scaleLeaveSheet() {
+    const sheet = document.querySelector('.leave-application-sheet');
+    const container = document.querySelector('.sheet-frame');
+    if (!sheet || !container) return;
+
+    sheet.style.transform = 'none';
+    sheet.style.maxWidth = window.innerWidth <= 820 ? 'none' : '100%';
+    
+    const containerWidth = container.clientWidth;
+    const isMobile = window.innerWidth <= 640;
+    const padding = isMobile ? 16 : 32;
+    const availableWidth = containerWidth - padding;
+    const originalWidth = sheet.offsetWidth || 794;
+
+    if (availableWidth < originalWidth) {
+        const scale = availableWidth / originalWidth;
+        sheet.style.transformOrigin = 'top left';
+        sheet.style.transform = `scale(${scale})`;
+        sheet.style.marginBottom = `-${sheet.offsetHeight * (1 - scale)}px`;
+        sheet.style.marginRight = `-${originalWidth * (1 - scale)}px`;
+    } else {
+        sheet.style.transform = 'none';
+        sheet.style.marginBottom = '0';
+        sheet.style.marginRight = '0';
+    }
+}
+
+window.addEventListener('resize', scaleLeaveSheet);
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(scaleLeaveSheet, 150);
+});
+
+if(document.readyState === 'complete') {
+    scaleLeaveSheet();
+}
 </script>
 {% endblock %}

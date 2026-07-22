@@ -2,57 +2,90 @@
 
 {% block title %}My Class Assignments - HRMS{% endblock %}
 
+{% block head %}
+<style>
+    /* Premium UI Enhancements */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05);
+    }
+    
+    .hover-lift {
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -10px rgba(79, 70, 229, 0.25);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto py-8">
+<div class="max-w-5xl mx-auto py-8 md:py-12 px-4 sm:px-6">
     <!-- Header -->
-    <div class="mb-8 flex items-center justify-between">
+    <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-            <h1 class="text-3xl font-bold text-slate-800">My Class Assignments</h1>
-            <p class="text-slate-500 mt-2">Review and respond to class assignment requests from other faculty members</p>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-3">
+                <i class="fas fa-tasks"></i> Task Center
+            </div>
+            <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Class Assignments</h1>
+            <p class="text-slate-500 mt-2 text-sm md:text-base font-medium">Review and respond to substitution requests from colleagues</p>
         </div>
-        <a href="{{ url_for('lecturer_dashboard') }}" class="w-12 h-12 rounded-2xl bg-white shadow-lg border border-slate-100 flex items-center justify-center text-slate-600 hover:text-indigo-600 transition-all hover:scale-110 group" title="Back to Dashboard">
-            <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+        <a href="{{ url_for('lecturer_dashboard') }}" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm group">
+            <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> Back to Dashboard
         </a>
     </div>
 
     <!-- HOD Pending Requests (New) -->
     {% if hod_pending %}
-    <div class="mb-12 bg-white rounded-2xl shadow-xl shadow-indigo-100/50 border-2 border-indigo-50 overflow-hidden">
-        <div class="p-6 border-b border-indigo-50 bg-gradient-to-r from-indigo-600 to-purple-600">
-            <h2 class="text-xl font-bold text-white flex items-center">
-                <i class="fas fa-user-shield mr-3"></i>
-                HOD Permission Requests
-                <span class="ml-3 px-3 py-1 rounded-full bg-white/20 text-white text-sm font-bold backdrop-blur-md">
-                    {{ hod_pending|length }}
-                </span>
-            </h2>
-            <p class="text-indigo-100 text-[10px] font-bold uppercase mt-1 tracking-widest opacity-80">Faculty awaiting your approval to submit leave</p>
+    <div class="mb-12">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">HOD Permissions</h2>
+                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Awaiting Your Approval</p>
+            </div>
+            <div class="ml-auto flex items-center justify-center px-2 min-w-[2rem] h-8 rounded-full bg-rose-100 text-rose-600 font-black text-sm">
+                {{ hod_pending|length }}
+            </div>
         </div>
 
-        <div class="divide-y divide-slate-50">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             {% for h in hod_pending %}
-            <div class="p-4 md:p-6 hover:bg-indigo-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 group" id="hod-request-{{ h.id }}">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-xl md:rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg md:text-xl shadow-inner group-hover:scale-110 transition-transform">
-                        {{ h.requester_name[0] }}
+            <div class="glass-card rounded-2xl p-5 hover-lift relative overflow-hidden group" id="hod-request-{{ h.id }}">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150"></div>
+                
+                <div class="flex items-start justify-between gap-4 relative z-10">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border border-white flex items-center justify-center text-indigo-700 font-black text-lg shadow-sm shrink-0">
+                            {{ h.requester_name[0] }}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="font-black text-slate-800 text-[15px] sm:text-lg leading-tight break-words">{{ h.requester_name }}</h3>
+                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wide mt-1">
+                                <i class="far fa-clock shrink-0"></i> <span>{{ h.created_at.strftime('%d %b, %H:%M') }}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="min-w-0">
-                        <h3 class="font-black text-slate-800 uppercase tracking-tight text-sm md:text-lg truncate">{{ h.requester_name }}</h3>
-                        <p class="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase tracking-widest">Requested on {{ h.created_at.strftime('%d-%m-%Y %H:%M') }}</p>
-                    </div>
-                </div>
-                <div class="flex flex-wrap md:flex-nowrap gap-2 md:gap-3">
-                    <a href="{{ url_for('hod_preview_sheet', request_id=h.id) }}"
-                       class="flex-1 md:flex-none px-3 md:px-4 py-2 md:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase transition-all flex items-center justify-center whitespace-nowrap">
-                        <i class="fas fa-file-alt mr-2"></i> View Sheet
+                    <a href="{{ url_for('hod_preview_sheet', request_id=h.id) }}" title="Preview Sheet"
+                       class="w-10 h-10 shrink-0 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-colors shadow-sm">
+                        <i class="fas fa-file-alt"></i>
                     </a>
-                    <button onclick="respondToHodRequest('{{ h.id }}', 'approve')"
-                            class="flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center justify-center whitespace-nowrap">
-                        <i class="fas fa-check mr-2"></i> Approve
-                    </button>
+                </div>
+
+                <div class="flex gap-2 mt-5 relative z-10">
                     <button onclick="respondToHodRequest('{{ h.id }}', 'reject')"
-                            class="flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 bg-white border-2 border-rose-100 text-rose-600 hover:bg-rose-50 rounded-lg md:rounded-xl text-[10px] md:text-[11px] font-black uppercase transition-all active:scale-95 flex items-center justify-center whitespace-nowrap">
-                        <i class="fas fa-times mr-2"></i> Reject
+                            class="flex-1 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-[11px] font-black uppercase transition-all hover:bg-rose-50 hover:border-rose-300">
+                        Reject
+                    </button>
+                    <button onclick="respondToHodRequest('{{ h.id }}', 'approve')"
+                            class="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl text-[11px] font-black uppercase transition-all hover:shadow-lg hover:shadow-emerald-200">
+                        Approve
                     </button>
                 </div>
             </div>
@@ -61,20 +94,23 @@
     </div>
     {% endif %}
 
-    {% if notifications %}
     <!-- Pending Assignments -->
-    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-slate-100 overflow-hidden">
-        <div class="p-6 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-purple-50">
-            <h2 class="text-xl font-bold text-slate-800 flex items-center">
-                <i class="fas fa-bell mr-3 text-indigo-600"></i>
-                Pending Assignment Requests
-                <span class="ml-3 px-3 py-1 rounded-full bg-indigo-600 text-white text-sm font-bold">
-                    {{ notifications|length }}
-                </span>
-            </h2>
+    {% if notifications %}
+    <div class="mb-12">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">Pending Requests</h2>
+                <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Faculty seeking substitution</p>
+            </div>
+            <div class="ml-auto flex items-center justify-center px-2 min-w-[2rem] h-8 rounded-full bg-amber-100 text-amber-700 font-black text-sm">
+                {{ notifications|length }}
+            </div>
         </div>
 
-        <div class="divide-y divide-slate-100">
+        <div class="space-y-6">
             {% set grouped_notifications = {} %}
             {% for n in notifications %}
                 {% set sender = n.sender_id %}
@@ -85,40 +121,63 @@
             {% endfor %}
 
             {% for sender_id, group in grouped_notifications.items() %}
-            <div class="p-6 hover:bg-slate-50/50 transition-colors">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg">
-                        {{ group[0].sender_name[0] }}
-                    </div>
-                    <div>
-                        <h3 class="font-black text-slate-800 uppercase tracking-tight">{{ group[0].sender_name }}</h3>
-                        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Requested {{ group|length }} Substitution(s)</p>
+            <div class="glass-card rounded-3xl overflow-hidden border border-slate-200/60 shadow-sm">
+                <div class="p-5 md:p-6 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-700 font-black text-xl shadow-sm z-10 relative">
+                                {{ group[0].sender_name[0] }}
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-amber-400 rounded-full border-2 border-white flex items-center justify-center text-[9px] text-white font-bold z-20 shadow-sm">
+                                {{ group|length }}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg uppercase tracking-tight">{{ group[0].sender_name }}</h3>
+                            <p class="text-xs text-slate-500 font-semibold">Requested you to handle {{ group|length }} class{% if group|length > 1 %}es{% endif %}</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="space-y-3 ml-12">
-                    {% for n in group %}
-                    <div class="assignment-item p-3 md:p-4 bg-white border border-slate-100 rounded-xl md:rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" id="notification-{{ n.id }}">
-                        <div class="flex-1 min-w-0">
-                            <div class="text-[10px] md:text-[11px] font-black text-indigo-700 uppercase mb-1 truncate">{{ n.class_details.subject }}</div>
-                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                                <span class="text-[9px] md:text-[10px] font-bold text-slate-500 whitespace-nowrap"><i class="fas fa-calendar-day mr-1"></i> {{ n.class_details.date }}</span>
-                                <span class="text-[9px] md:text-[10px] font-bold text-slate-500 whitespace-nowrap"><i class="fas fa-clock mr-1"></i> {{ n.class_details.time }}</span>
-                                <span class="text-[9px] md:text-[10px] font-black text-slate-400 italic">Room {{ n.class_details.room or 'TBD' }}</span>
+                <div class="p-3 md:p-5 bg-white">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                        {% for n in group %}
+                        <div class="assignment-item group relative p-4 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all" id="notification-{{ n.id }}">
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                        <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase">{{ n.class_details.subject }}</span>
+                                        {% if n.class_details.room %}
+                                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase"><i class="fas fa-map-marker-alt text-slate-400 mr-1"></i> Room {{ n.class_details.room }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <h4 class="font-bold text-slate-800 text-[13px] mb-2"><i class="far fa-calendar-alt text-indigo-400 mr-1.5"></i> {{ n.class_details.day }}, {{ n.class_details.date }}</h4>
+                                    <div class="inline-flex items-center gap-2">
+                                        <div class="inline-flex items-center px-2 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[11px] font-bold text-slate-600">
+                                            <i class="far fa-clock text-slate-400 mr-1.5"></i> {{ n.class_details.time }}
+                                        </div>
+                                        {% if n.existing_subject %}
+                                            {% if n.existing_subject == 'Free Slot' %}
+                                            <span class="text-emerald-600 text-[10px] font-bold px-2 py-1 bg-emerald-50 rounded border border-emerald-100"><i class="fas fa-check-circle mr-1"></i> Free Slot</span>
+                                            {% else %}
+                                            <span class="text-rose-600 text-[10px] font-bold px-2 py-1 bg-rose-50 rounded border border-rose-100"><i class="fas fa-exclamation-triangle mr-1"></i> Clash: {{ n.existing_subject }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="flex flex-row sm:flex-col gap-2 shrink-0 justify-end mt-2 sm:mt-0">
+                                    <button onclick="respondToAssignment('{{ n.allocation_id }}', 'accept', '{{ n.id }}')" class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 font-bold text-[11px] uppercase tracking-wider hover:bg-emerald-500 hover:text-white transition-colors border border-emerald-100 flex items-center justify-center gap-1.5">
+                                        <i class="fas fa-check"></i> Accept
+                                    </button>
+                                    <button onclick="respondToAssignment('{{ n.allocation_id }}', 'reject', '{{ n.id }}')" class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-rose-50 text-rose-600 font-bold text-[11px] uppercase tracking-wider hover:bg-rose-500 hover:text-white transition-colors border border-rose-100 flex items-center justify-center gap-1.5">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="flex gap-2 w-full sm:w-auto">
-                            <button onclick="respondToAssignment('{{ n.allocation_id }}', 'accept', '{{ n.id }}')"
-                                    class="flex-1 sm:flex-none px-3 md:px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[9px] md:text-[10px] font-black uppercase transition-all shadow-md active:scale-95 whitespace-nowrap">
-                                Accept
-                            </button>
-                            <button onclick="respondToAssignment('{{ n.allocation_id }}', 'reject', '{{ n.id }}')"
-                                    class="flex-1 sm:flex-none px-3 md:px-4 py-2 bg-white border border-rose-100 text-rose-600 hover:bg-rose-50 rounded-lg text-[9px] md:text-[10px] font-black uppercase transition-all active:scale-95 whitespace-nowrap">
-                                Reject
-                            </button>
-                        </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 </div>
             </div>
             {% endfor %}
@@ -127,79 +186,142 @@
     {% endif %}
 
     <!-- Confirmed Assignments History -->
-    {% if accepted_assignments %}
-    <div class="mt-12">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-xl font-bold text-slate-800 flex items-center">
-                <i class="fas fa-check-double mr-3 text-emerald-600"></i>
-                My Confirmed Assignments
-            </h2>
-            <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase rounded-lg border border-emerald-200">
-                {{ accepted_assignments|length }} Ready
-            </span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {% for a in accepted_assignments %}
-            <div class="assignment-item p-4 bg-white border border-emerald-100 rounded-2xl shadow-sm hover:shadow-md transition-all relative overflow-hidden group" 
-                 id="allocation-{{ a.id }}" data-alloc-id="{{ a.id }}">
-                <div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <i class="fas fa-handshake text-3xl text-emerald-600"></i>
+    {% if upcoming_assignments or completed_assignments %}
+    <div class="mb-12">
+        <!-- Upcoming Classes -->
+        {% if upcoming_assignments %}
+        <div class="mb-10">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-400 to-red-500 flex items-center justify-center text-white shadow-lg shadow-red-200">
+                    <i class="fas fa-calendar-day"></i>
                 </div>
-                
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div>
-                        <div class="text-[11px] font-black text-slate-800 uppercase tracking-tight">{{ a.class_details.subject }}</div>
-                        <div class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{{ a.class_details.date }} | {{ a.class_details.time }}</div>
-                    </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Upcoming Classes</h2>
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Classes assigned to you that are pending</p>
                 </div>
+                <div class="ml-auto flex items-center justify-center px-3 py-1 rounded-full bg-rose-100 text-rose-700 font-black text-[10px] uppercase tracking-wide">
+                    {{ upcoming_assignments|length }} Upcoming
+                </div>
+            </div>
 
-                <div class="flex items-center justify-between mt-auto">
-                    <div class="flex items-center gap-2">
-                         <div class="px-2 py-0.5 bg-slate-50 text-slate-400 text-[8px] font-black rounded uppercase border border-slate-100">Room {{ a.class_details.room or 'TBD' }}</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {% for a in upcoming_assignments %}
+                <div class="glass-card rounded-2xl p-5 hover-lift border-t-4 border-t-rose-400 relative overflow-hidden group" id="allocation-{{ a.id }}" data-alloc-id="{{ a.id }}">
+                    <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 pointer-events-none">
+                        <i class="fas fa-clock text-8xl text-rose-600"></i>
                     </div>
-                    <div class="text-[9px] font-black uppercase italic">
-                        {% if a.status == 'approved' %}
-                            <span class="text-indigo-600"><i class="fas fa-certificate mr-1"></i> Official</span>
-                        {% else %}
-                            <span class="text-emerald-600"><i class="fas fa-check mr-1"></i> Committed</span>
+                    
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-rose-50 text-rose-600">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <span class="px-2 py-1 rounded-md bg-rose-50 text-rose-600 text-[8px] font-black uppercase tracking-wider flex items-center gap-1 status-badge">
+                            <i class="fas fa-hourglass-half text-rose-400"></i> Not Completed
+                        </span>
+                    </div>
+
+                    <div class="relative z-10 mb-4">
+                        <h3 class="font-black text-slate-800 text-[15px] uppercase leading-tight mb-1 truncate">{{ a.class_details.subject }}</h3>
+                        <p class="text-xs font-semibold text-slate-500"><i class="far fa-calendar-check text-slate-300 mr-1.5"></i> {{ a.class_details.day }}, {{ a.class_details.date }}</p>
+                        <p class="text-xs font-semibold text-slate-500 mt-1"><i class="far fa-clock text-slate-300 mr-1.5"></i> {{ a.class_details.time }}</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[9px] font-bold">
+                                {{ a.assigned_by_name[0] }}
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-500 truncate max-w-[150px]">For {{ a.assigned_by_name }}</span>
+                        </div>
+                        {% if a.class_details.room %}
+                        <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-wider">Rm {{ a.class_details.room }}</span>
                         {% endif %}
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
+        {% endif %}
+
+        <!-- Completed Classes -->
+        {% if completed_assignments %}
+        <div>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-teal-200">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Completed Assignments</h2>
+                    <p class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Classes you've successfully substituted</p>
+                </div>
+                <div class="ml-auto flex items-center justify-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-black text-[10px] uppercase tracking-wide">
+                    {{ completed_assignments|length }} Completed
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 opacity-80">
+                {% for a in completed_assignments %}
+                <div class="glass-card rounded-2xl p-5 hover-lift border-t-4 border-t-emerald-400 relative overflow-hidden group" id="allocation-{{ a.id }}" data-alloc-id="{{ a.id }}">
+                    <div class="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity transform group-hover:scale-110 pointer-events-none">
+                        <i class="fas fa-handshake text-8xl text-emerald-600"></i>
+                    </div>
+                    
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <span class="px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 text-[8px] font-black uppercase tracking-wider flex items-center gap-1 status-badge">
+                            <i class="fas fa-check-circle text-emerald-400"></i> Completed
+                        </span>
+                    </div>
+
+                    <div class="relative z-10 mb-4">
+                        <h3 class="font-black text-slate-800 text-[15px] uppercase leading-tight mb-1 truncate">{{ a.class_details.subject }}</h3>
+                        <p class="text-xs font-semibold text-slate-500"><i class="far fa-calendar-check text-slate-300 mr-1.5"></i> {{ a.class_details.day }}, {{ a.class_details.date }}</p>
+                        <p class="text-xs font-semibold text-slate-500 mt-1"><i class="far fa-clock text-slate-300 mr-1.5"></i> {{ a.class_details.time }}</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 relative z-10 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-[9px] font-bold">
+                                {{ a.assigned_by_name[0] }}
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-500 truncate max-w-[150px]">For {{ a.assigned_by_name }}</span>
+                        </div>
+                        {% if a.class_details.room %}
+                        <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-wider">Rm {{ a.class_details.room }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 
-    {% if not notifications and not accepted_assignments %}
-    <!-- No Activity at all -->
-    <div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-slate-100 p-12 text-center">
-        <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-4">
-            <i class="fas fa-bell-slash text-3xl"></i>
+    {% if not hod_pending and not notifications and not accepted_assignments %}
+    <div class="bg-white rounded-3xl p-12 text-center shadow-sm border border-slate-100">
+        <div class="w-24 h-24 mx-auto rounded-full bg-slate-50 flex items-center justify-center mb-6">
+            <i class="fas fa-clipboard-check text-4xl text-slate-300"></i>
         </div>
-        <h2 class="text-xl font-bold text-slate-800 mb-2">No Recent Activity</h2>
-        <p class="text-slate-500 mb-6">You don't have any pending requests or recent assignments.</p>
+        <h3 class="text-2xl font-bold text-slate-800 mb-2">All Caught Up!</h3>
+        <p class="text-slate-500">You don't have any pending assignment requests or confirmed duties at the moment.</p>
     </div>
     {% endif %}
-
+    
     <!-- Info Card -->
-    <div class="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-100">
-        <div class="flex items-start space-x-4">
-            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
-                <i class="fas fa-info-circle"></i>
-            </div>
-            <div>
-                <h3 class="font-bold text-blue-800 mb-1">About Class Assignments</h3>
-                <p class="text-sm text-blue-700">
-                    When you accept a class assignment, the admin will review and finalize the allocation. 
-                    The timetable will be automatically updated to reflect the changes. If you reject, 
-                    the requesting faculty will be notified to find another replacement.
-                </p>
-            </div>
+    <div class="mt-8 bg-blue-50/50 rounded-2xl p-6 border border-blue-100/50 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <div>
+            <h3 class="font-bold text-blue-900 mb-1">About Class Assignments</h3>
+            <p class="text-xs text-blue-700/80 leading-relaxed font-medium">
+                When you accept a class assignment, the admin will review and finalize the allocation. 
+                The timetable will be automatically updated to reflect the changes. If you reject, 
+                the requesting faculty will be notified to find another replacement.
+            </p>
         </div>
     </div>
 </div>
