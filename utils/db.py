@@ -38,11 +38,15 @@ department_hods = db["department_hods"]  # Department-wise HOD assignments
 permissions = db["permissions"]  # Dedicated collection for Permission Leave requests
 broadcast_notifications = db["broadcast_notifications"]  # Global notifications with images
 system_settings = db["system_settings"]  # Payroll SMTP and other admin settings
+login_attempts = db["login_attempts"]  # Account security lockout tracking
+password_resets = db["password_resets"]  # Password reset tokens tracking
 
 
 def init_db():
     # Create unique index for username
     users.create_index("username", unique=True)
+    login_attempts.create_index("username", unique=True)
+    password_resets.create_index("token", unique=True)
     # Create default admin if not exists
     if not users.find_one({"role": "admin"}):
         from flask_bcrypt import generate_password_hash

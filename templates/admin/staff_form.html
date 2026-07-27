@@ -6,7 +6,6 @@
 
 {% block content %}
 <div class="mb-6 flex items-start justify-between gap-4">
-    </div>
     <a href="{{ url_for('manage_staff') }}"
         class="inline-flex items-center px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-semibold transition-colors">
         <i class="fas fa-arrow-left mr-2"></i> Back
@@ -14,7 +13,7 @@
 </div>
 
 {% if error %}
-<div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm">
+<div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 text-sm font-medium">
     {{ error }}
 </div>
 {% endif %}
@@ -23,25 +22,25 @@
     <form method="POST" class="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Staff ID <span class="text-rose-600">*</span></label>
-            <input name="staff_id" value="{{ form.staff_id }}" placeholder="BBHCF001" required
-                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <input name="staff_id" value="{{ form.staff_id }}" placeholder="e.g. BBHCF001" required
+                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono uppercase">
         </div>
 
         <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Full Name <span class="text-rose-600">*</span></label>
-            <input name="name" value="{{ form.name }}" placeholder="Prof. K. Umesh Shetty" required
+            <input name="name" value="{{ form.name }}" placeholder="e.g. Dr. Ramesh Kumar" required
                 class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
         </div>
 
         <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Designation <span class="text-rose-600">*</span></label>
-            <input name="designation" value="{{ form.designation }}" placeholder="Professor & Principal" required
+            <input name="designation" value="{{ form.designation }}" placeholder="e.g. Assistant Professor" required
                 class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
         </div>
 
         <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Department <span class="text-rose-600">*</span></label>
-            <input name="department" value="{{ form.department }}" placeholder="Administration" required
+            <input name="department" value="{{ form.department }}" placeholder="e.g. Computer Science" required
                 class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
         </div>
 
@@ -58,23 +57,14 @@
 
         <div>
             <label class="block text-sm font-semibold text-slate-700 mb-1">Email</label>
-            <input name="email" value="{{ form.email }}" placeholder="umesh@college.edu" type="email"
+            <input name="email" value="{{ form.email }}" placeholder="e.g. ramesh@college.edu" type="email"
                 class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
         </div>
 
         <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Phone Number</label>
-            <input name="phone" value="{{ form.phone }}" placeholder="9876543210" type="tel"
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Phone Number <span class="text-xs text-slate-500 font-normal">(10-Digit Mobile Number)</span></label>
+            <input name="phone" value="{{ form.phone }}" placeholder="e.g. 9876543210" type="tel" maxlength="10" minlength="10" pattern="[6-9][0-9]{9}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10)"
                 class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-        </div>
-
-        <div>
-            <label class="block text-sm font-semibold text-slate-700 mb-1">Username <span class="text-rose-600">*</span></label>
-            <input name="username" id="username_input" value="{{ form.username }}" placeholder="Auto-filled from Staff ID" required
-                class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            <p class="mt-1 text-xs text-slate-500">
-                <i class="fas fa-info-circle mr-1"></i>Username will be set to Staff ID (lowercase) if left empty
-            </p>
         </div>
 
         <div>
@@ -82,7 +72,7 @@
                 Password {% if mode != "edit" %}<span class="text-rose-600">*</span>{% endif %}
             </label>
             <input name="password" type="text" value="{% if mode == 'edit' %}{{ form.display_password }}{% endif %}"
-                placeholder="{% if mode == 'edit' %}Current Password{% else %}Default: 123456{% endif %}"
+                placeholder="{% if mode == 'edit' %}Current Password{% else %}e.g. Set password (default: 123456){% endif %}"
                 class="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             <p class="mt-1 text-xs text-slate-500">
                 <i class="fas fa-info-circle mr-1"></i>{% if mode == 'edit' %}Edit to change password{% else %}Default password is <span class="font-mono">123456</span> if left empty{% endif %}
@@ -102,21 +92,4 @@
         </div>
     </form>
 </div>
-
-<script>
-// Auto-fill username from Staff ID
-document.addEventListener('DOMContentLoaded', function() {
-    const staffIdInput = document.querySelector('input[name="staff_id"]');
-    const usernameInput = document.getElementById('username_input');
-    
-    if (staffIdInput && usernameInput) {
-        staffIdInput.addEventListener('input', function() {
-            if (!usernameInput.value || usernameInput.value === '{{ form.username }}') {
-                usernameInput.value = this.value.toLowerCase();
-            }
-        });
-    }
-});
-</script>
 {% endblock %}
-

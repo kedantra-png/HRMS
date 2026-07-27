@@ -62,6 +62,31 @@
 
             <form action="{{ request.full_path }}" method="POST" class="flex-1 p-6 sm:p-8 space-y-6">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Live Security Lockout Alert Banner -->
+                <div id="lockout-alert-container" class="hidden p-4 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 animate-shake space-y-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                            <i class="fas fa-user-lock text-rose-600 text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-rose-900 uppercase tracking-wide">Account Temporarily Locked</h4>
+                            <p id="lockout-message" class="text-xs font-medium text-rose-700">Security limit reached due to multiple incorrect password entries.</p>
+                        </div>
+                    </div>
+                    <div class="bg-rose-100/70 rounded-lg p-3 text-center flex items-center justify-center gap-2 border border-rose-200/60">
+                        <i class="fas fa-stopwatch text-rose-600 text-sm animate-pulse"></i>
+                        <span class="text-xs font-semibold text-slate-700">Retry allowed in:</span>
+                        <span id="lockout-timer" class="font-mono text-lg font-extrabold text-rose-600 tracking-wider">00:00</span>
+                    </div>
+                    <div class="text-center pt-1 border-t border-rose-200/60">
+                        <p class="text-xs text-rose-800">
+                            Want to stop the timer now? 
+                            <a href="{{ url_for('forgot_password') }}" class="font-bold text-indigo-700 hover:text-indigo-900 underline ml-1">Reset Password via Email</a>
+                        </p>
+                    </div>
+                </div>
+
                 {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                 <div class="space-y-3">
@@ -81,7 +106,7 @@
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
                             <i class="fas fa-user"></i>
                         </span>
-                        <input type="text" name="username" required value="{{ default_user }}"
+                        <input type="text" id="username" name="username" required value="{{ username or default_user }}"
                             class="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 transition-all duration-200"
                             placeholder="Enter your username">
                     </div>
@@ -94,7 +119,7 @@
                             <i class="fas fa-lock"></i>
                         </span>
                         <input type="password" id="password" name="password" required value="{{ default_pass }}"
-                            class="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 transition-all duration-200"
+                            class="block w-full pl-10 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50 transition-all duration-200 disabled:opacity-50 disabled:bg-slate-200 disabled:cursor-not-allowed"
                             placeholder="••••••••">
                         <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-indigo-600 transition-colors focus:outline-none">
                             <i id="toggleIcon" class="fas fa-eye"></i>
@@ -102,14 +127,17 @@
                     </div>
                 </div>
 
-                <div class="flex items-center">
-                    <input type="checkbox" id="remember" name="remember"
-                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded">
-                    <label for="remember" class="ml-2 block text-sm text-slate-600">Remember me</label>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember" name="remember"
+                            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded">
+                        <label for="remember" class="ml-2 block text-sm text-slate-600">Remember me</label>
+                    </div>
+                    <a id="forgotPasswordLink" href="{{ url_for('forgot_password') }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">Forgot password?</a>
                 </div>
 
-                <button type="submit"
-                    class="w-full {{ bg_color }} text-white py-3 px-4 rounded-xl font-bold hover:opacity-90 transform transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-lg shadow-indigo-200">
+                <button type="submit" id="submitBtn"
+                    class="w-full {{ bg_color }} text-white py-3 px-4 rounded-xl font-bold hover:opacity-90 transform transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
                     Sign In
                 </button>
             </form>
@@ -125,9 +153,137 @@
 
 
     <script>
+        let countdownTimer = null;
+        let remainingLockoutSec = 0;
+
         document.addEventListener('DOMContentLoaded', function () {
+            if (window.history.replaceState) {
+                window.history.replaceState(null, null, window.location.href);
+            }
             if (window.clearHrmsChatBrowserStorage) window.clearHrmsChatBrowserStorage();
+
+            const usernameInput = document.getElementById('username');
+            const forgotLink = document.getElementById('forgotPasswordLink');
+
+            function updateForgotLink() {
+                if (forgotLink && usernameInput) {
+                    const uVal = usernameInput.value ? usernameInput.value.strip ? usernameInput.value.strip() : usernameInput.value.trim() : '';
+                    const baseUrl = "{{ url_for('forgot_password') }}";
+                    forgotLink.href = uVal ? `${baseUrl}?username=${encodeURIComponent(uVal)}` : baseUrl;
+                }
+            }
+            updateForgotLink();
+
+            // Server passed initial lockout info
+            {% if lockout_info and lockout_info.is_locked %}
+                startLockoutCountdown({{ lockout_info.remaining_seconds }});
+            {% else %}
+                if (usernameInput && usernameInput.value.trim()) {
+                    checkLockoutStatus(usernameInput.value.trim());
+                }
+            {% endif %}
+
+            // Listen for username input changes to check lockout dynamically
+            let debounceTimer = null;
+            usernameInput.addEventListener('input', function () {
+                updateForgotLink();
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    checkLockoutStatus(this.value);
+                }, 400);
+            });
         });
+
+        function formatTimerString(totalSeconds) {
+            if (totalSeconds <= 0) return "00:00";
+            const hrs = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+
+            const pad = (n) => String(n).padStart(2, '0');
+            if (hrs > 0) {
+                return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+            }
+            return `${pad(mins)}:${pad(secs)}`;
+        }
+
+        function startLockoutCountdown(seconds) {
+            clearInterval(countdownTimer);
+            remainingLockoutSec = Math.max(0, parseInt(seconds) || 0);
+
+            const alertContainer = document.getElementById('lockout-alert-container');
+            const timerSpan = document.getElementById('lockout-timer');
+            const passwordInput = document.getElementById('password');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (remainingLockoutSec <= 0) {
+                clearLockoutState();
+                return;
+            }
+
+            // Lock UI controls
+            alertContainer.classList.remove('hidden');
+            passwordInput.disabled = true;
+            submitBtn.disabled = true;
+
+            timerSpan.textContent = formatTimerString(remainingLockoutSec);
+
+            countdownTimer = setInterval(() => {
+                remainingLockoutSec--;
+                if (remainingLockoutSec <= 0) {
+                    clearInterval(countdownTimer);
+                    timerSpan.textContent = "00:00";
+                    
+                    // Show expired / unlocked state
+                    alertContainer.className = "p-4 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 animate-pulse space-y-2";
+                    alertContainer.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-lock-open text-emerald-600 text-xl"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-emerald-900">Lockout Expired</h4>
+                                <p class="text-xs font-medium text-emerald-700">You may now enter your password and try signing in.</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    passwordInput.disabled = false;
+                    submitBtn.disabled = false;
+                    passwordInput.focus();
+                } else {
+                    timerSpan.textContent = formatTimerString(remainingLockoutSec);
+                }
+            }, 1000);
+        }
+
+        function clearLockoutState() {
+            clearInterval(countdownTimer);
+            const alertContainer = document.getElementById('lockout-alert-container');
+            const passwordInput = document.getElementById('password');
+            const submitBtn = document.getElementById('submitBtn');
+
+            alertContainer.classList.add('hidden');
+            passwordInput.disabled = false;
+            submitBtn.disabled = false;
+        }
+
+        function checkLockoutStatus(username) {
+            if (!username || !username.trim()) {
+                clearLockoutState();
+                return;
+            }
+            fetch('/api/check-lockout?username=' + encodeURIComponent(username.trim()))
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.is_locked) {
+                        startLockoutCountdown(data.remaining_seconds);
+                    } else {
+                        if (remainingLockoutSec > 0) {
+                            clearLockoutState();
+                        }
+                    }
+                })
+                .catch(err => console.error('Error checking lockout status:', err));
+        }
 
         function togglePassword() {
             const passwordInput = document.getElementById('password');

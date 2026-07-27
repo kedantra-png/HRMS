@@ -330,3 +330,299 @@ HR / Payroll Office
     if last_smtp_error:
         return {"ok": False, "reason": f"Mail server error: {last_smtp_error}"}
     return {"ok": False, "reason": "Could not send email — no SMTP connection method succeeded."}
+
+
+def send_password_reset_email(
+    to_email: str,
+    recipient_name: str,
+    reset_url: str,
+) -> dict:
+    """
+    Send Password Reset Email with secure link. Returns {'ok': True} or {'ok': False, 'reason': '...'}.
+    """
+    if not smtp_configured():
+        return {
+            "ok": False,
+            "reason": "System SMTP email is not configured. Please contact administrator.",
+        }
+
+    s = _smtp_settings()
+    user, password = s["user"], s["password"]
+    from_addr, college = s["from_addr"], s["college"]
+
+    subject = f"Password Reset Request — {college} HRMS"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }}
+            .container {{ max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }}
+            .header {{ background-color: #4f46e5; padding: 32px 24px; text-align: center; color: #ffffff; }}
+            .content {{ padding: 32px 24px; }}
+            .btn {{ display: inline-block; background-color: #4f46e5; color: #ffffff !important; font-weight: 700; text-decoration: none; padding: 14px 28px; border-radius: 12px; margin: 24px 0; font-size: 15px; box-shadow: 0 4px 6px rgba(79,70,229,0.2); }}
+            .footer {{ background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }}
+            .url-box {{ background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; word-break: break-all; color: #334155; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2 style="margin:0; font-size: 22px;">HRMS Password Reset</h2>
+                <p style="margin:8px 0 0 0; opacity: 0.85; font-size: 14px;">{college}</p>
+            </div>
+            <div class="content">
+                <p>Hello <strong>{recipient_name or 'User'}</strong>,</p>
+                <p>We received a request to reset your password for your HRMS account. Click the button below to set a new password:</p>
+                <div style="text-align: center;">
+                    <a href="{reset_url}" class="btn" target="_blank">Reset Password Now</a>
+                </div>
+                <p style="font-size: 13px; color: #64748b;">This password reset link is valid for <strong>30 minutes</strong>. If you did not request this, please ignore this email and your password will remain unchanged.</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+                <p style="font-size: 12px; color: #64748b;">If the button above does not work, copy and paste this link into your web browser:</p>
+                <div class="url-box">{reset_url}</div>
+            </div>
+            <div class="footer">
+                &copy; {college} HRMS System. Automated security notification.
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    plain_text = f"""HRMS Password Reset - {college}
+
+Hello {recipient_name or 'User'},
+
+We received a request to reset your password for your HRMS account.
+Click the link below or copy it into your browser to set a new password:
+
+{reset_url}
+
+This password reset link is valid for 30 minutes.
+
+(c) {college} HRMS System
+"""
+
+    sender_display = f'"{college} HRMS Portal" <{from_addr}>'
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = sender_display
+    msg["To"] = to_email
+    msg["Reply-To"] = from_addr
+    msg["Subject"] = subject
+    msg["Auto-Submitted"] = "auto-generated"
+    msg["X-Auto-Response-Suppress"] = "All"
+    msg["Importance"] = "High"
+    msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+    msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+    profiles = _smtp_connect_profiles(s)
+    last_error = None
+    for profile in profiles:
+        h, p, tls = profile["host"], profile["port"], profile["use_tls"]
+        mode = f"{h}:{p} ({'STARTTLS' if tls else 'SSL'})"
+        try:
+            server = _open_smtp_server(h, p, tls)
+            server.login(user, password)
+            server.sendmail(from_addr, [to_email], msg.as_string())
+            server.quit()
+            return {"ok": True}
+        except smtplib.SMTPAuthenticationError:
+            return {"ok": False, "reason": "Gmail login failed — check SMTP credentials."}
+        except Exception as e:
+            last_error = f"{mode}: {e}"
+            continue
+    return {"ok": False, "reason": f"Could not send email ({last_error})"}
+
+
+def send_lockout_security_alert_email(
+    to_email: str,
+    recipient_name: str,
+    unlock_url: str,
+    lockout_duration_str: str,
+) -> dict:
+    """
+    Send Security Lockout Alert Email with 1-click timer cancellation link.
+    """
+    if not smtp_configured():
+        return {
+            "ok": False,
+            "reason": "System SMTP email is not configured.",
+        }
+
+    s = _smtp_settings()
+    user, password = s["user"], s["password"]
+    from_addr, college = s["from_addr"], s["college"]
+
+    subject = f"Security Lockout Alert: Account Locked — {college} HRMS"
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }}
+            .container {{ max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }}
+            .header {{ background-color: #e11d48; padding: 32px 24px; text-align: center; color: #ffffff; }}
+            .content {{ padding: 32px 24px; }}
+            .alert-badge {{ display: inline-block; background-color: #ffe4e6; color: #9f1239; font-weight: 700; padding: 6px 14px; border-radius: 20px; font-size: 13px; margin-bottom: 16px; }}
+            .btn {{ display: inline-block; background-color: #e11d48; color: #ffffff !important; font-weight: 700; text-decoration: none; padding: 14px 28px; border-radius: 12px; margin: 24px 0; font-size: 15px; box-shadow: 0 4px 6px rgba(225,29,72,0.2); }}
+            .footer {{ background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }}
+            .url-box {{ background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; word-break: break-all; color: #334155; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2 style="margin:0; font-size: 22px;">Security Lockout Warning</h2>
+                <p style="margin:8px 0 0 0; opacity: 0.85; font-size: 14px;">{college} HRMS</p>
+            </div>
+            <div class="content">
+                <div class="alert-badge">Lockout Timer Active: {lockout_duration_str}</div>
+                <p>Hello <strong>{recipient_name or 'User'}</strong>,</p>
+                <p>Your HRMS account was temporarily locked due to multiple incorrect password login attempts.</p>
+                <p>If this was you and you want to <strong>stop the countdown timer immediately</strong>, click the button below to unlock your account and regain access:</p>
+                <div style="text-align: center;">
+                    <a href="{unlock_url}" class="btn" target="_blank">Stop Timer & Unlock Account Now</a>
+                </div>
+                <p style="font-size: 13px; color: #64748b;">This instant unlock link is valid for <strong>30 minutes</strong>.</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+                <p style="font-size: 12px; color: #64748b;">Or copy and paste this link into your browser:</p>
+                <div class="url-box">{unlock_url}</div>
+            </div>
+            <div class="footer">
+                &copy; {college} HRMS System. Automated security protection.
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    plain_text = f"""Security Lockout Alert - {college} HRMS
+
+Hello {recipient_name or 'User'},
+
+Your HRMS account was temporarily locked due to multiple incorrect password login attempts.
+Lockout Timer Active: {lockout_duration_str}
+
+To stop the countdown timer immediately and unlock your account, click the link below or paste it into your browser:
+
+{unlock_url}
+
+This instant unlock link is valid for 30 minutes.
+
+(c) {college} HRMS System Security Protection
+"""
+
+    sender_display = f'"{college} HRMS Portal" <{from_addr}>'
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = sender_display
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg["Auto-Submitted"] = "auto-generated"
+    msg["X-Auto-Response-Suppress"] = "All"
+    msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+    msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+    profiles = _smtp_connect_profiles(s)
+    last_error = None
+    for profile in profiles:
+        h, p, tls = profile["host"], profile["port"], profile["use_tls"]
+        mode = f"{h}:{p} ({'STARTTLS' if tls else 'SSL'})"
+        try:
+            server = _open_smtp_server(h, p, tls)
+            server.login(user, password)
+            server.sendmail(from_addr, [to_email], msg.as_string())
+            server.quit()
+            return {"ok": True}
+        except smtplib.SMTPAuthenticationError:
+            return {"ok": False, "reason": "Gmail authentication error."}
+        except Exception as e:
+            last_error = f"{mode}: {e}"
+            continue
+    return {"ok": False, "reason": f"Could not send email ({last_error})"}
+
+
+def send_test_warning_email(to_email: str) -> dict:
+    """
+    Send a test HRMS security warning email to verify SMTP delivery to real inboxes.
+    """
+    if not is_valid_email(to_email):
+        return {"ok": False, "reason": f"Invalid recipient email address: '{to_email}'"}
+
+    if not smtp_configured():
+        return {
+            "ok": False,
+            "reason": "System SMTP email is not configured. Please enter your Gmail address and 16-character App Password.",
+        }
+
+    s = _smtp_settings()
+    user, password = s["user"], s["password"]
+    from_addr, college = s["from_addr"], s["college"]
+
+    subject = f"🧪 HRMS Security Alert Test Email — {college}"
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 20px; }}
+            .container {{ max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }}
+            .header {{ background-color: #4f46e5; padding: 32px 24px; text-align: center; color: #ffffff; }}
+            .content {{ padding: 32px 24px; }}
+            .status-badge {{ display: inline-block; background-color: #d1fae5; color: #065f46; font-weight: 700; padding: 6px 14px; border-radius: 20px; font-size: 13px; margin-bottom: 16px; }}
+            .footer {{ background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2 style="margin:0; font-size: 22px;">Security Email Delivery Test</h2>
+                <p style="margin:8px 0 0 0; opacity: 0.85; font-size: 14px;">{college} HRMS</p>
+            </div>
+            <div class="content">
+                <div class="status-badge">✅ Email System Operational</div>
+                <p>Hello Administrator,</p>
+                <p>This is a <strong>test security warning email</strong> sent from the HRMS Admin Dashboard.</p>
+                <p>Your SMTP server connection (<strong>{user}</strong>) is functioning properly and successfully delivering account lockout and security alerts to faculty inboxes.</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+                <p style="font-size: 12px; color: #64748b;">Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+            </div>
+            <div class="footer">
+                &copy; {college} HRMS System. Email verification tool.
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["From"] = from_addr
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+    profiles = _smtp_connect_profiles(s)
+    last_error = None
+    for profile in profiles:
+        h, p, tls = profile["host"], profile["port"], profile["use_tls"]
+        mode = f"{h}:{p} ({'STARTTLS' if tls else 'SSL'})"
+        try:
+            server = _open_smtp_server(h, p, tls)
+            server.login(user, password)
+            server.sendmail(from_addr, [to_email], msg.as_string())
+            server.quit()
+            return {"ok": True, "message": f"Test warning email sent successfully to '{to_email}' via {mode}!"}
+        except smtplib.SMTPAuthenticationError:
+            return {"ok": False, "reason": "Gmail login failed — check your 16-character App Password."}
+        except Exception as e:
+            last_error = f"{mode}: {e}"
+            continue
+    return {"ok": False, "reason": f"Could not send test email ({last_error})"}

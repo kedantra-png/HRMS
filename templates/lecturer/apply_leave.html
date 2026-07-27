@@ -149,7 +149,7 @@
                     <label class="block text-[10px] font-black text-slate-500 mb-1 uppercase tracking-widest">Select Session</label>
                     <select name="session" id="leaveSession" 
                             class="block w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white transition-all font-bold text-slate-700">
-                        <option value="morning">Morning (Period 0 - III)</option>
+                        <option value="morning" selected>Morning (Period 0 - III)</option>
                         <option value="afternoon">Afternoon (Period IV - VII)</option>
                     </select>
                 </div>
@@ -216,12 +216,12 @@
                         </div>
                     </div>
                 </div>
-                <div id="timeDurationBadge" class="hidden px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-black text-indigo-700 uppercase tracking-widest">Duration Preview</span>
-                        <span id="permissionCountBadge" class="hidden px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black rounded uppercase">Taken: 0</span>
+                <div id="timeDurationBadge" class="hidden px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[10px] font-black text-indigo-700 uppercase tracking-widest whitespace-nowrap">Duration Preview</span>
+                        <span id="permissionCountBadge" class="hidden px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black rounded uppercase whitespace-nowrap">Taken: 0</span>
                     </div>
-                    <span id="timeDurationText" class="text-xs font-black text-slate-700"></span>
+                    <span id="timeDurationText" class="text-xs sm:text-sm font-black text-slate-700"></span>
                 </div>
             </div>
             {% else %}
@@ -247,6 +247,10 @@
             </div>
             {% endif %}
 
+            <input type="hidden" name="assignments_json" id="assignmentsJson">
+            <input type="hidden" name="no_class_dates_json" id="noClassDatesJson">
+
+            {% if not is_non_faculty %}
             <!-- Assignment Section (Now Permanent) -->
             <div id="assignmentSection" class="space-y-4 pt-4 border-t border-slate-100">
                 <div class="flex items-center justify-between">
@@ -271,9 +275,6 @@
                     </div>
                 </div>
             </div>
-
-            <input type="hidden" name="assignments_json" id="assignmentsJson">
-            <input type="hidden" name="no_class_dates_json" id="noClassDatesJson">
 
             <!-- HOD Permission Section (New) -->
             <div id="hodSection" class="hidden space-y-4 pt-4 border-t border-slate-100">
@@ -326,6 +327,7 @@
                     </table>
                 </div>
             </div>
+            {% endif %}
 
             <div class="flex items-center space-x-4 pt-4">
                 <button type="submit" id="submitBtn" disabled
@@ -769,7 +771,7 @@
                     if (fromDateInput) fromDateInput.value = d.from_date || '';
                     if (toDateInput) toDateInput.value = d.to_date || '';
                     if (halfDayCheck) halfDayCheck.checked = d.half_day || false;
-                    if (leaveSession) leaveSession.value = d.session || '';
+                    if (leaveSession) leaveSession.value = d.session || 'morning';
                     
                     if (mode === 'time') {
                         const tFrom = d.time_from || '09:25';
@@ -989,6 +991,9 @@
             if (halfDayCheck) {
                 if (halfDayCheck.checked) {
                     sessionContainer.classList.remove('hidden');
+                    if (leaveSession && (!leaveSession.value || leaveSession.value === '')) {
+                        leaveSession.value = 'morning';
+                    }
                     if (toDateInput && fromDateInput) {
                         toDateInput.value = fromDateInput.value;
                         toDateInput.parentElement.classList.add('opacity-50');
@@ -1146,7 +1151,7 @@
             const total = activeClasses.length;
             const progressBox = document.getElementById('assignmentProgressBox');
             
-            if (total > 0) {
+            if (total > 0 && progressBox) {
                 progressBox.classList.remove('hidden');
                 // Count successful assignments (Colleague Accepted OR Management Approved)
                 let completedCount = 0;
@@ -1163,20 +1168,20 @@
                 const statusMsg = document.getElementById('assignmentStatusMsg');
                 
                 const percent = (completedCount / total) * 100;
-                countBadge.innerText = `${completedCount}/${total} Accepted`;
-                progressBar.style.width = `${percent}%`;
+                if (countBadge) countBadge.innerText = `${completedCount}/${total} Accepted`;
+                if (progressBar) progressBar.style.width = `${percent}%`;
                 
                 if (completedCount < total) {
                     isValid = false;
-                    statusMsg.innerText = `Waiting for ${total - completedCount} colleague approvals...`;
-                    countBadge.className = "px-2 py-0.5 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-black uppercase border border-rose-100";
-                    progressBar.className = "bg-rose-500 h-full transition-all duration-500";
+                    if (statusMsg) statusMsg.innerText = `Waiting for ${total - completedCount} colleague approvals...`;
+                    if (countBadge) countBadge.className = "px-2 py-0.5 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-black uppercase border border-rose-100";
+                    if (progressBar) progressBar.className = "bg-rose-500 h-full transition-all duration-500";
                 } else {
-                    statusMsg.innerText = "All assignments confirmed! You can now submit.";
-                    countBadge.className = "px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase border border-emerald-200";
-                    progressBar.className = "bg-emerald-500 h-full transition-all duration-500";
+                    if (statusMsg) statusMsg.innerText = "All assignments confirmed! You can now submit.";
+                    if (countBadge) countBadge.className = "px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase border border-emerald-200";
+                    if (progressBar) progressBar.className = "bg-emerald-500 h-full transition-all duration-500";
                 }
-            } else {
+            } else if (progressBox) {
                 progressBox.classList.add('hidden');
             }
 
@@ -1212,19 +1217,23 @@
                 if (assignmentSection) assignmentSection.classList.add('hidden');
             }
             
-            if (isValid && assignmentsDone && hodStatus === 'Not Requested') {
-                requestHodBtn.disabled = false;
-                if (activeClasses.length === 0 && classesFetched) {
-                    hodStatusMsg.innerText = "No-class days marked. Request HOD permission now.";
-                } else {
-                    hodStatusMsg.innerText = "All assignments clear. Request HOD permission now.";
-                }
-                hodStatusMsg.className = "text-[10px] text-indigo-600 font-bold italic uppercase";
-            } else if (!assignmentsDone) {
-                requestHodBtn.disabled = true;
-                if (hodStatus === 'Not Requested') {
-                    hodStatusMsg.innerText = "Please complete class assignments first (or mark days as No Class).";
-                    hodStatusMsg.className = "text-[10px] text-slate-400 font-bold italic uppercase";
+            if (requestHodBtn) {
+                if (isValid && assignmentsDone && hodStatus === 'Not Requested') {
+                    requestHodBtn.disabled = false;
+                    if (hodStatusMsg) {
+                        if (activeClasses.length === 0 && classesFetched) {
+                            hodStatusMsg.innerText = "No-class days marked. Request HOD permission now.";
+                        } else {
+                            hodStatusMsg.innerText = "All assignments clear. Request HOD permission now.";
+                        }
+                        hodStatusMsg.className = "text-[10px] text-indigo-600 font-bold italic uppercase";
+                    }
+                } else if (!assignmentsDone) {
+                    requestHodBtn.disabled = true;
+                    if (hodStatusMsg && hodStatus === 'Not Requested') {
+                        hodStatusMsg.innerText = "Please complete class assignments first (or mark days as No Class).";
+                        hodStatusMsg.className = "text-[10px] text-slate-400 font-bold italic uppercase";
+                    }
                 }
             }
 
@@ -1334,8 +1343,18 @@
                 }
             }
 
-            const needsHod = (mode === 'full') || (mode === 'time' && activeClasses.length > 0);
-            submitBtn.disabled = !isValid || !assignmentsDone || (needsHod && !isHodApproved) || !isDateValid;
+            const isNonFaculty = {{ 'true' if is_non_faculty else 'false' }};
+            const hasReason = Boolean(leaveReason && leaveReason.value.trim().length > 0);
+            const hasDatesOrTime = (mode === 'time')
+                ? (Boolean(document.getElementById('permissionDate')?.value) && isTimeValid)
+                : (Boolean(fromDateInput?.value) && Boolean(toDateInput?.value));
+
+            if (isNonFaculty) {
+                submitBtn.disabled = !isValid || !isDateValid || !hasDatesOrTime || !hasReason;
+            } else {
+                const needsHod = (mode === 'full') || (mode === 'time' && activeClasses.length > 0);
+                submitBtn.disabled = !isValid || !assignmentsDone || (needsHod && !isHodApproved) || !isDateValid || !hasDatesOrTime || !hasReason;
+            }
             
             document.getElementById('assignmentsJson').value = JSON.stringify(activeClasses.map(c => {
                 const key = getClassKey(c);
@@ -1440,6 +1459,7 @@
 
         function renderClasses() {
             const container = document.getElementById('classListContainer');
+            if (!container) return;
             if (mode === 'full') refreshLeavePeriodDates();
 
             const hasPeriodView = (mode === 'full' && leavePeriodDates.length > 0) ||
@@ -1468,23 +1488,23 @@
 
                     html += `
                         <div class="mb-4 border border-slate-100 rounded-2xl bg-white shadow-sm ${showAsNoClass ? 'ring-2 ring-indigo-100' : ''}">
-                            <div class="p-4 bg-slate-50 flex items-center justify-between rounded-t-2xl gap-2">
+                            <div class="p-3 sm:p-4 bg-slate-50 flex flex-wrap sm:flex-nowrap items-center justify-between rounded-t-2xl gap-2">
                                 <div onclick="document.getElementById('subjects-${group.id}').classList.toggle('hidden')" 
-                                     class="flex items-center gap-3 flex-1 cursor-pointer active:bg-slate-100 transition-colors min-w-0">
-                                    <div class="px-3 py-1 ${showAsNoClass ? 'bg-slate-500' : 'bg-indigo-700'} text-white text-[10px] font-black rounded-lg uppercase shadow-sm">${group.day}</div>
-                                    <div class="text-[12px] font-black text-slate-800 tracking-tight truncate">${displayDate}</div>
-                                    ${isMarkedNoClass ? '<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase rounded border border-indigo-200">No Class</span>' : ''}
-                                    ${isNaturallyEmpty && !isMarkedNoClass ? '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded border border-slate-200">No Classes</span>' : ''}
+                                     class="flex items-center gap-2 sm:gap-3 flex-1 cursor-pointer active:bg-slate-100 transition-colors min-w-0 flex-wrap sm:flex-nowrap">
+                                    <div class="px-2.5 py-1 ${showAsNoClass ? 'bg-slate-500' : 'bg-indigo-700'} text-white text-[10px] font-black rounded-lg uppercase shadow-sm whitespace-nowrap">${group.day}</div>
+                                    <div class="text-[12px] font-black text-slate-800 tracking-tight whitespace-nowrap">${displayDate}</div>
+                                    ${isMarkedNoClass ? '<span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase rounded border border-indigo-200 whitespace-nowrap">No Class</span>' : ''}
+                                    ${isNaturallyEmpty && !isMarkedNoClass ? '<span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black uppercase rounded border border-slate-200 whitespace-nowrap">No Classes</span>' : ''}
                                 </div>
-                                <div class="flex items-center gap-2 shrink-0">
+                                <div class="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
                                     ${isMarkedNoClass
                                         ? `<button type="button" onclick="event.stopPropagation(); window.undoNoClass('${dk}')"
-                                               class="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase hover:bg-slate-50 transition-all">
+                                               class="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-[9px] font-black uppercase hover:bg-slate-50 transition-all whitespace-nowrap">
                                             Undo
                                            </button>`
                                         : (showNoClassBtn
                                             ? `<button type="button" onclick="event.stopPropagation(); window.markNoClass('${dk}')"
-                                                   class="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-[9px] font-black uppercase hover:bg-indigo-50 transition-all shadow-sm">
+                                                   class="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-[9px] font-black uppercase hover:bg-indigo-50 transition-all shadow-sm whitespace-nowrap">
                                                 <i class="fas fa-ban mr-1"></i> No Class
                                                </button>`
                                             : '')
@@ -1767,18 +1787,19 @@
 
         inputElements.forEach(el => {
             if (el) {
-                const eventType = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : (el.type === 'time' ? 'change' : 'input');
-                el.addEventListener(eventType, () => {
-                    resetHodPermission();
-                    if (el === fromDateInput || el === toDateInput) {
-                        classesFetched = false;
-                        refreshLeavePeriodDates();
-                        renderClasses();
-                    }
-                    validateAndRefresh();
-                    if (el === fromDateInput || el === toDateInput || el === halfDayCheck || el === leaveSession || el.id === 'timeFrom' || el.id === 'timeTo') {
-                        updateClasses();
-                    }
+                ['input', 'change'].forEach(evt => {
+                    el.addEventListener(evt, () => {
+                        resetHodPermission();
+                        if (el === fromDateInput || el === toDateInput) {
+                            classesFetched = false;
+                            refreshLeavePeriodDates();
+                            renderClasses();
+                        }
+                        validateAndRefresh();
+                        if (el === fromDateInput || el === toDateInput || el === halfDayCheck || el === leaveSession || el.id === 'timeFrom' || el.id === 'timeTo') {
+                            updateClasses();
+                        }
+                    });
                 });
             }
         });

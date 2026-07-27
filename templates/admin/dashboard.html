@@ -35,7 +35,12 @@
                 </p>
             </div>
         </div>
-        <div class="w-full sm:w-auto flex justify-end">
+        <div class="w-full sm:w-auto flex justify-end items-center gap-5">
+            <a href="{{ url_for('change_password') }}"
+                class="inline-flex items-center text-indigo-600 hover:text-indigo-700 text-sm font-bold transition-colors duration-150">
+                <i class="fas fa-user-cog mr-2"></i>
+                Profile & Security
+            </a>
             <a href="{{ url_for('logout') }}"
                 class="inline-flex items-center text-red-600 hover:text-red-700 text-sm font-bold transition-colors duration-150">
                 <i class="fas fa-sign-out-alt mr-2"></i>
@@ -154,80 +159,7 @@
     </a>
 </div>
 
-<!-- Salary sender email (Gmail app password) — no salary unlock required -->
-<div class="bg-white rounded-2xl shadow-lg shadow-black/10 border border-indigo-100 overflow-hidden mb-8" id="dashboard-sender-email">
-    <button type="button" id="toggle-sender-panel"
-        class="w-full px-6 py-4 flex items-center justify-between gap-3 text-left hover:bg-indigo-50/50 transition-colors">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
-                <i class="fas fa-envelope-open-text"></i>
-            </div>
-            <div>
-                <h3 class="font-bold text-slate-900">Salary slip sender email</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Gmail + App Password used to email salary slips to faculty</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-            {% if smtp_configured %}
-            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">Configured</span>
-            {% else %}
-            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">Not set</span>
-            {% endif %}
-            <i id="sender-panel-chevron" class="fas fa-chevron-down text-slate-400 transition-transform"></i>
-        </div>
-    </button>
-    <div id="sender-panel-body" class="hidden border-t border-slate-100 px-6 pb-6 pt-2">
-        {% if smtp_configured %}
-        <p class="text-xs font-bold text-emerald-700 mb-3"><i class="fas fa-check-circle"></i> {{ smtp_status }}</p>
-        {% endif %}
-        {% if payroll_smtp.source == 'ui' %}
-        <p class="text-[11px] font-bold text-indigo-600 mb-3"><i class="fas fa-database"></i> Saved on dashboard (overrides .env)</p>
-        {% elif payroll_smtp.source == 'env' %}
-        <p class="text-[11px] font-bold text-amber-700 mb-3"><i class="fas fa-file-code"></i> Using .env — save below to change from the website</p>
-        {% endif %}
-        <form id="dashboard-smtp-form" method="post" action="{{ url_for('admin_dashboard_sender_email') }}" class="space-y-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="dash_smtp_user" class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Sender Gmail</label>
-                    <input type="email" id="dash_smtp_user" name="smtp_user" required
-                        class="mt-1 w-full px-4 py-3 rounded-xl border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                        value="{{ payroll_smtp.smtp_user }}" autocomplete="username">
-                </div>
-                <div>
-                    <label for="dash_smtp_password" class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Gmail App Password</label>
-                    <div class="relative mt-1">
-                        <input type="password" id="dash_smtp_password" name="smtp_password"
-                            class="w-full px-4 py-3 pr-12 rounded-xl border border-slate-200 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500"
-                            placeholder="{% if payroll_smtp.password_saved_in_ui %}Leave blank to keep saved password{% elif payroll_smtp.has_password %}Leave blank to use .env password{% else %}16-character app password{% endif %}"
-                            autocomplete="new-password">
-                        <button type="button" id="dash-toggle-smtp-pw" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-600" title="Show password">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <p class="text-[11px] text-slate-500">Use a <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener" class="text-indigo-600 font-bold underline">Google App Password</a>, not your normal Gmail password. Port <strong>{{ payroll_smtp.smtp_port }}</strong> (SSL).</p>
-            <div id="dash-smtp-test-result" class="hidden rounded-xl px-4 py-3 text-sm font-bold"></div>
-            <div class="flex flex-wrap gap-3">
-                <button type="button" id="dash-btn-test-smtp"
-                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm border border-slate-200">
-                    <i class="fas fa-plug mr-1"></i> Test connection
-                </button>
-                <button type="submit"
-                    class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md">
-                    <i class="fas fa-save mr-1"></i> Save sender login
-                </button>
-                {% if payroll_smtp.source == 'ui' %}
-                <button type="button" id="dash-reset-env-btn"
-                    class="px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-sm border border-amber-200">
-                    <i class="fas fa-undo mr-1"></i> Use .env sender
-                </button>
-                {% endif %}
-            </div>
-        </form>
-    </div>
-</div>
+
 
 <!-- Recent Leave Requests (after dashboard cards) -->
 <div class="bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 overflow-hidden mb-8">

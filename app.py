@@ -7,9 +7,10 @@ from io import BytesIO
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf.csrf import CSRFProtect, CSRFError
-from utils.db import users, leaves, salaries, timetable, init_db, db, leave_class_allocations, faculty_notifications, timetable_history, leave_drafts, leave_types, hod_requests, department_hods, permissions, broadcast_notifications, staff_conversations, staff_messages, staff_socket_sessions
+from utils.db import users, leaves, salaries, timetable, init_db, db, leave_class_allocations, faculty_notifications, timetable_history, leave_drafts, leave_types, hod_requests, department_hods, permissions, broadcast_notifications, staff_conversations, staff_messages, staff_socket_sessions, password_resets
 from bson.objectid import ObjectId
 import os
+import secrets
 import pandas as pd
 from chatbot_engine import get_hrms_response_stream
 from utils.auth import (
@@ -25,11 +26,22 @@ from utils.salary_email import (
     smtp_configured,
     smtp_status_message,
     send_salary_slip_email,
+    send_password_reset_email,
+    send_lockout_security_alert_email,
+    send_test_warning_email,
     get_payroll_smtp_for_admin,
     save_payroll_smtp,
     clear_payroll_smtp,
     test_smtp_login,
     _looks_like_gmail_app_password,
+)
+from utils.security import (
+    get_lockout_status,
+    record_failed_attempt,
+    record_successful_login,
+    validate_password_policy,
+    is_strong_password,
+    is_valid_phone,
 )
 
 app = Flask(__name__)
@@ -135,25 +147,387 @@ def index():
         return redirect(url_for('lecturer_dashboard'))
     return render_template('landing.html')
 
+@app.before_request
+def check_user_security_and_lockout():
+    if current_user and current_user.is_authenticated:
+        # 1. Check account lockout status
+        lockout = get_lockout_status(current_user.username)
+        if lockout["is_locked"]:
+            rem_fmt = lockout["formatted_time"]
+            logout_user()
+            flash(f"Your account ID has been locked for security. Please wait {rem_fmt} before logging in again.", "danger")
+            return redirect(url_for('login', username=current_user.username))
+
+        # 2. Enforce mandatory password & profile (email, phone) update
+        endpoint = request.endpoint or ''
+        allowed_endpoints = ('change_password', 'logout', 'static')
+        if endpoint not in allowed_endpoints and not request.path.startswith('/static') and not request.path.startswith('/api'):
+            user_doc = users.find_one({"_id": ObjectId(current_user.id)})
+            if user_doc:
+                disp_pass = user_doc.get("display_password", "")
+                must_change = user_doc.get("must_change_password", False)
+                user_email = (user_doc.get("email") or "").strip()
+                user_phone = (user_doc.get("phone") or "").strip()
+
+                if must_change or (disp_pass and not is_strong_password(disp_pass)) or not is_valid_email(user_email) or not user_phone:
+                    flash("Security Setup Required: Please set a strong password, registered email, and phone number to open the dashboard.", "warning")
+                    return redirect(url_for('change_password'))
+
+@app.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    user_doc = users.find_one({"_id": ObjectId(current_user.id)})
+    if not user_doc:
+        flash("User account not found.", "danger")
+        return redirect(url_for('logout'))
+
+    user_email = user_doc.get('email', '')
+    user_phone = user_doc.get('phone', '')
+
+    if request.method == 'POST':
+        curr_pass = request.form.get('current_password') or ''
+        new_pass = request.form.get('new_password') or ''
+        confirm_pass = request.form.get('confirm_password') or ''
+        email = (request.form.get('email') or '').strip()
+        phone = (request.form.get('phone') or '').strip()
+
+        # 1. Verify current password
+        if not bcrypt.check_password_hash(user_doc['password'], curr_pass):
+            flash("Current password entered is incorrect.", "danger")
+            return render_template('change_password.html', user_email=email, user_phone=phone)
+
+        # 2. Check passwords match
+        if new_pass != confirm_pass:
+            flash("New passwords do not match. Please re-enter carefully.", "danger")
+            return render_template('change_password.html', user_email=email, user_phone=phone)
+
+        # 3. Validate new password policy
+        valid_pass, pass_msg = validate_password_policy(new_pass)
+        if not valid_pass:
+            flash(f"Password Policy Error: {pass_msg}", "danger")
+            return render_template('change_password.html', user_email=email, user_phone=phone)
+
+        # 4. Validate Email Address
+        if not is_valid_email(email):
+            flash("Invalid Email Format: Please enter a valid email address (e.g. faculty@college.edu).", "danger")
+            return render_template('change_password.html', user_email=email, user_phone=phone)
+
+        # 5. Validate Phone Number (Strict 10-digit mobile number)
+        if not is_valid_phone(phone):
+            flash("Invalid Mobile Phone Number: Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9 (e.g. 9876543210).", "danger")
+            return render_template('change_password.html', user_email=email, user_phone=phone)
+
+        hashed_pw = bcrypt.generate_password_hash(new_pass).decode('utf-8')
+
+        # 6. Update user document in MongoDB
+        users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {
+                "$set": {
+                    "password": hashed_pw,
+                    "display_password": new_pass,
+                    "email": email,
+                    "phone": phone,
+                    "must_change_password": False
+                }
+            }
+        )
+
+        flash("Profile security details updated successfully! Welcome to HRMS.", "success")
+        if current_user.role == 'admin':
+            return redirect(url_for('admin_dashboard'))
+        return redirect(url_for('lecturer_dashboard'))
+
+    return render_template('change_password.html', user_email=user_email, user_phone=user_phone)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    lockout_info = None
+    target_username = ""
+
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user_data = users.find_one({"username": username})
-        
+        raw_user = (request.form.get('username') or '').strip()
+        password = request.form.get('password') or ''
+        role_param = request.args.get('role', '')
+
+        # 1. Verify if username/staff_id exists in DB first
+        user_data = users.find_one({
+            "$or": [
+                {"username": raw_user},
+                {"username": raw_user.lower()},
+                {"staff_id": raw_user},
+                {"staff_id": raw_user.upper()}
+            ]
+        })
+
         if not user_data:
+            # Username is wrong/invalid -> Flash 'Invalid Username' without setting lockout attempts on valid accounts
             flash('Invalid Username', 'danger')
-        elif not bcrypt.check_password_hash(user_data['password'], password):
-            flash('Invalid Password', 'danger')
+            return redirect(url_for('login', username=raw_user, role=role_param))
+
+        canonical_username = user_data.get('username', raw_user).lower()
+        user_role = user_data.get('role', '')
+
+        # 2. Strict Role Portal Validation: Block Faculty on Management Login & Vice Versa
+        if role_param == 'admin' and user_role != 'admin':
+            flash("Access Denied: Faculty credentials cannot be used for Management Login. Please use Faculty Login.", "danger")
+            return redirect(url_for('login', username=raw_user, role=role_param))
+
+        if role_param == 'lecturer' and user_role == 'admin':
+            flash("Access Denied: Management credentials cannot be used for Faculty Login. Please use Management Login.", "danger")
+            return redirect(url_for('login', username=raw_user, role='admin'))
+
+        # 3. Check if this correct User ID / Username is currently locked out
+        lockout_status = get_lockout_status(canonical_username)
+        if lockout_status["is_locked"]:
+            rem_fmt = lockout_status["formatted_time"]
+            flash(f"Account security lockout: Too many failed password attempts on this ID. Please wait {rem_fmt} before trying again.", "danger")
+            return redirect(url_for('login', username=raw_user, role=role_param))
+
+        # 3. Username is CORRECT, now check if password is correct
+        if not bcrypt.check_password_hash(user_data['password'], password):
+            # Username IS CORRECT, but password is WRONG! Record failed attempt for this user ID.
+            fail_res = record_failed_attempt(canonical_username)
+            if fail_res["is_locked"]:
+                rem_fmt = fail_res["formatted_time"]
+                email = (user_data.get("email") or "").strip()
+                if is_valid_email(email):
+                    token = secrets.token_urlsafe(32)
+                    now = datetime.utcnow()
+                    expires_at = now + timedelta(minutes=30)
+                    password_resets.delete_many({"user_id": str(user_data["_id"]), "type": "unlock"})
+                    password_resets.insert_one({
+                        "token": token,
+                        "user_id": str(user_data["_id"]),
+                        "username": canonical_username,
+                        "email": email,
+                        "type": "unlock",
+                        "created_at": now,
+                        "expires_at": expires_at,
+                        "used": False
+                    })
+                    unlock_url = url_for('unlock_account', token=token, _external=True)
+                    send_lockout_security_alert_email(email, user_data.get('name', 'User'), unlock_url, rem_fmt)
+                    email_parts = email.split("@")
+                    masked_email = f"{email_parts[0][0]}***@{email_parts[1]}" if len(email_parts[0]) > 1 else email
+                    flash(f"Account locked! Security alert & instant unlock link sent to: {masked_email}. Use the email link or Reset Password to stop timer immediately.", "danger")
+                else:
+                    flash(f"Account locked due to multiple incorrect password entries! Security timer set for {rem_fmt}.", "danger")
+            else:
+                rem = fail_res["remaining_attempts"]
+                flash(f"Invalid Password. You have {rem} attempt{'s' if rem != 1 else ''} remaining before account lockout.", "danger")
+            return redirect(url_for('login', username=raw_user, role=role_param))
         else:
+            # Username and Password both CORRECT -> reset lockout state & log in
+            record_successful_login(canonical_username)
             user_obj = User(user_data)
             remember = 'remember' in request.form
             login_user(user_obj, remember=remember)
             if user_obj.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             return redirect(url_for('lecturer_dashboard'))
-    return render_template('login.html')
+    else:
+        q_user = (request.args.get('username') or '').strip()
+        if q_user:
+            user_data = users.find_one({
+                "$or": [
+                    {"username": q_user},
+                    {"username": q_user.lower()},
+                    {"staff_id": q_user},
+                    {"staff_id": q_user.upper()}
+                ]
+            })
+            c_user = user_data.get('username', q_user).lower() if user_data else q_user.lower()
+            lockout_info = get_lockout_status(c_user)
+            target_username = q_user
+
+    return render_template('login.html', lockout_info=lockout_info, username=target_username)
+
+@app.route('/api/check-lockout', methods=['GET'])
+def check_lockout_api():
+    raw_user = (request.args.get('username') or '').strip()
+    if not raw_user:
+        return jsonify({"is_locked": False, "remaining_seconds": 0})
+        
+    user_data = users.find_one({
+        "$or": [
+            {"username": raw_user},
+            {"username": raw_user.lower()},
+            {"staff_id": raw_user},
+            {"staff_id": raw_user.upper()}
+        ]
+    })
+    c_user = user_data.get('username', raw_user).lower() if user_data else raw_user.lower()
+    status = get_lockout_status(c_user)
+    return jsonify(status)
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        identifier = (request.form.get('identifier') or '').strip()
+        if not identifier:
+            flash("Please enter your Username or Staff ID.", "danger")
+            return render_template('forgot_password.html', identifier=identifier)
+
+        user_data = users.find_one({
+            "$or": [
+                {"username": identifier},
+                {"username": identifier.lower()},
+                {"staff_id": identifier},
+                {"staff_id": identifier.upper()}
+            ]
+        })
+
+        if not user_data:
+            flash("No account found matching that Username or Staff ID.", "danger")
+            return render_template('forgot_password.html', identifier=identifier)
+
+        email = (user_data.get('email') or '').strip()
+        if not is_valid_email(email):
+            flash(f"No valid email address registered for account '{user_data.get('name', identifier)}'. Please contact system administration.", "warning")
+            return render_template('forgot_password.html', identifier=identifier)
+
+        # Generate secure random token valid for 30 minutes
+        token = secrets.token_urlsafe(32)
+        now = datetime.utcnow()
+        expires_at = now + timedelta(minutes=30)
+
+        # Remove existing unused tokens for this user
+        password_resets.delete_many({"user_id": str(user_data["_id"])})
+
+        password_resets.insert_one({
+            "token": token,
+            "user_id": str(user_data["_id"]),
+            "username": user_data.get("username", identifier).lower(),
+            "email": email,
+            "created_at": now,
+            "expires_at": expires_at,
+            "used": False
+        })
+
+        reset_url = url_for('reset_password', token=token, _external=True)
+
+        res = send_password_reset_email(email, user_data.get('name', 'User'), reset_url)
+        if res.get("ok"):
+            email_parts = email.split("@")
+            masked_email = f"{email_parts[0][0]}***@{email_parts[1]}" if len(email_parts[0]) > 1 else email
+            flash(f"A password reset link has been sent to your registered email address ({masked_email})! Please check your inbox.", "success")
+            return redirect(url_for('login', username=user_data.get("username", identifier)))
+        else:
+            reason = res.get("reason", "Could not send email.")
+            flash(f"Email dispatch note: {reason}", "warning")
+            return render_template('forgot_password.html', identifier=identifier)
+
+    q_user = (request.args.get('username') or '').strip()
+    if not q_user:
+        flash("Please enter your Username or Staff ID first before clicking Forgot password.", "warning")
+        return redirect(url_for('login'))
+
+    user_data = users.find_one({
+        "$or": [
+            {"username": q_user},
+            {"username": q_user.lower()},
+            {"staff_id": q_user},
+            {"staff_id": q_user.upper()}
+        ]
+    })
+
+    if not user_data:
+        flash(f"Invalid Username: No registered account found matching '{q_user}'.", "danger")
+        return redirect(url_for('login', username=q_user))
+
+    canonical_identifier = user_data.get('username', q_user)
+    return render_template('forgot_password.html', identifier=canonical_identifier)
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    reset_doc = password_resets.find_one({"token": token, "used": False})
+    if not reset_doc:
+        flash("This password reset link is invalid or has already been used. Please request a new one.", "danger")
+        return redirect(url_for('forgot_password'))
+
+    now = datetime.utcnow()
+    if reset_doc.get("expires_at") and now > reset_doc.get("expires_at"):
+        flash("This password reset link has expired. Please request a new link.", "warning")
+        return redirect(url_for('forgot_password'))
+
+    user_data = users.find_one({"_id": ObjectId(reset_doc["user_id"])})
+    if not user_data:
+        flash("User account not found.", "danger")
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        new_pass = request.form.get('new_password') or ''
+        confirm_pass = request.form.get('confirm_password') or ''
+
+        if new_pass != confirm_pass:
+            flash("Passwords do not match. Please re-enter passwords carefully.", "danger")
+            return render_template('reset_password.html', token=token, username=user_data.get('username'))
+
+        valid, msg = validate_password_policy(new_pass)
+        if not valid:
+            flash(f"Password Policy Error: {msg}", "danger")
+            return render_template('reset_password.html', token=token, username=user_data.get('username'))
+
+        hashed_pw = bcrypt.generate_password_hash(new_pass).decode('utf-8')
+
+        # Update password in database
+        users.update_one(
+            {"_id": ObjectId(reset_doc["user_id"])},
+            {"$set": {"password": hashed_pw, "display_password": new_pass}}
+        )
+
+        # Mark token as used
+        password_resets.update_one({"token": token}, {"$set": {"used": True, "used_at": now}})
+
+        # Clear any active security lockout metrics
+        record_successful_login(user_data.get('username', ''))
+
+        flash("Your password has been reset successfully! You can now sign in with your new password.", "success")
+        return redirect(url_for('login', username=user_data.get('username')))
+
+    return render_template('reset_password.html', token=token, username=user_data.get('username'))
+
+@app.route('/unlock-account/<token>', methods=['GET'])
+def unlock_account(token):
+    # Find token matching unlock type
+    reset_doc = password_resets.find_one({"token": token, "type": "unlock"})
+    if not reset_doc:
+        flash("This security unlock link has expired or has been replaced by a newer alert email. Please check your inbox for the latest security link.", "warning")
+        return redirect(url_for('login'))
+
+    now = datetime.utcnow()
+    if reset_doc.get("expires_at") and now > reset_doc.get("expires_at"):
+        flash("This security unlock link has expired. Please request a password reset or wait for the timer.", "warning")
+        return redirect(url_for('forgot_password'))
+
+    # Mark token used & remove all active unlock tokens for this user so old links cannot be reused
+    if reset_doc.get("user_id"):
+        password_resets.delete_many({"user_id": reset_doc["user_id"], "type": "unlock"})
+    else:
+        password_resets.update_one({"token": token}, {"$set": {"used": True, "used_at": now}})
+
+    # Immediately cancel & clear lockout metrics in MongoDB, completely restoring Stage 0 (7 initial attempt chances)!
+    raw_user = reset_doc.get("username", "")
+    record_successful_login(raw_user)
+
+    user_data = None
+    if reset_doc.get("user_id"):
+        try:
+            user_data = users.find_one({"_id": ObjectId(reset_doc["user_id"])})
+        except Exception:
+            user_data = None
+
+    if user_data:
+        if user_data.get("username"):
+            record_successful_login(user_data["username"])
+        if user_data.get("staff_id"):
+            record_successful_login(user_data["staff_id"])
+
+    target_user = user_data.get("username", raw_user) if user_data else raw_user
+    flash(f"Account unlocked successfully! Lockout timer stopped and initial 7 attempt chances restored for '{target_user}'. You can now sign in.", "success")
+    return redirect(url_for('login', username=target_user))
 
 @app.route('/logout')
 @login_required
@@ -882,6 +1256,21 @@ def admin_dashboard_sender_email_test():
     result = test_smtp_login(smtp_user or None, smtp_password or None)
     return jsonify(result)
 
+@app.route('/admin/test-warning-email', methods=['POST'])
+@login_required
+@admin_required
+def admin_test_warning_email():
+    target_email = (request.form.get("test_email") or "").strip()
+    if not target_email:
+        admin_doc = users.find_one({"_id": ObjectId(current_user.id)})
+        target_email = (admin_doc.get("email") or "").strip() if admin_doc else ""
+
+    if not is_valid_email(target_email):
+        return jsonify({"ok": False, "reason": "Please provide a valid recipient email address to receive the test email."})
+
+    res = send_test_warning_email(target_email)
+    return jsonify(res)
+
 
 @app.route('/admin/dashboard/sender-email/reset-env', methods=['POST'])
 @login_required
@@ -1469,7 +1858,7 @@ def admin_staff_edit(id):
         username = (request.form.get('username') or '').strip()
         new_password = request.form.get('password') or ''
 
-        # Auto-set username = staff_id if not provided
+        # Auto-set username = staff_id.lower() if not provided
         if not username and staff_id:
             username = staff_id.lower()
 
@@ -1490,8 +1879,6 @@ def admin_staff_edit(id):
             existing_staff_id = users.find_one({"staff_id": staff_id, "_id": {"$ne": staff_doc["_id"]}})
             if existing_staff_id:
                 error = "This Staff ID already exists."
-            elif not username:
-                error = "Username is required for lecturer login."
             else:
                 existing_username = users.find_one({"username": username, "_id": {"$ne": staff_doc["_id"]}})
                 if existing_username:
@@ -3051,47 +3438,48 @@ def clean_t(t):
         return None
 
 def get_faculty_duty_bounds(staff_id):
-    """Calculate the earliest start and latest end time for a faculty's duty.
+    """Calculate the earliest start and latest end time for a staff member's duty.
     Includes standard college hours plus any timetable-specific classes.
     """
-    # 1. Start with standard college hours based on staff type
-    user_doc = users.find_one({"staff_id": staff_id})
-    staff_type = determine_staff_type(user_doc)
-    
-    # Use a dummy weekday to get standard hours (e.g., 9:25 - 16:30)
-    # Note: Saturday hours are handled during actual delay calculation, 
-    # but for Permission Application validation, we use a broad window.
-    from datetime import date
-    test_date = date(2026, 5, 4) # A Monday
-    deadline_in, threshold_out = get_thresholds_for(test_date, staff_type, staff_id)
-    
-    final_start = deadline_in.strftime("%H:%M")
-    final_end = threshold_out.strftime("%H:%M")
-    
-    # 2. Expand bounds based on actual timetable periods
-    data = load_faculty_timetable(staff_id)
-    if data and 'timetable' in data and 'periods' in data['timetable']:
-        periods = data['timetable']['periods']
-        for p in periods:
-            t_range = p.get('time', '')
-            if '-' in t_range:
-                try:
-                    s_part, e_part = t_range.split('-')
-                    s_cleaned = clean_t(s_part)
-                    e_cleaned = clean_t(e_part)
-                    
-                    if s_cleaned and s_cleaned < final_start:
-                        final_start = s_cleaned
-                    if e_cleaned and e_cleaned > final_end:
-                        final_end = e_cleaned
-                except:
-                    pass
-    
-    # 3. Safety fallbacks
-    if final_start < "06:00": final_start = "09:00"
-    if final_end < final_start: final_end = "16:30"
-    
-    return final_start, final_end
+    try:
+        user_doc = users.find_one({"staff_id": staff_id}) if staff_id else None
+        staff_type = determine_staff_type(user_doc)
+        
+        from datetime import date
+        test_date = date(2026, 5, 4) # A Monday
+        deadline_in, threshold_out = get_thresholds_for(test_date, staff_type, staff_id)
+        
+        final_start = deadline_in.strftime("%H:%M")
+        final_end = threshold_out.strftime("%H:%M")
+        
+        # 2. Expand bounds based on actual timetable periods if present
+        try:
+            tb_doc = timetables.find_one({"staff_id": staff_id}) if staff_id else None
+            if tb_doc and isinstance(tb_doc, dict) and 'periods' in tb_doc:
+                for p in tb_doc.get('periods', []):
+                    t_range = p.get('time', '')
+                    if '-' in t_range:
+                        try:
+                            s_part, e_part = t_range.split('-', 1)
+                            s_cleaned = clean_t(s_part)
+                            e_cleaned = clean_t(e_part)
+                            
+                            if s_cleaned and s_cleaned < final_start:
+                                final_start = s_cleaned
+                            if e_cleaned and e_cleaned > final_end:
+                                final_end = e_cleaned
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+        
+        # 3. Safety fallbacks
+        if final_start < "06:00": final_start = "09:00"
+        if final_end < final_start: final_end = "16:30"
+        
+        return final_start, final_end
+    except Exception:
+        return "09:15", "17:15"
 
 @app.route('/api/faculty/duty-hours/<staff_id>')
 @login_required
@@ -3875,6 +4263,17 @@ def compute_daily_delay(records, date_obj, user_doc):
     
     if not checkins: return 'Absent'
     
+    # Extract status note if present
+    status_note = ""
+    for r in records:
+        if r.get('status_note'):
+            status_note = r.get('status_note')
+            break
+
+    # If no checkout punches exist and no leave/permission note, return 'Absent' for delay
+    if not checkouts and not status_note:
+        return 'Absent'
+
     # 1. Define the Required Duty Window for the day
     staff_type = determine_staff_type(user_doc)
     faculty_id = user_doc.get('staff_id') if isinstance(user_doc, dict) else (user_doc if isinstance(user_doc, str) else None)
@@ -3893,11 +4292,6 @@ def compute_daily_delay(records, date_obj, user_doc):
         co = parse_ts(r.get('checkout'))
         if ci and co:
             covered_intervals.append((ci, co))
-        elif ci:
-            if ref_date == datetime.now().date():
-                covered_intervals.append((ci, datetime.now()))
-            else:
-                covered_intervals.append((ci, req_end))
     
     # Add Permissions/Leaves from status_note
     status_note = ""
@@ -4087,10 +4481,23 @@ def lecturer_attendance():
                     max_co = max(checkouts) if checkouts else None
                     time_in = min_ci.strftime("%H:%M") if min_ci else ""
                     time_out = max_co.strftime("%H:%M") if max_co else ""
-                    status = "Present" if (min_ci and max_co) else ("Checked-in" if min_ci else "Unknown")
+
+                    dt_obj = datetime.fromisoformat(iso_date)
+                    staff_type = determine_staff_type(staff_doc)
+                    deadline_in, threshold_out = get_thresholds_for(dt_obj, staff_type, staff_id)
+                    req_end_dt = datetime.combine(dt_obj.date(), threshold_out)
+
+                    if min_ci and max_co:
+                        status = "Present"
+                    elif min_ci:
+                        if iso_date == today_str and datetime.now() < req_end_dt:
+                            status = "Checked-in"
+                        else:
+                            status = "Absent"
+                    else:
+                        status = "Absent"
 
                     try:
-                        dt_obj = datetime.fromisoformat(iso_date)
                         delay_val = compute_daily_delay(user_rows, dt_obj, staff_doc)
                     except:
                         delay_val = "00:00:00"
@@ -4225,16 +4632,32 @@ def admin_faculty_attendance():
                     u_doc = staff_lookup.get(s_id)
                     try:
                         dt_obj = datetime.fromisoformat(date_part)
-                        delay_val = compute_daily_delay(s_rows, dt_obj, u_doc)
+                        staff_type = determine_staff_type(u_doc)
+                        deadline_in, threshold_out = get_thresholds_for(dt_obj, staff_type, s_id)
+                        req_end_dt = datetime.combine(dt_obj.date(), threshold_out)
                     except:
-                        delay_val = "00:00:00"
+                        req_end_dt = datetime.now()
+                        dt_obj = datetime.now()
 
                     checkins = [parse_ts(r.get("checkin")) for r in s_rows if r.get("checkin")]
                     checkouts = [parse_ts(r.get("checkout")) for r in s_rows if r.get("checkout")]
                     min_ci = min(checkins) if checkins else None
                     max_co = max(checkouts) if checkouts else None
 
-                    status = "Present" if (min_ci and max_co) else ("Checked-in" if min_ci else "Unknown")
+                    if min_ci and max_co:
+                        status = "Present"
+                    elif min_ci:
+                        if date_part == datetime.now().strftime('%Y-%m-%d') and datetime.now() < req_end_dt:
+                            status = "Checked-in"
+                        else:
+                            status = "Absent"
+                    else:
+                        status = "Absent"
+
+                    try:
+                        delay_val = compute_daily_delay(s_rows, dt_obj, u_doc)
+                    except:
+                        delay_val = "00:00:00"
                     
                     if date_part == view_date:
                         l_type = leave_map.get(str(u_doc['_id']) if u_doc else "")
@@ -4982,7 +5405,18 @@ def apply_leave():
         flash("Leave application submitted successfully with class assignments!", "success")
         return redirect(url_for('lecturer_dashboard'))
     
-    return render_template('lecturer/apply_leave.html', mode=mode, current_user_staff_id=getattr(current_user, 'staff_id', ''))
+    staff_id_val = str(getattr(current_user, 'staff_id', '') or '').strip().upper()
+    user_doc = users.find_one({"_id": ObjectId(current_user.id)}) if (current_user and hasattr(current_user, 'id')) else {}
+    cat_val = str((user_doc or {}).get('category') or getattr(current_user, 'category', '') or '').strip().lower()
+    stype_val = str((user_doc or {}).get('staff_type') or getattr(current_user, 'staff_type', '') or '').strip().lower()
+    is_non_faculty = staff_id_val.startswith('BBHCFN') or 'non' in cat_val or 'non' in stype_val
+
+    return render_template(
+        'lecturer/apply_leave.html',
+        mode=mode,
+        current_user_staff_id=staff_id_val,
+        is_non_faculty=is_non_faculty
+    )
 
 
 @app.route('/lecturer/leave/<id>/cancel', methods=['POST'])
