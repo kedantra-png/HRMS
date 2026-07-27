@@ -238,4 +238,46 @@
   } else {
     boot();
   }
+
+  // Dynamic footer avoidance: Automatically lifts floating buttons (WhatsApp & AI Chatbot) above footers
+  function updateFabFooterAvoidance() {
+    const footer = document.querySelector('footer, .hrms-page-footer, #hrms-global-footer');
+    const fabWhatsApp = document.querySelector('#staff-chat-launcher');
+    const fabChatbot = document.querySelector('#hrms-chatbot');
+    const fabs = [fabWhatsApp, fabChatbot].filter(Boolean);
+
+    if (!fabs.length) return;
+
+    let liftAmount = 0;
+    if (footer) {
+      const rect = footer.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      if (rect.top < viewportHeight && rect.bottom > 0) {
+        const overlap = viewportHeight - rect.top;
+        // 20px clearance above footer top edge
+        liftAmount = Math.max(0, Math.round(overlap + 20));
+      }
+    }
+
+    fabs.forEach(function (fab) {
+      if (fab.classList.contains('fab-is-dragging') || fab.classList.contains('fab-container-dragging')) {
+        return;
+      }
+      if (liftAmount > 0) {
+        fab.classList.add('fab-footer-lifted');
+        fab.style.transform = 'translateY(-' + liftAmount + 'px)';
+        fab.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+      } else {
+        fab.classList.remove('fab-footer-lifted');
+        fab.style.transform = 'translateY(0px)';
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateFabFooterAvoidance, { passive: true });
+  window.addEventListener('resize', updateFabFooterAvoidance, { passive: true });
+  document.addEventListener('DOMContentLoaded', updateFabFooterAvoidance);
+  setTimeout(updateFabFooterAvoidance, 100);
+  setTimeout(updateFabFooterAvoidance, 300);
+  setTimeout(updateFabFooterAvoidance, 700);
 })();

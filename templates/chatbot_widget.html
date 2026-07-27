@@ -40,10 +40,23 @@
 
     .hrms-chatbot {
         position: fixed;
-        bottom: 30px;
+        bottom: calc(30px + var(--fab-offset, 0px));
         right: 30px;
         z-index: 9999;
         font-family: 'Inter', sans-serif;
+        transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (max-width: 640px) {
+        .hrms-chatbot:not([data-fab-positioned]) {
+            bottom: calc(1.25rem + var(--fab-offset, 0px));
+            right: 1rem;
+        }
+        .chatbot-bubble {
+            width: 52px;
+            height: 52px;
+            font-size: 22px;
+        }
     }
 
     .chatbot-bubble {
