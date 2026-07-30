@@ -472,46 +472,57 @@
     </div>
 </div>
 
-<div class="mb-8 -mx-4 sm:-mx-6 lg:-mx-8">
-    <div
-        class="relative w-full bg-white border-b border-slate-200 px-4 py-4 sm:px-8 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-5">
-        <div class="flex flex-col items-center sm:flex-row sm:items-center gap-1 sm:gap-5">
-            <div class="flex-shrink-0">
-                <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="College Logo"
-                    class="h-20 w-20 sm:h-24 sm:w-24 object-contain">
+<div class="mb-6 sm:mb-8 -mx-4 sm:-mx-6 lg:-mx-8">
+    <div class="w-full bg-white border-b border-slate-200 px-4 py-3 sm:px-8 sm:py-5 shadow-xs">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Left Side: Logo & College Title -->
+            <div class="flex items-center gap-3 sm:gap-5 text-center md:text-left w-full md:w-auto justify-center md:justify-start">
+                <div class="shrink-0">
+                    <img src="{{ url_for('static', filename='img/logo-removebg-preview.png') }}" alt="College Logo"
+                        class="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 object-contain drop-shadow-sm">
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-base sm:text-xl md:text-2xl font-extrabold text-slate-900 leading-tight tracking-tight">
+                        Dr. B. B. Hegde First Grade College, Kundapura
+                    </h1>
+                    <div class="h-0.5 bg-gradient-to-r from-indigo-500 via-indigo-300 to-transparent my-1 w-full max-w-xs md:max-w-md mx-auto md:mx-0"></div>
+                    <p class="text-[11px] sm:text-xs text-slate-500 font-medium truncate sm:whitespace-normal">
+                        A Unit of Coondapur Education Society (R)
+                    </p>
+                </div>
             </div>
-            <div class="text-center sm:text-left">
-                <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-snug">
-                    Dr. B. B. Hegde First Grade College, Kundapura
-                </h1>
-                <div class="h-px animate-flow-line my-1.5 w-full"></div>
-                <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                    A Unit of Coondapur Education Society (R)
-                </p>
+
+            <!-- Right Side: Navigation & Actions -->
+            <div class="flex items-center justify-center md:justify-end gap-2 sm:gap-3 w-full md:w-auto pt-2 md:pt-0 border-t md:border-0 border-slate-100 flex-wrap">
+                <!-- Notifications Bell -->
+                <button onclick="toggleNotifications()" 
+                    class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-all flex items-center justify-center shrink-0 group shadow-2xs"
+                    title="View Notifications">
+                    <i id="notif-bell-icon" class="fas fa-bell text-sm sm:text-base"></i>
+                    <span id="notif-badge" class="hidden absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
+                </button>
+
+                <!-- Profile -->
+                <button onclick="toggleProfileModal()" 
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 border border-transparent hover:border-indigo-100 transition-all active:scale-95">
+                    <i class="fas fa-user-circle text-base sm:text-lg text-indigo-600"></i>
+                    <span>Profile</span>
+                </button>
+
+                <!-- Security -->
+                <a href="{{ url_for('change_password') }}"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 border border-transparent hover:border-indigo-100 transition-all active:scale-95">
+                    <i class="fas fa-user-shield text-base sm:text-lg text-indigo-600"></i>
+                    <span>Security</span>
+                </a>
+
+                <!-- Logout -->
+                <a href="{{ url_for('logout') }}"
+                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all active:scale-95">
+                    <i class="fas fa-sign-out-alt text-base sm:text-lg"></i>
+                    <span>Logout</span>
+                </a>
             </div>
-        </div>
-        <div class="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-6 sm:gap-6">
-            <button onclick="toggleNotifications()" 
-                class="absolute right-4 top-6 sm:relative sm:right-0 sm:top-0 w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all flex items-center justify-center group">
-                <i id="notif-bell-icon" class="fas fa-bell text-lg"></i>
-                <span id="notif-badge" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
-                <span class="absolute -bottom-10 right-0 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">Updates</span>
-            </button>
-            <button onclick="toggleProfileModal()" 
-                class="flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-bold transition-all active:scale-95">
-                <i class="fas fa-user-circle text-xl mr-2"></i>
-                Profile
-            </button>
-            <a href="{{ url_for('change_password') }}"
-                class="flex items-center text-indigo-600 hover:text-indigo-800 text-sm font-bold transition-colors">
-                <i class="fas fa-user-shield text-lg mr-1.5"></i>
-                Security
-            </a>
-            <a href="{{ url_for('logout') }}"
-                class="flex items-center text-red-600 hover:text-red-700 text-sm font-bold transition-colors">
-                <i class="fas fa-sign-out-alt mr-2"></i>
-                Logout
-            </a>
         </div>
     </div>
 </div>
@@ -602,7 +613,7 @@
                             <div class="min-w-0 w-full">
                                 <p class="font-bold text-slate-700 truncate">{{ leave.type }}</p>
                                 <p class="text-xs text-slate-500 truncate">
-                                    {{ leave.from_date }}{% if leave.to_date and leave.to_date != leave.from_date %} to {{ leave.to_date }}{% endif %}
+                                    {{ leave.from_date | dmy }}{% if leave.to_date and leave.to_date != leave.from_date %} to {{ leave.to_date | dmy }}{% endif %}
                                     {% if leave.half_day %}
                                     <span class="font-bold text-indigo-600 ml-1 uppercase">({{ leave.session }})</span>
                                     {% endif %}
@@ -709,7 +720,7 @@
                     <div id="profile-container" onclick="{% if not profile_locked %}document.getElementById('profile-upload').click(){% endif %}" 
                          class="absolute inset-[9px] sm:inset-[10px] rounded-full border-4 border-white overflow-hidden {% if not profile_locked %}cursor-pointer{% endif %} bg-white transition-transform active:scale-95">
                         <img id="profile-display" 
-                             src="{% if profile_pic %}{{ url_for('static', filename=profile_pic) }}?v={{ range(1, 10000)|random }}{% else %}https://ui-avatars.com/api/?name={{ current_user.name }}&background=6366f1&color=fff&size=256{% endif %}"
+                             src="{% if profile_pic %}{{ url_for('static', filename=profile_pic) }}?v={{ range(1, 10000)|random }}{% else %}https://ui-avatars.com/api/?name={{ current_user.name | avatar_initials }}&background=6366f1&color=fff&size=256{% endif %}"
                              class="w-full h-full object-cover"
                              onload="onProfileImageReady()"
                              onerror="onProfileImageReady()">
@@ -731,9 +742,11 @@
                 <p class="text-sm text-slate-500 leading-tight">Assistant Professor</p>
 
                 <div class="profile-stats-grid">
-                    <div class="stat-leaves text-center min-w-0">
-                        <p id="leaves-left-count" class="text-base sm:text-lg font-bold text-slate-800 leading-tight">{{ leaves_left }}</p>
-                        <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase leading-tight mt-1">Leaves Left</p>
+                    <div class="stat-leaves text-center min-w-0 cursor-pointer p-1.5 rounded-2xl hover:bg-indigo-50/70 border border-transparent hover:border-indigo-200 transition-all duration-200 group" onclick="openLeaveDetailsModal()" title="Click to view detailed leave breakdown">
+                        <p id="leaves-left-count" class="text-base sm:text-lg font-bold text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors">{{ leaves_left }}</p>
+                        <p class="text-[9px] sm:text-[10px] font-bold text-indigo-600 uppercase leading-tight mt-1 inline-flex items-center gap-0.5">
+                            Leaves Left <i class="fas fa-chevron-right text-[8px] opacity-70 group-hover:translate-x-0.5 transition-transform"></i>
+                        </p>
                     </div>
                     <div class="stat-attendance text-center min-w-0 px-1">
                         <p class="text-base sm:text-lg font-bold text-slate-800 leading-tight">{{ attendance_percent }}%</p>
@@ -1028,7 +1041,150 @@
             }, 300);
         }
     }
+
+    async function openLeaveDetailsModal() {
+        const modal = document.getElementById('leaveDetailsModal');
+        const container = document.getElementById('leaveDetailsModalContainer');
+        const content = document.getElementById('leaveBreakdownContent');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            container.classList.remove('scale-95', 'opacity-0');
+            container.classList.add('scale-100', 'opacity-100');
+        }, 10);
+
+        content.innerHTML = `
+            <div class="text-center py-8 text-slate-400">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-indigo-600"></i>
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Fetching latest leave details...</p>
+            </div>
+        `;
+
+        try {
+            const res = await fetch('/lecturer/api/all-balances');
+            const data = await res.json();
+            if (data.success && data.stats && data.stats.length > 0) {
+                let totalRemaining = 0;
+                let html = '<div class="space-y-3">';
+                data.stats.forEach(st => {
+                    totalRemaining += st.remaining;
+                    const percentUsed = st.total > 0 ? Math.min(100, Math.round((st.used / st.total) * 100)) : 0;
+                    html += `
+                        <div class="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:border-indigo-300 transition-all">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-indigo-600 shadow-sm"></span>
+                                    <span class="font-extrabold text-slate-800 text-sm">${st.type}</span>
+                                </div>
+                                <span class="text-xs font-black ${st.remaining > 0 ? 'text-emerald-700 bg-emerald-100/60 px-3 py-1 rounded-full border border-emerald-200/80' : 'text-slate-500 bg-slate-100 px-3 py-1 rounded-full'}">
+                                    ${st.remaining} Days Left
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-center text-xs py-2 bg-slate-50 rounded-xl my-2.5 border border-slate-100">
+                                <div>
+                                    <span class="block text-[9px] font-black text-slate-400 uppercase tracking-wider">Allocated</span>
+                                    <span class="font-bold text-slate-800 text-sm">${st.total}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[9px] font-black text-slate-400 uppercase tracking-wider">Used</span>
+                                    <span class="font-bold text-amber-600 text-sm">${st.used}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[9px] font-black text-slate-400 uppercase tracking-wider">Remaining</span>
+                                    <span class="font-bold text-indigo-600 text-sm">${st.remaining}</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div class="bg-gradient-to-r from-indigo-500 to-violet-600 h-full rounded-full transition-all duration-500" style="width: ${percentUsed}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                content.innerHTML = html;
+                document.getElementById('modalTotalLeavesLeft').textContent = `${totalRemaining} Days`;
+                const mainCount = document.getElementById('leaves-left-count');
+                if (mainCount) mainCount.textContent = totalRemaining;
+            } else {
+                content.innerHTML = `
+                    <div class="p-8 text-center text-slate-500 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <i class="fas fa-info-circle text-amber-500 text-3xl mb-3"></i>
+                        <p class="font-bold text-sm text-slate-700">No leave categories assigned</p>
+                        <p class="text-xs text-slate-400 mt-1">Leave balances will update once configured by admin.</p>
+                    </div>
+                `;
+            }
+        } catch(err) {
+            console.error(err);
+            content.innerHTML = `
+                <div class="p-8 text-center text-rose-600 bg-rose-50 rounded-2xl border border-rose-100">
+                    <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+                    <p class="font-bold text-sm">Failed to load leave details</p>
+                    <p class="text-xs mt-1 text-rose-500">Please check your connection and try again.</p>
+                </div>
+            `;
+        }
+    }
+
+    function closeLeaveDetailsModal() {
+        const modal = document.getElementById('leaveDetailsModal');
+        const container = document.getElementById('leaveDetailsModalContainer');
+        if (container) {
+            container.classList.remove('scale-100', 'opacity-100');
+            container.classList.add('scale-95', 'opacity-0');
+        }
+        setTimeout(() => {
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }, 300);
+    }
 </script>
+
+<!-- Leave Details Modal -->
+<div id="leaveDetailsModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div class="bg-white w-full max-w-md lg:max-w-lg rounded-[32px] shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0 duration-300 flex flex-col max-h-[85vh] border border-slate-100" id="leaveDetailsModalContainer">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 p-6 text-white relative shrink-0">
+            <button onclick="closeLeaveDetailsModal()" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+            <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center text-xl text-white shadow-inner">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-xl leading-tight">Leave Balance Details</h3>
+                    <p class="text-xs text-indigo-100 font-medium">Real-time updated leave information</p>
+                </div>
+            </div>
+            <div class="mt-4 pt-4 border-t border-white/15 flex items-center justify-between">
+                <span class="text-xs font-bold text-indigo-200 uppercase tracking-widest">Total Remaining</span>
+                <span class="text-2xl font-black text-white" id="modalTotalLeavesLeft">{{ leaves_left }} Days</span>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4 overflow-y-auto flex-1 bg-slate-50/60 custom-scrollbar" id="leaveBreakdownContent">
+            <div class="text-center py-8 text-slate-400">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-3 text-indigo-600"></i>
+                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Loading leave categories...</p>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
+            <a href="{{ url_for('apply_leave', mode='full') }}" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-200 flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i> Apply Leave
+            </a>
+            <button onclick="closeLeaveDetailsModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- Faculty Profile Modal -->
 <div id="profileModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">

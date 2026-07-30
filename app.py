@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, get_flashed_messages, session, send_file, jsonify, Response
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, date
 from dotenv import load_dotenv
 load_dotenv()
 from flask_socketio import SocketIO, emit, join_room
@@ -66,6 +66,56 @@ def salary_display_amount(v):
 
 def _salary_display_amt(v):
     return salary_display_amount(v)
+
+
+@app.template_filter('avatar_initials')
+def avatar_initials_filter(name):
+    """
+    Extracts 2-letter initials ignoring honorific titles (Mr., Mrs., Dr., Prof., Ms., etc.)
+    Example: 'Mr. Pranam R Betrabet' -> 'PR'
+    """
+    if not name:
+        return "U"
+    titles = {"mr", "mr.", "mrs", "mrs.", "ms", "ms.", "dr", "dr.", "prof", "prof.", "sir", "madam"}
+    parts = [p.strip() for p in str(name).split() if p.strip()]
+    
+    while parts and parts[0].lower() in titles:
+        parts.pop(0)
+        
+    if not parts:
+        return "U"
+    
+    if len(parts) == 1:
+        return parts[0][:2].upper()
+    
+    return (parts[0][0] + parts[1][0]).upper()
+
+
+@app.template_filter('format_date_dmy')
+@app.template_filter('dmy')
+def format_date_dmy_filter(value):
+    """
+    Formats dates into DD-MM-YYYY format across Jinja templates.
+    Example: '2026-07-30' -> '30-07-2026'
+    """
+    if not value:
+        return ""
+    if isinstance(value, (datetime, date)):
+        return value.strftime("%d-%m-%Y")
+    
+    val_str = str(value).strip()
+    if not val_str:
+        return ""
+        
+    try:
+        # Check if it starts with YYYY-MM-DD
+        m = re.match(r'^(?P<y>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})(?P<rest>.*)$', val_str)
+        if m:
+            return f"{m.group('d')}-{m.group('m')}-{m.group('y')}{m.group('rest')}"
+    except Exception:
+        pass
+        
+    return val_str
 
 
 app.secret_key = os.getenv("SECRET_KEY") or os.urandom(24)
@@ -5259,6 +5309,34 @@ def apply_leave():
         else:
             from_date = request.form.get('from_date')
             to_date = request.form.get('to_date')
+
+        today_str = datetime.now().strftime('%Y-%m-%d')
+        now_mins = datetime.now().hour * 60 + datetime.now().minute
+
+        if leave_mode == 'time':
+            if base_date < today_str:
+                flash("Permission Date cannot be in the past.", "danger")
+                return redirect(url_for('apply_leave', mode='time'))
+            if base_date == today_str and req_start < now_mins:
+                flash("Permission 'From' time cannot be in the past.", "danger")
+                return redirect(url_for('apply_leave', mode='time'))
+        else:
+            if from_date < today_str:
+                flash("From Date cannot be in the past.", "danger")
+                return redirect(url_for('apply_leave', mode=leave_mode))
+            if to_date and to_date < today_str:
+                flash("To Date cannot be in the past.", "danger")
+                return redirect(url_for('apply_leave', mode=leave_mode))
+            if from_date == today_str:
+                if now_mins >= 15 * 60:
+                    flash("It's past 3:00 PM. Current day leave is no longer available.", "danger")
+                    return redirect(url_for('apply_leave', mode=leave_mode))
+                elif now_mins >= 9 * 60 + 30:
+                    half_day_flag = request.form.get('half_day') == 'on'
+                    session_val = request.form.get('session')
+                    if not half_day_flag or session_val != 'afternoon':
+                        flash("It's past 9:30 AM. Today you can only apply for 'Afternoon Half-Day'.", "danger")
+                        return redirect(url_for('apply_leave', mode=leave_mode))
 
         # CLEANUP: Delete only STALE drafts (Pending/Rejected) before submitting.
         # We must PRESERVE 'accepted' drafts so they can be linked to this leave.

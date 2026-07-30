@@ -31,11 +31,11 @@
             </div>
             <div>
                 <p class="text-indigo-200 text-sm">From Date</p>
-                <p class="font-bold text-lg">{{ leave.from_date }}</p>
+                <p class="font-bold text-lg">{{ leave.from_date | dmy }}</p>
             </div>
             <div>
                 <p class="text-indigo-200 text-sm">To Date</p>
-                <p class="font-bold text-lg">{{ leave.to_date }}</p>
+                <p class="font-bold text-lg">{{ leave.to_date | dmy }}</p>
             </div>
             <div>
                 <p class="text-indigo-200 text-sm">Allocation Status</p>

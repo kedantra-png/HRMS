@@ -142,25 +142,26 @@
         </div>
 
         <!-- Faculty Info -->
-        <div class="space-y-4 md:space-y-2 mb-6">
-            <div class="flex flex-col md:flex-row md:items-end gap-1 md:gap-0">
+        <!-- Faculty Info -->
+        <div class="space-y-3 md:space-y-2 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-0 py-0.5">
                 <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Name of the Faculty</span>
-                <span class="hidden md:inline mr-2">:</span>
-                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base">{{ hod_req.requester_name }}</div>
+                <span class="hidden md:inline mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base leading-normal truncate">{{ hod_req.requester_name }}</div>
             </div>
-            <div class="flex flex-col md:flex-row md:items-end gap-1 md:gap-0">
+            <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-0 py-0.5">
                 <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Department</span>
-                <span class="hidden md:inline mr-2">:</span>
-                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base">{{ lecturer.department or '___________________________' }}</div>
+                <span class="hidden md:inline mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base leading-normal truncate">{{ lecturer.department or '___________________________' }}</div>
             </div>
-            <div class="flex flex-col md:flex-row md:items-end gap-1 md:gap-0">
+            <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-0 py-0.5">
                 <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Designation</span>
-                <span class="hidden md:inline mr-2">:</span>
-                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base">{{ lecturer.designation or '___________________________' }}</div>
+                <span class="hidden md:inline mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 uppercase text-sm md:text-base leading-normal truncate">{{ lecturer.designation or '___________________________' }}</div>
             </div>
-            <div class="flex flex-col md:flex-row md:items-start pt-1 gap-2 md:gap-0">
+            <div class="flex flex-col md:flex-row md:items-center pt-1 gap-2 md:gap-0 py-0.5">
                 <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Nature of Leave</span>
-                <span class="hidden md:inline mr-2">:</span>
+                <span class="hidden md:inline mr-2.5 font-bold text-slate-700">:</span>
                 <div class="pb-0.5 font-bold text-slate-900 flex flex-wrap items-center gap-4">
                     {% if not duration_str and hod_req.mode != 'time' %}
                     <span class="text-[9px] md:text-xs text-slate-400 font-normal italic">(CL / EL / RH / OOD / SCL / LOP) :</span>
@@ -170,29 +171,29 @@
                     </span>
                 </div>
             </div>
-            <div class="flex flex-col md:flex-row md:items-start pt-1 gap-2 md:gap-0">
-                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase mt-0.5">No. of days of Leave</span>
-                <span class="hidden md:inline mr-2 mt-0.5">:</span>
+            <div class="flex flex-col md:flex-row md:items-center pt-1 gap-2 md:gap-0 py-0.5">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">No. of days of Leave</span>
+                <span class="hidden md:inline mr-2.5 font-bold text-slate-700">:</span>
                 <div class="flex-1 flex flex-col gap-3 md:gap-2 pb-0.5 w-full">
                     <div class="flex flex-wrap gap-4 md:gap-6 items-center">
                         <span class="text-sm">From: <span class="font-bold border-b border-dotted border-slate-400 px-2 min-w-[60px] inline-block">
                                 {% if hod_req.mode == 'time' %}
-                                    {{ hod_req.from_date.split(' ')[0] if ' ' in hod_req.from_date|string else hod_req.from_date or '____' }} 
+                                    {{ (hod_req.from_date.split(' ')[0] if ' ' in hod_req.from_date|string else hod_req.from_date or '____') | dmy }} 
                                     {% if ' ' in hod_req.from_date|string %}
                                     <span class="text-indigo-600 ml-1 font-black">({{ hod_req.from_date.split(' ')[1] }})</span>
                                     {% endif %}
                                 {% else %}
-                                    {% if ' ' in hod_req.from_date|string %}{{ hod_req.from_date.split(' ')[0] }}{% else %}{{ hod_req.from_date or '__________' }}{% endif %}
+                                    {% if ' ' in hod_req.from_date|string %}{{ hod_req.from_date.split(' ')[0] | dmy }}{% else %}{{ hod_req.from_date | dmy or '__________' }}{% endif %}
                                 {% endif %}
                             </span></span>
                         <span class="text-sm">To: <span class="font-bold border-b border-dotted border-slate-400 px-2 min-w-[60px] inline-block">
                                 {% if hod_req.mode == 'time' %}
-                                    {{ hod_req.to_date.split(' ')[0] if ' ' in hod_req.to_date|string else hod_req.to_date or '____' }}
+                                    {{ (hod_req.to_date.split(' ')[0] if ' ' in hod_req.to_date|string else hod_req.to_date or '____') | dmy }}
                                     {% if ' ' in hod_req.to_date|string %}
                                     <span class="text-indigo-600 ml-1 font-black">({{ hod_req.to_date.split(' ')[1] }})</span>
                                     {% endif %}
                                 {% else %}
-                                    {% if ' ' in hod_req.to_date|string %}{{ hod_req.to_date.split(' ')[0] }}{% else %}{{ hod_req.to_date or '__________' }}{% endif %}
+                                    {% if ' ' in hod_req.to_date|string %}{{ hod_req.to_date.split(' ')[0] | dmy }}{% else %}{{ hod_req.to_date | dmy or '__________' }}{% endif %}
                                 {% endif %}
                             </span></span>
                     </div>
@@ -214,10 +215,10 @@
                     </div>
                 </div>
             </div>
-            <div class="flex flex-col md:flex-row md:items-start gap-1 md:gap-0">
-                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase mt-0.5">Reason for the Leave</span>
-                <span class="hidden md:inline mr-2 mt-0.5">:</span>
-                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-1 font-medium text-slate-800 leading-relaxed italic min-h-[40px] text-sm md:text-base break-all min-w-0">
+            <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-0 py-0.5">
+                <span class="text-[10px] md:text-sm font-bold text-slate-500 md:text-slate-700 md:w-48 shrink-0 uppercase">Reason for the Leave</span>
+                <span class="hidden md:inline mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-300 md:border-slate-400 flex-1 pb-1 font-medium text-slate-800 leading-normal italic min-h-[30px] text-sm md:text-base break-all min-w-0">
                     {{ hod_req.reason or '__________________________________________________________________________' }}
                 </div>
             </div>
@@ -398,7 +399,6 @@
         if (!sheet || !container) return;
 
         sheet.style.transform = 'none';
-        sheet.style.maxWidth = window.innerWidth <= 820 ? 'none' : '100%';
         
         const containerWidth = container.clientWidth;
         const isMobile = window.innerWidth <= 640;
@@ -406,12 +406,12 @@
         const availableWidth = containerWidth - padding;
         const originalWidth = sheet.offsetWidth || 794;
 
-        if (availableWidth < originalWidth) {
+        if (availableWidth < originalWidth && originalWidth > 0) {
             const scale = availableWidth / originalWidth;
-            sheet.style.transformOrigin = 'top left';
+            sheet.style.transformOrigin = 'top center';
             sheet.style.transform = `scale(${scale})`;
             sheet.style.marginBottom = `-${sheet.offsetHeight * (1 - scale)}px`;
-            sheet.style.marginRight = `-${originalWidth * (1 - scale)}px`;
+            sheet.style.marginRight = '0';
         } else {
             sheet.style.transform = 'none';
             sheet.style.marginBottom = '0';

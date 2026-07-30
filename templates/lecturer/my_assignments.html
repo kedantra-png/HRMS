@@ -148,7 +148,7 @@
                                     <div class="flex items-center gap-2 mb-2 flex-wrap">
                                         <span class="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase">{{ n.class_details.subject }}</span>
                                         {% if n.class_details.room %}
-                                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase"><i class="fas fa-map-marker-alt text-slate-400 mr-1"></i> Room {{ n.class_details.room }}</span>
+                                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase"><i class="fas fa-map-marker-alt text-slate-400 mr-1"></i> Class {{ n.class_details.room }}</span>
                                         {% endif %}
                                     </div>
                                     <h4 class="font-bold text-slate-800 text-[13px] mb-2"><i class="far fa-calendar-alt text-indigo-400 mr-1.5"></i> {{ n.class_details.day }}, {{ n.class_details.date }}</h4>
@@ -234,7 +234,7 @@
                             <span class="text-[10px] font-bold text-slate-500 truncate max-w-[150px]">For {{ a.assigned_by_name }}</span>
                         </div>
                         {% if a.class_details.room %}
-                        <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-wider">Rm {{ a.class_details.room }}</span>
+                        <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-wider">Class {{ a.class_details.room }}</span>
                         {% endif %}
                     </div>
                 </div>
@@ -289,7 +289,7 @@
                             <span class="text-[10px] font-bold text-slate-500 truncate max-w-[150px]">For {{ a.assigned_by_name }}</span>
                         </div>
                         {% if a.class_details.room %}
-                        <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-wider">Rm {{ a.class_details.room }}</span>
+                        <span class="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-1 rounded uppercase tracking-wider">Class {{ a.class_details.room }}</span>
                         {% endif %}
                     </div>
                 </div>

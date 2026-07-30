@@ -155,43 +155,43 @@
 
         <!-- Faculty Info -->
         <div class="space-y-2 mb-4">
-            <div class="flex items-end">
+            <div class="flex items-center py-0.5">
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">Name of the Faculty</span>
-                <span class="mr-2">:</span>
-                <div class="border-b border-dotted border-slate-400 flex-1 pb-0.5 font-bold text-slate-900">{{ leave.lecturer_name }}</div>
+                <span class="mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 leading-normal truncate">{{ leave.lecturer_name }}</div>
             </div>
-            <div class="flex items-end">
+            <div class="flex items-center py-0.5">
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">Department</span>
-                <span class="mr-2">:</span>
-                <div class="border-b border-dotted border-slate-400 flex-1 pb-0.5 font-bold text-slate-900">{{ lecturer.department or '___________________________' }}</div>
+                <span class="mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 leading-normal truncate">{{ lecturer.department or '___________________________' }}</div>
             </div>
-            <div class="flex items-end">
+            <div class="flex items-center py-0.5">
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">Designation</span>
-                <span class="mr-2">:</span>
-                <div class="border-b border-dotted border-slate-400 flex-1 pb-0.5 font-bold text-slate-900">{{ lecturer.designation or '___________________________' }}</div>
+                <span class="mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-400 flex-1 pb-0.5 font-bold text-slate-900 leading-normal truncate">{{ lecturer.designation or '___________________________' }}</div>
             </div>
-            <div class="flex items-end">
+            <div class="flex items-center py-0.5">
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">Nature of Leave</span>
-                <span class="mr-2">:</span>
+                <span class="mr-2.5 font-bold text-slate-700">:</span>
                 <div class="pb-0.5 font-bold text-slate-900 flex items-center gap-4">
                     {% if leave.mode != 'time' %}
                     <span class="text-xs text-slate-400 font-normal">(CL / EL / RH / OOD / SCL / LOP) :</span>
                     {% endif %}
-                    <span class="px-2 py-0.5 bg-slate-100 rounded border border-slate-200 uppercase">{{ leave.type }}</span>
+                    <span class="px-2 py-0.5 bg-slate-100 rounded border border-slate-200 uppercase text-xs">{{ leave.type }}</span>
                 </div>
             </div>
-            <div class="flex items-end pt-1">
+            <div class="flex items-center py-0.5">
                 <span class="text-sm font-bold text-slate-700 w-48 shrink-0">No. of days of Leave</span>
-                <span class="mr-2">:</span>
-                <div class="flex-1 flex gap-4 pb-0.5 items-center">
+                <span class="mr-2.5 font-bold text-slate-700">:</span>
+                <div class="flex-1 flex gap-4 pb-0.5 items-center flex-wrap">
                     {% if leave.mode == 'time' %}
-                    <span class="text-[11px] font-medium italic">Date: <span class="font-bold border-b border-dotted border-slate-400 px-1">{{ leave.from_date.split(' ')[0] if ' ' in leave.from_date|string else leave.from_date }}</span></span>
+                    <span class="text-[11px] font-medium italic">Date: <span class="font-bold border-b border-dotted border-slate-400 px-1">{{ (leave.from_date.split(' ')[0] if ' ' in leave.from_date|string else leave.from_date) | dmy }}</span></span>
                     {% endif %}
                     <span class="text-[11px] font-medium">From: <span class="font-bold border-b border-dotted border-slate-400 px-1">
-                        {% if ' ' in leave.from_date|string %}{{ leave.from_date.split(' ')[1] }}{% else %}{{ leave.from_date }}{% endif %}
+                        {% if ' ' in leave.from_date|string %}{{ leave.from_date.split(' ')[1] }}{% else %}{{ leave.from_date | dmy }}{% endif %}
                     </span></span>
                     <span class="text-[11px] font-medium ml-2">To: <span class="font-bold border-b border-dotted border-slate-400 px-1">
-                        {% if ' ' in leave.to_date|string %}{{ leave.to_date.split(' ')[1] }}{% else %}{{ leave.to_date }}{% endif %}
+                        {% if ' ' in leave.to_date|string %}{{ leave.to_date.split(' ')[1] }}{% else %}{{ leave.to_date | dmy }}{% endif %}
                     </span></span>
                     <span class="text-[11px] font-medium ml-4 flex items-center">
                         {% if leave.half_day %}<span class="text-[10px] font-black text-indigo-600 uppercase mr-1">({{ leave.session }})</span>{% endif %}
@@ -205,10 +205,10 @@
                     </span>
                 </div>
             </div>
-            <div class="flex items-start">
-                <span class="text-sm font-bold text-slate-700 w-48 shrink-0 mt-0.5">Reason for the Leave</span>
-                <span class="mr-2 mt-0.5">:</span>
-                <div class="border-b border-dotted border-slate-400 flex-1 pb-1 font-medium text-slate-800 leading-relaxed italic min-h-[30px]">
+            <div class="flex items-center py-0.5">
+                <span class="text-sm font-bold text-slate-700 w-48 shrink-0">Reason for the Leave</span>
+                <span class="mr-2.5 font-bold text-slate-700">:</span>
+                <div class="border-b border-dotted border-slate-400 flex-1 pb-0.5 font-medium text-slate-800 leading-normal italic min-h-[24px]">
                     {{ leave.reason }}
                 </div>
             </div>
@@ -495,7 +495,6 @@ function scaleLeaveSheet() {
     if (!sheet || !container) return;
 
     sheet.style.transform = 'none';
-    sheet.style.maxWidth = window.innerWidth <= 820 ? 'none' : '100%';
     
     const containerWidth = container.clientWidth;
     const isMobile = window.innerWidth <= 640;
@@ -503,12 +502,12 @@ function scaleLeaveSheet() {
     const availableWidth = containerWidth - padding;
     const originalWidth = sheet.offsetWidth || 794;
 
-    if (availableWidth < originalWidth) {
+    if (availableWidth < originalWidth && originalWidth > 0) {
         const scale = availableWidth / originalWidth;
-        sheet.style.transformOrigin = 'top left';
+        sheet.style.transformOrigin = 'top center';
         sheet.style.transform = `scale(${scale})`;
         sheet.style.marginBottom = `-${sheet.offsetHeight * (1 - scale)}px`;
-        sheet.style.marginRight = `-${originalWidth * (1 - scale)}px`;
+        sheet.style.marginRight = '0';
     } else {
         sheet.style.transform = 'none';
         sheet.style.marginBottom = '0';

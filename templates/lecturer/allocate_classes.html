@@ -19,11 +19,11 @@
             </div>
             <div>
                 <p class="text-indigo-200 text-sm">From Date</p>
-                <p class="font-bold text-lg">{{ leave.from_date }}</p>
+                <p class="font-bold text-lg">{{ leave.from_date | dmy }}</p>
             </div>
             <div>
                 <p class="text-indigo-200 text-sm">To Date</p>
-                <p class="font-bold text-lg">{{ leave.to_date }}</p>
+                <p class="font-bold text-lg">{{ leave.to_date | dmy }}</p>
             </div>
             <div>
                 <p class="text-indigo-200 text-sm">Status</p>
@@ -259,7 +259,7 @@ function openAssignModal(classId) {
     
     document.getElementById('modal-class-subject').textContent = subject;
     document.getElementById('modal-class-datetime').textContent = `${day}, ${date} at ${time}`;
-    document.getElementById('modal-class-room').textContent = `Room: ${room || 'TBD'}`;
+    document.getElementById('modal-class-room').textContent = `Class: ${room || 'TBD'}`;
     
     // Reset selections
     selectedFacultyId = null;

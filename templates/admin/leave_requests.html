@@ -321,7 +321,7 @@
                         <td class="px-6 py-4 font-bold text-slate-700">{{ leave.lecturer_name }}</td>
                         <td class="px-6 py-4 text-sm">{{ leave.type }}</td>
                         <td class="px-6 py-4 text-xs text-slate-500">
-                            {{ leave.from_date }}{% if leave.to_date and leave.to_date != leave.from_date %} to {{ leave.to_date }}{% endif %}
+                            {{ leave.from_date | dmy }}{% if leave.to_date and leave.to_date != leave.from_date %} to {{ leave.to_date | dmy }}{% endif %}
                             {% if leave.half_day %}
                             <span class="block text-[10px] font-bold text-indigo-600 mt-1 uppercase tracking-tighter">Half Day ({{ leave.session }})</span>
                             {% endif %}
