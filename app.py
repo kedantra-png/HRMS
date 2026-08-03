@@ -2155,6 +2155,83 @@ def admin_staff_export_excel():
         flash(f'Error exporting Excel: {str(e)}', 'error')
         return redirect(url_for('manage_staff'))
 
+@app.route('/admin/staff/download-template')
+@login_required
+@admin_required
+def admin_staff_download_template():
+    """Generate and download a sample Excel template for faculty bulk upload."""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Faculty Template"
+
+        headers = [
+            "Staff ID",
+            "Name",
+            "Designation",
+            "Department",
+            "Category",
+            "Email",
+            "Username",
+            "Password"
+        ]
+
+        ws.append(headers)
+
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        thin_border = Border(
+            left=Side(style='thin', color='CBD5E1'),
+            right=Side(style='thin', color='CBD5E1'),
+            top=Side(style='thin', color='CBD5E1'),
+            bottom=Side(style='thin', color='CBD5E1')
+        )
+
+        for col_num in range(1, len(headers) + 1):
+            cell = ws.cell(row=1, column=col_num)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            cell.border = thin_border
+
+        sample_rows = [
+            ["BBHCF001", "Prof. K. Umesh Shetty", "Principal & Professor", "Administration", "Teaching Faculty", "umesh@example.com", "bbhcf001", "BBHCF001123"],
+            ["BBHCF002", "Dr. John Doe", "Assistant Professor", "Computer Science", "Teaching Faculty", "john@example.com", "bbhcf002", "BBHCF002123"],
+        ]
+
+        for row_data in sample_rows:
+            ws.append(row_data)
+
+        for row_idx in range(2, len(sample_rows) + 2):
+            for col_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_idx, column=col_idx)
+                cell.border = thin_border
+                cell.alignment = Alignment(vertical="center")
+
+        col_widths = [15, 28, 25, 22, 20, 25, 18, 18]
+        for idx, width in enumerate(col_widths, start=1):
+            col_letter = get_column_letter(idx)
+            ws.column_dimensions[col_letter].width = width
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name="Faculty_Bulk_Upload_Template.xlsx"
+        )
+    except Exception as e:
+        flash(f'Error generating template: {str(e)}', 'error')
+        return redirect(url_for('admin_staff_bulk_upload'))
+
 @app.route('/admin/staff/bulk-upload', methods=['GET', 'POST'])
 @login_required
 @admin_required

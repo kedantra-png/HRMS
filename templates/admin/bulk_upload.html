@@ -3,17 +3,23 @@
 {% block title %}Bulk Upload Staff - Admin{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex items-start justify-between gap-4">
+<div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
     <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800">Bulk Upload Faculty</h1>
         <p class="text-slate-500 mt-1 text-sm sm:text-base">
             Upload an Excel file (.xlsx) to add multiple faculty records at once.
         </p>
     </div>
-    <a href="{{ url_for('manage_staff') }}"
-        class="inline-flex items-center px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-semibold transition-colors">
-        <i class="fas fa-arrow-left mr-2"></i> Back
-    </a>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('admin_staff_download_template') }}"
+            class="inline-flex items-center px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-sm transition-all hover:shadow-md">
+            <i class="fas fa-file-excel mr-2"></i> Download Template
+        </a>
+        <a href="{{ url_for('manage_staff') }}"
+            class="inline-flex items-center px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-semibold transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Back
+        </a>
+    </div>
 </div>
 
 {% if error %}
@@ -42,7 +48,13 @@
 <div class="bg-white rounded-2xl shadow-lg shadow-black/15 border border-slate-100 overflow-hidden">
     <div class="p-6 sm:p-8">
         <div class="mb-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-3">Excel File Format</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                <h2 class="text-lg font-bold text-slate-800">Excel File Format</h2>
+                <a href="{{ url_for('admin_staff_download_template') }}"
+                    class="inline-flex items-center px-3.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-200 transition-colors w-fit">
+                    <i class="fas fa-download mr-1.5"></i> Download Excel Template (.xlsx)
+                </a>
+            </div>
             <p class="text-sm text-slate-600 mb-4">
                 Your Excel file should have the following columns (in any order):
             </p>
